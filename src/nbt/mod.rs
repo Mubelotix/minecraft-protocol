@@ -24,7 +24,7 @@ pub enum NbtTag<'a> {
 }
 
 #[inline]
-pub fn parse_nbt_tag(input: &[u8], tag_id: u8) -> Result<(NbtTag, &[u8]), &'static str> {
+pub fn parse_nbt_tag(input: &mut [u8], tag_id: u8) -> Result<(NbtTag, &mut [u8]), &'static str> {
     match tag_id {
         1 => {
             let (value, remaining_bytes) = parse_byte(input)?;
@@ -78,13 +78,13 @@ pub fn parse_nbt_tag(input: &[u8], tag_id: u8) -> Result<(NbtTag, &[u8]), &'stat
     }
 }
 
-pub fn parse_nbt(input: &[u8]) -> Result<(NbtTag, &[u8]), &'static str> {
+pub fn parse_nbt(input: &mut [u8]) -> Result<(NbtTag, &mut [u8]), &'static str> {
     let tag_id = *input.first().ok_or("Empty input, no NBT data.")?;
     if tag_id == 10 {
         let (name, content) = parse_root_compound(input)?;
-        return Ok((NbtTag::RootCompound(name, content), &[]));
+        return Ok((NbtTag::RootCompound(name, content), &mut []));
     }
-    parse_nbt_tag(&input[1..], tag_id)
+    parse_nbt_tag(&mut input[1..], tag_id)
 }
 
 #[cfg(test)]
@@ -95,11 +95,11 @@ mod tests {
     fn test_nbt() {
         println!(
             "{:?}",
-            parse_nbt(include_bytes!("test_data/bigtest.nbt")).unwrap()
+            parse_nbt(&mut include_bytes!("test_data/bigtest.nbt").to_vec()).unwrap()
         );
         println!(
             "{:?}",
-            parse_nbt(include_bytes!("test_data/hello_world.nbt")).unwrap()
+            parse_nbt(&mut include_bytes!("test_data/hello_world.nbt").to_vec()).unwrap()
         );
     }
 }
