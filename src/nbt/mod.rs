@@ -94,11 +94,11 @@ mod tests {
     #[test]
     fn test_nbt() {
         println!(
-            "{:?}",
+            "{:#?}",
             parse_nbt(&mut include_bytes!("test_data/bigtest.nbt").to_vec()).unwrap()
         );
         println!(
-            "{:?}",
+            "{:#?}",
             parse_nbt(&mut include_bytes!("test_data/hello_world.nbt").to_vec()).unwrap()
         );
     }

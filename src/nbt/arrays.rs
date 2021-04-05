@@ -18,6 +18,54 @@ pub enum NbtList<'a> {
     Compound(Vec<HashMap<&'a str, NbtTag<'a>>>),
 }
 
+#[cfg(target_endian = "big")]
+#[inline]
+unsafe fn i64_slice_from_raw_parts<'a>(pointer: *const i64, len: usize) -> &'a [i64] {
+    std::slice::from_raw_parts(pointer, len)
+}
+
+#[cfg(target_endian = "little")]
+#[inline]
+unsafe fn i64_slice_from_raw_parts<'a>(pointer: *mut i64, len: usize) -> &'a [i64] {
+    let slice = std::slice::from_raw_parts_mut(pointer, len);
+    for number in &mut slice.iter_mut() {
+        *number = number.swap_bytes();
+    }
+    slice
+}
+
+#[cfg(target_endian = "big")]
+#[inline]
+unsafe fn i32_slice_from_raw_parts<'a>(pointer: *const i32, len: usize) -> &'a [i32] {
+    std::slice::from_raw_parts(pointer, len)
+}
+
+#[cfg(target_endian = "little")]
+#[inline]
+unsafe fn i32_slice_from_raw_parts<'a>(pointer: *mut i32, len: usize) -> &'a [i32] {
+    let slice = std::slice::from_raw_parts_mut(pointer, len);
+    for number in &mut slice.iter_mut() {
+        *number = number.swap_bytes();
+    }
+    slice
+}
+
+#[cfg(target_endian = "big")]
+#[inline]
+unsafe fn i16_slice_from_raw_parts<'a>(pointer: *const i16, len: usize) -> &'a [i16] {
+    std::slice::from_raw_parts(pointer, len)
+}
+
+#[cfg(target_endian = "little")]
+#[inline]
+unsafe fn i16_slice_from_raw_parts<'a>(pointer: *mut i16, len: usize) -> &'a [i16] {
+    let slice = std::slice::from_raw_parts_mut(pointer, len);
+    for number in &mut slice.iter_mut() {
+        *number = number.swap_bytes();
+    }
+    slice
+}
+
 /// A length-prefixed modified UTF-8 string. The prefix is an unsigned short (thus 2 bytes) signifying the length of the string in bytes
 #[inline]
 pub fn parse_string(mut input: &mut [u8]) -> Result<(&str, &mut [u8]), &'static str> {
@@ -63,7 +111,7 @@ pub fn parse_list(input: &mut [u8]) -> Result<(NbtList, &mut [u8]), &'static str
                 );
             }
             let array =
-                unsafe { std::slice::from_raw_parts(input.as_ptr().add(5) as *const i16, len) };
+                unsafe { i16_slice_from_raw_parts(input.as_ptr().add(5) as *mut i16, len) };
             return Ok((NbtList::Short(array), &mut input[5 + len * 2..]));
         }
         3 => {
@@ -73,7 +121,7 @@ pub fn parse_list(input: &mut [u8]) -> Result<(NbtList, &mut [u8]), &'static str
                 );
             }
             let array =
-                unsafe { std::slice::from_raw_parts(input.as_ptr().add(5) as *const i32, len) };
+                unsafe { i32_slice_from_raw_parts(input.as_ptr().add(5) as *mut i32, len) };
             return Ok((NbtList::Int(array), &mut input[5 + len * 4..]));
         }
         4 => {
@@ -83,7 +131,7 @@ pub fn parse_list(input: &mut [u8]) -> Result<(NbtList, &mut [u8]), &'static str
                 );
             }
             let array =
-                unsafe { std::slice::from_raw_parts(input.as_ptr().add(5) as *const i64, len) };
+                unsafe { i64_slice_from_raw_parts(input.as_ptr().add(5) as *mut i64, len) };
             return Ok((NbtList::Long(array), &mut input[5 + len * 8..]));
         }
         5 => {
@@ -207,7 +255,7 @@ pub fn parse_int_array(input: &mut [u8]) -> Result<(&[i32], &mut [u8]), &'static
     if input.len() < 4 + len * 4 {
         return Err("A int array tag cannot claim to contain more bytes than the remaining bytes.");
     }
-    let array = unsafe { std::slice::from_raw_parts(input.as_ptr().add(4) as *const i32, len) };
+    let array = unsafe { i32_slice_from_raw_parts(input.as_ptr().add(4) as *mut i32, len) };
     Ok((array, &mut input[4 + len * 4..]))
 }
 
@@ -227,6 +275,6 @@ pub fn parse_long_array(input: &mut [u8]) -> Result<(&[i64], &mut [u8]), &'stati
             "A long array tag cannot claim to contain more bytes than the remaining bytes.",
         );
     }
-    let array = unsafe { std::slice::from_raw_parts(input.as_ptr().add(4) as *const i64, len) };
+    let array = unsafe { i64_slice_from_raw_parts(input.as_ptr().add(4) as *mut i64, len) };
     Ok((array, &mut input[4 + len * 8..]))
 }
