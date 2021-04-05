@@ -142,8 +142,7 @@ pub fn parse_list(input: &[u8]) -> Result<(NbtList, &[u8]), &'static str> {
             let mut input = &input[5..];
             let mut list = Vec::new();
             for _ in 0..len {
-                let (result, new_input) =
-                    parse_compound(input).map_err(|_| "Invalid list item")?;
+                let (result, new_input) = parse_compound(input).map_err(|_| "Invalid list item")?;
                 input = new_input;
                 list.push(result);
             }

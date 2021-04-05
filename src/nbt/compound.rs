@@ -48,7 +48,6 @@ pub fn parse_root_compound(
         .map_err(|_| "A compound tag name should contain valid utf8 characters.")?;
     input = &input[2 + len..];
 
-
     let (content, input) = parse_compound(input)?;
     if !input.is_empty() {
         return Err("There should be no data after a root compound.");
