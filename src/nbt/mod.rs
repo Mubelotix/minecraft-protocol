@@ -101,5 +101,13 @@ mod tests {
             "{:#?}",
             parse_nbt(&mut include_bytes!("test_data/hello_world.nbt").to_vec()).unwrap()
         );
+        println!(
+            "{:#?}",
+            parse_nbt(&mut include_bytes!("test_data/servers.dat").to_vec()).unwrap()
+        );
+        println!(
+            "{:#?}",
+            parse_nbt(&mut include_bytes!("test_data/level.dat").to_vec()).unwrap()
+        );
     }
 }
