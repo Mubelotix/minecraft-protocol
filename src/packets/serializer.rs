@@ -546,3 +546,52 @@ impl<'a> MinecraftPacketPart<'a> for &'a str {
         Ok((string, input))
     }
 }
+
+impl<'a> MinecraftPacketPart<'a> for Position {
+    fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        let mut total: u64 = (unsafe{std::mem::transmute::<i32, u32>(self.x)} & 0b00000011111111111111111111111111) as u64;
+        total <<= 26;
+        total += (unsafe{std::mem::transmute::<i16, u16>(self.y)} & 0b0000001111111111) as u64;
+        total <<= 12;
+        total += (unsafe{std::mem::transmute::<i32, u32>(self.z)} & 0b00000011111111111111111111111111) as u64;
+
+        let bytes = total.to_le_bytes();
+        output.push(bytes[7]);
+        output.push(bytes[6]);
+        output.push(bytes[5]);
+        output.push(bytes[4]);
+        output.push(bytes[3]);
+        output.push(bytes[2]);
+        output.push(bytes[1]);
+        output.push(bytes[0]);
+        Ok(())
+    }
+
+    fn build_from_minecraft_packet(input: &'a mut [u8]) -> Result<(Self, &'a mut [u8]), &'static str> {
+        if input.len() < 8 {
+            return Err("Missing bytes in position");
+        }
+        let (bytes, input) = input.split_at_mut(8);
+        let mut total = unsafe {
+            u64::from_le_bytes([
+                *bytes.get_unchecked(7),
+                *bytes.get_unchecked(6),
+                *bytes.get_unchecked(5),
+                *bytes.get_unchecked(4),
+                *bytes.get_unchecked(3),
+                *bytes.get_unchecked(2),
+                *bytes.get_unchecked(1),
+                *bytes.get_unchecked(0),
+            ])
+        };
+
+        let z: i32 = unsafe {std::mem::transmute((total & 0b00000011111111111111111111111111) as u32)};
+        total >>= 26;
+        let y: i16 = unsafe {std::mem::transmute((total & 0b0000001111111111) as u16)};
+        total >>= 12;
+        let x: i32 = unsafe {std::mem::transmute((total & 0b00000011111111111111111111111111) as u32)};
+
+        Ok((Position {x, y, z}, input))
+    }
+}
+
