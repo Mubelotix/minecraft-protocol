@@ -2,9 +2,9 @@ use std::convert::TryInto;
 
 use super::*;
 
-pub trait MinecraftPacketPart: Sized {
+pub trait MinecraftPacketPart<'a>: Sized {
     fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str>;
-    fn build_from_minecraft_packet(input: &mut [u8]) -> Result<(Self, &mut [u8]), &'static str>;
+    fn build_from_minecraft_packet(input: &'a mut [u8]) -> Result<(Self, &'a mut [u8]), &'static str>;
 }
 
 pub trait MinecraftPacket: Sized {
@@ -15,7 +15,7 @@ pub trait MinecraftPacket: Sized {
 mod integers {
     use super::*;
 
-    impl MinecraftPacketPart for bool {
+    impl<'a> MinecraftPacketPart<'a> for bool {
         fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             output.push(self as u8);
             Ok(())
@@ -31,7 +31,7 @@ mod integers {
         }
     }
 
-    impl MinecraftPacketPart for i8 {
+    impl<'a> MinecraftPacketPart<'a> for i8 {
         fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             output.push(self.to_le_bytes()[0]);
             Ok(())
@@ -47,7 +47,7 @@ mod integers {
         }
     }
 
-    impl MinecraftPacketPart for u8 {
+    impl<'a> MinecraftPacketPart<'a> for u8 {
         fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             output.push(self);
             Ok(())
@@ -63,7 +63,7 @@ mod integers {
         }
     }
 
-    impl MinecraftPacketPart for i16 {
+    impl<'a> MinecraftPacketPart<'a> for i16 {
         fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             let bytes = self.to_le_bytes();
             output.push(bytes[1]);
@@ -93,7 +93,7 @@ mod integers {
         }
     }
 
-    impl MinecraftPacketPart for u16 {
+    impl<'a> MinecraftPacketPart<'a> for u16 {
         fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             let bytes = self.to_le_bytes();
             output.push(bytes[1]);
@@ -123,7 +123,7 @@ mod integers {
         }
     }
 
-    impl MinecraftPacketPart for i32 {
+    impl<'a> MinecraftPacketPart<'a> for i32 {
         fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             let bytes = self.to_le_bytes();
             output.push(bytes[3]);
@@ -160,7 +160,7 @@ mod integers {
         }
     }
 
-    impl MinecraftPacketPart for i64 {
+    impl<'a> MinecraftPacketPart<'a> for i64 {
         fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             let bytes = self.to_le_bytes();
             output.push(bytes[7]);
@@ -205,7 +205,7 @@ mod integers {
         }
     }
 
-    impl MinecraftPacketPart for f32 {
+    impl<'a> MinecraftPacketPart<'a> for f32 {
         fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             let bytes = self.to_le_bytes();
             output.push(bytes[3]);
@@ -242,7 +242,7 @@ mod integers {
         }
     }
 
-    impl MinecraftPacketPart for f64 {
+    impl<'a> MinecraftPacketPart<'a> for f64 {
         fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             let bytes = self.to_le_bytes();
             output.push(bytes[7]);
@@ -287,7 +287,7 @@ mod integers {
         }
     }
 
-    impl MinecraftPacketPart for VarInt {
+    impl<'a> MinecraftPacketPart<'a> for VarInt {
         fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             let mut value: u32 = unsafe { std::mem::transmute(self.0) };
 
@@ -331,7 +331,7 @@ mod integers {
         }
     }
 
-    impl MinecraftPacketPart for VarLong {
+    impl<'a> MinecraftPacketPart<'a> for VarLong {
         fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             let mut value: u64 = unsafe { std::mem::transmute(self.0) };
 
@@ -523,3 +523,26 @@ mod integers {
     }
 }
 
+impl<'a> MinecraftPacketPart<'a> for &'a str {
+    fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        let len = VarInt(self.len().try_into().map_err(|_| "String too long")?);
+        len.append_minecraft_packet_part(output)?;
+        output.extend_from_slice(self.as_bytes());
+        Ok(())
+    }
+
+    fn build_from_minecraft_packet(input: &mut [u8]) -> Result<(&str, &mut [u8]), &'static str> {
+        let (len, input) = VarInt::build_from_minecraft_packet(input)?;
+        if len.0 <= 0 {
+            return Ok(("", input))
+        }
+        let len: usize = len.0 as usize;
+        if len > input.len() {
+            return Err("String claims ownership of too much data");
+        }
+        let (slice, input) = input.split_at_mut(len);
+        let string = std::str::from_utf8(slice).map_err(|_| "Invalid utf8")?;
+
+        Ok((string, input))
+    }
+}
