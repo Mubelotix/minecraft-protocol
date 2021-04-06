@@ -11,6 +11,8 @@ pub struct Position {
     pub z: i32,
 }
 
+type UUID = u128;
+
 #[derive(Debug, MinecraftPacket)]
 pub struct TestPacket {
     data: u8,

@@ -205,6 +205,67 @@ mod integers {
         }
     }
 
+    impl<'a> MinecraftPacketPart<'a> for u128 {
+        fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+            let bytes = self.to_le_bytes();
+            output.push(bytes[15]);
+            output.push(bytes[14]);
+            output.push(bytes[13]);
+            output.push(bytes[12]);
+            output.push(bytes[11]);
+            output.push(bytes[10]);
+            output.push(bytes[9]);
+            output.push(bytes[8]);
+            output.push(bytes[7]);
+            output.push(bytes[6]);
+            output.push(bytes[5]);
+            output.push(bytes[4]);
+            output.push(bytes[3]);
+            output.push(bytes[2]);
+            output.push(bytes[1]);
+            output.push(bytes[0]);
+            Ok(())
+        }
+
+        fn build_from_minecraft_packet(
+            input: &mut [u8],
+        ) -> Result<(Self, &mut [u8]), &'static str> {
+            if input.len() < 16 {
+                return Err("Missing byte while parsing u128 (UUID).");
+            }
+            unsafe {
+                let len = input.len();
+                let ptr = input.as_mut_ptr();
+                let (bytes, input) = (
+                    std::slice::from_raw_parts_mut(ptr, 16),
+                    std::slice::from_raw_parts_mut(ptr.add(16), len - 16),
+                );
+
+                Ok((
+                    u128::from_le_bytes([
+                        *bytes.get_unchecked(15),
+                        *bytes.get_unchecked(14),
+                        *bytes.get_unchecked(13),
+                        *bytes.get_unchecked(12),
+                        *bytes.get_unchecked(11),
+                        *bytes.get_unchecked(10),
+                        *bytes.get_unchecked(9),
+                        *bytes.get_unchecked(8),
+                        *bytes.get_unchecked(7),
+                        *bytes.get_unchecked(6),
+                        *bytes.get_unchecked(5),
+                        *bytes.get_unchecked(4),
+                        *bytes.get_unchecked(3),
+                        *bytes.get_unchecked(2),
+                        *bytes.get_unchecked(1),
+                        *bytes.get_unchecked(0),
+                    ]),
+                    input,
+                ))
+            }
+        }
+    }
+
     impl<'a> MinecraftPacketPart<'a> for f32 {
         fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             let bytes = self.to_le_bytes();
