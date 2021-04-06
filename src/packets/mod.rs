@@ -12,6 +12,7 @@ pub struct Position {
 }
 
 type UUID = u128;
+type Angle = u8;
 
 #[derive(Debug, MinecraftPacket)]
 pub struct TestPacket {
