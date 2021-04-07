@@ -9,9 +9,9 @@ pub trait MinecraftPacketPart<'a>: Sized {
     ) -> Result<(Self, &'a mut [u8]), &'static str>;
 }
 
-pub trait MinecraftPacket: Sized {
+pub trait MinecraftPacket<'a>: Sized {
     fn serialize(self) -> Result<Vec<u8>, &'static str>;
-    fn deserialize(input: &mut [u8]) -> Result<Self, &'static str>;
+    fn deserialize(input: &'a mut [u8]) -> Result<Self, &'static str>;
 }
 
 mod integers {
@@ -682,5 +682,19 @@ impl<'a> MinecraftPacketPart<'a> for Direction {
             _ => return Err("The direction ID is outside the definition range"),
         };
         Ok((direction, input))
+    }
+}
+
+impl<'a> MinecraftPacketPart<'a> for RawBytes<'a> {
+    fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        output.extend_from_slice(self.data);
+        Ok(())
+    }
+
+    fn build_from_minecraft_packet(
+        input: &'a mut [u8],
+    ) -> Result<(Self, &'a mut [u8]), &'static str> {
+        let data = input;
+        Ok((RawBytes {data}, &mut []))
     }
 }

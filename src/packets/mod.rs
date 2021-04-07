@@ -27,6 +27,13 @@ pub enum Direction {
 pub type UUID = u128;
 pub type Angle = u8;
 
+/// This is used to replace an unsupported structure by taking all the remaining bytes of a packet.
+/// Feel free to make PRs.
+#[derive(Debug)]
+pub struct RawBytes<'a> {
+    data: &'a [u8],
+}
+
 #[derive(Debug, MinecraftPacket)]
 pub struct TestPacket {
     data: u8,

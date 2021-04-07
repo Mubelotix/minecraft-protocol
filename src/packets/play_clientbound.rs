@@ -66,3 +66,9 @@ pub struct EntityAnimation {
     pub id: VarInt,
     pub animation: crate::animations::Animation,
 }
+
+#[derive(Debug, MinecraftPacket)]
+pub struct Statistics<'a> {
+    pub count: VarInt,
+    pub statistic: RawBytes<'a>,
+}
