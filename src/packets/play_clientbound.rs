@@ -115,10 +115,22 @@ pub struct BlockEntityData<'a> {
 pub struct BlockAction {
     /// Block coordinates
     pub location: Position,
-    /// Varies depending on block — see [Block Actions](https://wiki.vg/Block_Actions).
+    /// Varies depending on block — see [Block Actions](https://wiki.vg/Block_Actions)
     pub action_id: u8,
-    /// Varies depending on block — see [Block Actions](https://wiki.vg/Block_Actions).
+    /// Varies depending on block — see [Block Actions](https://wiki.vg/Block_Actions)
     pub action_param: u8,
-    /// The block type ID for the block. This must match the block at the given coordinates.
+    /// The block type ID for the block. This must match the block at the given coordinates
     pub block_type: VarInt,
+}
+
+/// Fired whenever a block is changed within the render distance.
+/// Changes include plant growth, cake bites, redstone repeater delay changes, block facing changes (bed, chest, hopper...) and many other values depending on the type of the block.
+/// 
+/// **Warning**: Changing a block in a chunk that is not loaded is not a stable action. The Notchian client currently uses a shared empty chunk which is modified for all block changes in unloaded chunks; while in 1.9 this chunk never renders in older versions the changed block will appear in all copies of the empty chunk. Servers should avoid sending block changes in unloaded chunks and clients should ignore such packets.
+#[derive(Debug, MinecraftPacket)]
+pub struct BlockChange {
+    /// Block Coordinates
+    pub location: Position,
+    /// The new block state ID for the block as given in the [global palette](http://minecraft.gamepedia.com/Data_values%23Block_IDs). See that section for more information.
+    pub block_state: VarInt,
 }
