@@ -28,6 +28,9 @@ pub enum NbtTag<'a> {
 #[inline]
 pub fn parse_nbt_tag(input: &mut [u8], tag_id: u8) -> Result<(NbtTag, &mut [u8]), &'static str> {
     match tag_id {
+        0 => {
+            Ok((NbtTag::Null, input))
+        }
         1 => {
             let (value, remaining_bytes) = parse_byte(input)?;
             Ok((NbtTag::Byte(value), remaining_bytes))
