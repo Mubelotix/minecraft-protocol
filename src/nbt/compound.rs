@@ -2,7 +2,9 @@ use super::*;
 use std::collections::HashMap;
 
 #[inline]
-pub fn parse_compound(mut input: &mut [u8]) -> Result<(HashMap<&str, NbtTag>, &mut [u8]), &'static str> {
+pub fn parse_compound(
+    mut input: &mut [u8],
+) -> Result<(HashMap<&str, NbtTag>, &mut [u8]), &'static str> {
     let mut content = HashMap::new();
 
     loop {
@@ -13,7 +15,8 @@ pub fn parse_compound(mut input: &mut [u8]) -> Result<(HashMap<&str, NbtTag>, &m
         if input.len() < 3 {
             return Err("A tag in a compound should be introduced by three bytes.");
         }
-        let (tag_id, len): (u8, u16) = unsafe { (*input.get_unchecked(0), read_u16(&mut input[1..])) };
+        let (tag_id, len): (u8, u16) =
+            unsafe { (*input.get_unchecked(0), read_u16(&mut input[1..])) };
 
         let len = len as usize;
         let new_input = &mut input[3..];

@@ -1,5 +1,5 @@
-pub mod serializer;
 pub mod play_clientbound;
+pub mod serializer;
 pub use minecraft_packet_derive::*;
 use serializer::*;
 
@@ -21,7 +21,7 @@ pub enum Direction {
     South = 1,
     West,
     North,
-    East
+    East,
 }
 
 pub type UUID = u128;

@@ -87,7 +87,8 @@ pub fn parse_list(input: &mut [u8]) -> Result<(NbtList, &mut [u8]), &'static str
     if input.len() < 5 {
         return Err("A tag list should contain five bytes.");
     }
-    let (tag_type, len): (u8, i32) = unsafe { (*input.get_unchecked(0), read_i32(&mut input[1..])) };
+    let (tag_type, len): (u8, i32) =
+        unsafe { (*input.get_unchecked(0), read_i32(&mut input[1..])) };
     if len <= 0 {
         return Ok((NbtList::None, &mut input[5..]));
     }
@@ -110,8 +111,7 @@ pub fn parse_list(input: &mut [u8]) -> Result<(NbtList, &mut [u8]), &'static str
                     "A list tag cannot claim to contain more bytes than the remaining bytes.",
                 );
             }
-            let array =
-                unsafe { i16_slice_from_raw_parts(input.as_ptr().add(5) as *mut i16, len) };
+            let array = unsafe { i16_slice_from_raw_parts(input.as_ptr().add(5) as *mut i16, len) };
             return Ok((NbtList::Short(array), &mut input[5 + len * 2..]));
         }
         3 => {
@@ -120,8 +120,7 @@ pub fn parse_list(input: &mut [u8]) -> Result<(NbtList, &mut [u8]), &'static str
                     "A list tag cannot claim to contain more bytes than the remaining bytes.",
                 );
             }
-            let array =
-                unsafe { i32_slice_from_raw_parts(input.as_ptr().add(5) as *mut i32, len) };
+            let array = unsafe { i32_slice_from_raw_parts(input.as_ptr().add(5) as *mut i32, len) };
             return Ok((NbtList::Int(array), &mut input[5 + len * 4..]));
         }
         4 => {
@@ -130,8 +129,7 @@ pub fn parse_list(input: &mut [u8]) -> Result<(NbtList, &mut [u8]), &'static str
                     "A list tag cannot claim to contain more bytes than the remaining bytes.",
                 );
             }
-            let array =
-                unsafe { i64_slice_from_raw_parts(input.as_ptr().add(5) as *mut i64, len) };
+            let array = unsafe { i64_slice_from_raw_parts(input.as_ptr().add(5) as *mut i64, len) };
             return Ok((NbtList::Long(array), &mut input[5 + len * 8..]));
         }
         5 => {

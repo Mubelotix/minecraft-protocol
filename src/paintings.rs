@@ -77,7 +77,9 @@ impl<'a> MinecraftPacketPart<'a> for Painting {
         VarInt(self as i32).append_minecraft_packet_part(output)
     }
 
-    fn build_from_minecraft_packet(input: &'a mut [u8]) -> Result<(Self, &'a mut [u8]), &'static str> {
+    fn build_from_minecraft_packet(
+        input: &'a mut [u8],
+    ) -> Result<(Self, &'a mut [u8]), &'static str> {
         let (painting_id, input) = VarInt::build_from_minecraft_packet(input)?;
         let painting = match painting_id.0 {
             0 => Painting::Kebab,

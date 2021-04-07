@@ -4,7 +4,9 @@ use super::*;
 
 pub trait MinecraftPacketPart<'a>: Sized {
     fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str>;
-    fn build_from_minecraft_packet(input: &'a mut [u8]) -> Result<(Self, &'a mut [u8]), &'static str>;
+    fn build_from_minecraft_packet(
+        input: &'a mut [u8],
+    ) -> Result<(Self, &'a mut [u8]), &'static str>;
 }
 
 pub trait MinecraftPacket: Sized {
@@ -595,7 +597,7 @@ impl<'a> MinecraftPacketPart<'a> for &'a str {
     fn build_from_minecraft_packet(input: &mut [u8]) -> Result<(&str, &mut [u8]), &'static str> {
         let (len, input) = VarInt::build_from_minecraft_packet(input)?;
         if len.0 <= 0 {
-            return Ok(("", input))
+            return Ok(("", input));
         }
         let len: usize = len.0 as usize;
         if len > input.len() {
@@ -610,11 +612,13 @@ impl<'a> MinecraftPacketPart<'a> for &'a str {
 
 impl<'a> MinecraftPacketPart<'a> for Position {
     fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
-        let mut total: u64 = (unsafe{std::mem::transmute::<i32, u32>(self.x)} & 0b00000011111111111111111111111111) as u64;
+        let mut total: u64 = (unsafe { std::mem::transmute::<i32, u32>(self.x) }
+            & 0b00000011111111111111111111111111) as u64;
         total <<= 26;
-        total += (unsafe{std::mem::transmute::<i16, u16>(self.y)} & 0b0000001111111111) as u64;
+        total += (unsafe { std::mem::transmute::<i16, u16>(self.y) } & 0b0000001111111111) as u64;
         total <<= 12;
-        total += (unsafe{std::mem::transmute::<i32, u32>(self.z)} & 0b00000011111111111111111111111111) as u64;
+        total += (unsafe { std::mem::transmute::<i32, u32>(self.z) }
+            & 0b00000011111111111111111111111111) as u64;
 
         let bytes = total.to_le_bytes();
         output.push(bytes[7]);
@@ -628,7 +632,9 @@ impl<'a> MinecraftPacketPart<'a> for Position {
         Ok(())
     }
 
-    fn build_from_minecraft_packet(input: &'a mut [u8]) -> Result<(Self, &'a mut [u8]), &'static str> {
+    fn build_from_minecraft_packet(
+        input: &'a mut [u8],
+    ) -> Result<(Self, &'a mut [u8]), &'static str> {
         if input.len() < 8 {
             return Err("Missing bytes in position");
         }
@@ -646,13 +652,15 @@ impl<'a> MinecraftPacketPart<'a> for Position {
             ])
         };
 
-        let z: i32 = unsafe {std::mem::transmute((total & 0b00000011111111111111111111111111) as u32)};
+        let z: i32 =
+            unsafe { std::mem::transmute((total & 0b00000011111111111111111111111111) as u32) };
         total >>= 26;
-        let y: i16 = unsafe {std::mem::transmute((total & 0b0000001111111111) as u16)};
+        let y: i16 = unsafe { std::mem::transmute((total & 0b0000001111111111) as u16) };
         total >>= 12;
-        let x: i32 = unsafe {std::mem::transmute((total & 0b00000011111111111111111111111111) as u32)};
+        let x: i32 =
+            unsafe { std::mem::transmute((total & 0b00000011111111111111111111111111) as u32) };
 
-        Ok((Position {x, y, z}, input))
+        Ok((Position { x, y, z }, input))
     }
 }
 
@@ -662,7 +670,9 @@ impl<'a> MinecraftPacketPart<'a> for Direction {
         Ok(())
     }
 
-    fn build_from_minecraft_packet(input: &'a mut [u8]) -> Result<(Self, &'a mut [u8]), &'static str> {
+    fn build_from_minecraft_packet(
+        input: &'a mut [u8],
+    ) -> Result<(Self, &'a mut [u8]), &'static str> {
         let (direction_id, input) = u8::build_from_minecraft_packet(input)?;
         let direction = match direction_id {
             0 => Direction::South,

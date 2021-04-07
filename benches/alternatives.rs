@@ -16,7 +16,7 @@ fn minecraft_format(b: &mut Bencher) {
         let data: &mut [u8] = std::slice::from_raw_parts_mut(data, len);
         data
     };*/
-    
+
     b.iter(|| {
         let mut data = LEVEL.to_vec();
         minecraft_format::nbt::parse_nbt(&mut data);
