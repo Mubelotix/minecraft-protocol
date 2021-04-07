@@ -16,3 +16,11 @@ pub struct SpawnEntity {
     pub velocity_z: i16
 }
 
+#[derive(Debug, MinecraftPacket)]
+pub struct SpawnExperienceOrb {
+    pub id: VarInt,
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+    pub count: i16,
+}
