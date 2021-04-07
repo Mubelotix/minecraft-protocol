@@ -33,7 +33,7 @@ pub fn parse_compound(
 
 pub fn parse_root_compound(
     mut input: &mut [u8],
-) -> Result<(&str, HashMap<&str, NbtTag>), &'static str> {
+) -> Result<((&str, HashMap<&str, NbtTag>), &mut [u8]), &'static str> {
     if input.first() != Some(&10) {
         return Err("The root compound tag should start with the compound ID (10).");
     }
@@ -50,9 +50,18 @@ pub fn parse_root_compound(
     input = new_input;
 
     let (content, input) = parse_compound(input)?;
+
+    Ok(((name, content), input))
+}
+
+pub fn parse_root_compound_complete(
+    mut input: &mut [u8],
+) -> Result<(&str, HashMap<&str, NbtTag>), &'static str> {
+    let (value, input) = parse_root_compound(input)?;
+
     if !input.is_empty() {
         return Err("There should be no data after a root compound.");
     }
 
-    Ok((name, content))
+    Ok(value)
 }

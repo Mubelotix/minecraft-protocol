@@ -86,8 +86,8 @@ pub fn parse_nbt_tag(input: &mut [u8], tag_id: u8) -> Result<(NbtTag, &mut [u8])
 pub fn parse_nbt(input: &mut [u8]) -> Result<(NbtTag, &mut [u8]), &'static str> {
     let tag_id = *input.first().ok_or("Empty input, no NBT data.")?;
     if tag_id == 10 {
-        let (name, content) = parse_root_compound(input)?;
-        return Ok((NbtTag::RootCompound(name, content), &mut []));
+        let ((name, content), input) = parse_root_compound(input)?;
+        return Ok((NbtTag::RootCompound(name, content), input));
     }
     parse_nbt_tag(&mut input[1..], tag_id)
 }
