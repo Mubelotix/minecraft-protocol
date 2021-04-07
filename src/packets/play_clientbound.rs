@@ -77,7 +77,7 @@ pub struct Statistics<'a> {
 pub struct AcknowledgePlayerDigging {
     pub location: Position,
     pub block: VarInt,
-    pub status: crate::digging_states::PartialDiggingState,
+    pub status: crate::blocks::PartialDiggingState,
     pub successful: bool,
 }
 
@@ -94,4 +94,14 @@ pub struct BlockBreakAnimation {
     pub location: Position,
     /// 0–9 to set it, any other value to remove it
     pub destroy_stage: u8,
+}
+
+/// Sets the block entity associated with the block at the given location.
+#[derive(Debug, MinecraftPacket)]
+pub struct BlockEntityData<'a> {
+    pub location: Position,
+    /// The type of update to perform, see [crate::blocks::BlockEntityDataAction].
+    pub action: crate::blocks::BlockEntityDataAction,
+    /// Data to set. May be [crate::nbt::NbtTag::Null], in which case the block entity at the given location is removed (though this is not required since the client will remove the block entity automatically on chunk unload or block removal).
+    pub data: crate::nbt::NbtTag<'a>,
 }

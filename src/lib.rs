@@ -1,7 +1,7 @@
 #![allow(clippy::upper_case_acronyms)]
 
 pub mod animations;
-pub mod digging_states;
+pub mod blocks;
 pub mod nbt;
 pub mod packets;
 pub mod paintings;

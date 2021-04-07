@@ -2,12 +2,14 @@ use std::collections::HashMap;
 pub mod arrays;
 pub mod compound;
 pub mod numbers;
+pub mod serializer;
 use arrays::*;
 use compound::*;
 use numbers::*;
 
 #[derive(Debug)]
 pub enum NbtTag<'a> {
+    Null,
     Byte(i8),
     Short(i16),
     Int(i32),
