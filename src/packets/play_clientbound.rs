@@ -149,3 +149,14 @@ pub struct ServerDifficulty {
     pub difficulty: crate::difficulty::Difficulty,
     pub difficulty_locked: bool,
 }
+
+/// Identifying the difference between Chat/System Message is important as it helps respect the user's chat visibility options. See [processing chat](https://wiki.vg/Chat#Processing_chat) for more info about these positions.
+/// 
+/// **Warning**: Game info accepts json formatting but does not display it, although the deprecated §-based formatting works. This is not an issue when using the [Title] packet, so prefer that packet for displaying information in that slot. See MC-119145 for more information.
+#[derive(Debug, MinecraftPacket)]
+pub struct ChatMessage<'a> {
+    pub message: Chat<'a>,
+    pub position: crate::chat::Position,
+    /// Used by the Notchian client for the disableChat launch option. Setting 0 will always display the message regardless of the setting.
+    pub sender: UUID,
+}

@@ -3,6 +3,7 @@
 pub mod animations;
 pub mod blocks;
 pub mod boss_bar;
+pub mod chat;
 pub mod difficulty;
 pub mod nbt;
 pub mod packets;
