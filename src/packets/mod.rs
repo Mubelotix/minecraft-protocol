@@ -1,8 +1,11 @@
 pub mod serializer;
-use minecraft_packet_derive::*;
+pub mod play_clientbound;
+pub use minecraft_packet_derive::*;
 use serializer::*;
 
+#[derive(Debug)]
 pub struct VarInt(pub i32);
+#[derive(Debug)]
 pub struct VarLong(pub i64);
 
 pub struct Position {
@@ -11,11 +14,10 @@ pub struct Position {
     pub z: i32,
 }
 
-type UUID = u128;
-type Angle = u8;
+pub type UUID = u128;
+pub type Angle = u8;
 
 #[derive(Debug, MinecraftPacket)]
 pub struct TestPacket {
     data: u8,
 }
-
