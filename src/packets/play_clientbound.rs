@@ -142,3 +142,10 @@ pub struct BossBar<'a> {
     /// The action to apply on the boss bar.
     pub action: crate::boss_bar::BossBarAction<'a>,
 }
+
+/// Changes the difficulty setting in the client's option menu
+#[derive(Debug, MinecraftPacket)]
+pub struct ServerDifficulty {
+    pub difficulty: crate::difficulty::Difficulty,
+    pub difficulty_locked: bool,
+}
