@@ -15,8 +15,8 @@ pub struct Position {
     pub z: i32,
 }
 
+#[minecraft_enum(u8)]
 #[derive(Debug)]
-#[repr(u8)]
 pub enum Direction {
     South = 1,
     West,
