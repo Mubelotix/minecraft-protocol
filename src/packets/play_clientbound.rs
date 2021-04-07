@@ -25,6 +25,7 @@ pub struct SpawnExperienceOrb {
     pub count: i16,
 }
 
+#[derive(Debug, MinecraftPacket)]
 pub struct SpawnLivingEntity {
     pub id: VarInt,
     pub uuid: UUID,
@@ -38,4 +39,13 @@ pub struct SpawnLivingEntity {
     pub velocity_x: i16,
     pub velocity_y: i16,
     pub velocity_z: i16,
+}
+
+#[derive(Debug, MinecraftPacket)]
+pub struct SpawnPainting {
+    pub id: VarInt,
+    pub uuid: UUID,
+    pub motive: crate::paintings::Painting,
+    pub location: Position,
+    pub direction: Direction,
 }

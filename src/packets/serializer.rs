@@ -656,3 +656,21 @@ impl<'a> MinecraftPacketPart<'a> for Position {
     }
 }
 
+impl<'a> MinecraftPacketPart<'a> for Direction {
+    fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        output.push(self as u8);
+        Ok(())
+    }
+
+    fn build_from_minecraft_packet(input: &'a mut [u8]) -> Result<(Self, &'a mut [u8]), &'static str> {
+        let (direction_id, input) = u8::build_from_minecraft_packet(input)?;
+        let direction = match direction_id {
+            0 => Direction::South,
+            1 => Direction::West,
+            2 => Direction::North,
+            3 => Direction::East,
+            _ => return Err("The direction ID is outside the definition range"),
+        };
+        Ok((direction, input))
+    }
+}
