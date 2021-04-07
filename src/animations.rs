@@ -1,5 +1,4 @@
-use minecraft_packet_derive::minecraft_enum;
-use crate::packets::serializer::MinecraftPacketPart;
+use crate::*;
 
 #[minecraft_enum(u8)]
 #[derive(Debug)]

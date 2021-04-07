@@ -1,6 +1,4 @@
-use minecraft_packet_derive::minecraft_enum;
-use crate::packets::serializer::MinecraftPacketPart;
-use crate::packets::VarInt;
+use crate::*;
 
 #[minecraft_enum(VarInt)]
 #[derive(Debug, Clone, Copy)]

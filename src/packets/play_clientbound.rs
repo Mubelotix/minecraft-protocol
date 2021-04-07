@@ -72,3 +72,11 @@ pub struct Statistics<'a> {
     pub count: VarInt,
     pub statistic: RawBytes<'a>,
 }
+
+#[derive(Debug, MinecraftPacket)]
+pub struct AcknowledgePlayerDigging {
+    pub location: Position,
+    pub block: VarInt,
+    pub status: crate::digging_states::PartialDiggingState,
+    pub successful: bool,
+}
