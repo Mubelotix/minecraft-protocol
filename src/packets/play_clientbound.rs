@@ -105,3 +105,20 @@ pub struct BlockEntityData<'a> {
     /// Data to set. May be [crate::nbt::NbtTag::Null], in which case the block entity at the given location is removed (though this is not required since the client will remove the block entity automatically on chunk unload or block removal).
     pub data: crate::nbt::NbtTag<'a>,
 }
+
+/// This packet is used for a number of actions and animations performed by blocks, usually non-persistent.
+/// 
+/// See [Block Actions](https://wiki.vg/Block_Actions) for a list of values.
+/// 
+/// **Warning**: This packet uses a block ID, not a block state.
+#[derive(Debug, MinecraftPacket)]
+pub struct BlockAction {
+    /// Block coordinates
+    pub location: Position,
+    /// Varies depending on block — see [Block Actions](https://wiki.vg/Block_Actions).
+    pub action_id: u8,
+    /// Varies depending on block — see [Block Actions](https://wiki.vg/Block_Actions).
+    pub action_param: u8,
+    /// The block type ID for the block. This must match the block at the given coordinates.
+    pub block_type: VarInt,
+}
