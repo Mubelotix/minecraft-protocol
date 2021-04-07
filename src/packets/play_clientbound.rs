@@ -60,3 +60,9 @@ pub struct SpawnPlayer {
     pub yaw: Angle,
     pub pitch: Angle,
 }
+
+#[derive(Debug, MinecraftPacket)]
+pub struct EntityAnimation {
+    pub id: VarInt,
+    pub animation: crate::animations::Animation,
+}
