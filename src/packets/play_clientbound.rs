@@ -49,3 +49,14 @@ pub struct SpawnPainting {
     pub location: Position,
     pub direction: Direction,
 }
+
+#[derive(Debug, MinecraftPacket)]
+pub struct SpawnPlayer {
+    pub id: VarInt,
+    pub uuid: UUID,
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+    pub yaw: Angle,
+    pub pitch: Angle,
+}
