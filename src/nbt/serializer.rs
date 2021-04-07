@@ -9,6 +9,6 @@ impl<'a> MinecraftPacketPart<'a> for NbtTag<'a> {
     fn build_from_minecraft_packet(
         input: &'a mut [u8],
     ) -> Result<(Self, &'a mut [u8]), &'static str> {
-        todo!()
+        super::parse_nbt(input)
     }
 }

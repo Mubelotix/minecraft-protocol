@@ -55,7 +55,7 @@ pub fn parse_root_compound(
 }
 
 pub fn parse_root_compound_complete(
-    mut input: &mut [u8],
+    input: &mut [u8],
 ) -> Result<(&str, HashMap<&str, NbtTag>), &'static str> {
     let (value, input) = parse_root_compound(input)?;
 
