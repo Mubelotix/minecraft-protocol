@@ -37,7 +37,7 @@ pub struct RawBytes<'a> {
     data: &'a [u8],
 }
 
-#[derive(Debug, MinecraftPacket)]
+#[derive(Debug, MinecraftPacketPart)]
 pub struct TestPacket {
     data: u8,
 }

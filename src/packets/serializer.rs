@@ -3,27 +3,34 @@ use std::convert::TryInto;
 use super::*;
 
 pub trait MinecraftPacketPart<'a>: Sized {
-    fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str>;
-    fn build_from_minecraft_packet(
-        input: &'a mut [u8],
-    ) -> Result<(Self, &'a mut [u8]), &'static str>;
-}
+    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str>;
+    fn deserialize_minecraft_packet_part(input: &'a mut [u8]) -> Result<(Self, &'a mut [u8]), &'static str>;
 
-pub trait MinecraftPacket<'a>: Sized {
-    fn serialize(self) -> Result<Vec<u8>, &'static str>;
-    fn deserialize(input: &'a mut [u8]) -> Result<Self, &'static str>;
+    fn serialize_minecraft_packet(self) -> Result<Vec<u8>, &'static str> {
+        let mut buffer = Vec::new();
+        self.serialize_minecraft_packet_part(&mut buffer)?;
+        Ok(buffer)
+    }
+
+    fn deserialize_minecraft_packet(input: &'a mut [u8]) -> Result<Self, &'static str> {
+        let (result, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
+        if !input.is_empty() {
+            return Err("There are still unparsed bytes after parsing.");
+        }
+        Ok(result)
+    }
 }
 
 mod integers {
     use super::*;
 
     impl<'a> MinecraftPacketPart<'a> for bool {
-        fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             output.push(self as u8);
             Ok(())
         }
 
-        fn build_from_minecraft_packet(
+        fn deserialize_minecraft_packet_part(
             input: &mut [u8],
         ) -> Result<(Self, &mut [u8]), &'static str> {
             let (value, input) = input
@@ -34,12 +41,12 @@ mod integers {
     }
 
     impl<'a> MinecraftPacketPart<'a> for i8 {
-        fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             output.push(self.to_le_bytes()[0]);
             Ok(())
         }
 
-        fn build_from_minecraft_packet(
+        fn deserialize_minecraft_packet_part(
             input: &mut [u8],
         ) -> Result<(Self, &mut [u8]), &'static str> {
             let (value, input) = input
@@ -50,12 +57,12 @@ mod integers {
     }
 
     impl<'a> MinecraftPacketPart<'a> for u8 {
-        fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             output.push(self);
             Ok(())
         }
 
-        fn build_from_minecraft_packet(
+        fn deserialize_minecraft_packet_part(
             input: &mut [u8],
         ) -> Result<(Self, &mut [u8]), &'static str> {
             let (value, input) = input
@@ -66,14 +73,14 @@ mod integers {
     }
 
     impl<'a> MinecraftPacketPart<'a> for i16 {
-        fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             let bytes = self.to_le_bytes();
             output.push(bytes[1]);
             output.push(bytes[0]);
             Ok(())
         }
 
-        fn build_from_minecraft_packet(
+        fn deserialize_minecraft_packet_part(
             input: &mut [u8],
         ) -> Result<(Self, &mut [u8]), &'static str> {
             if input.len() < 2 {
@@ -96,14 +103,14 @@ mod integers {
     }
 
     impl<'a> MinecraftPacketPart<'a> for u16 {
-        fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             let bytes = self.to_le_bytes();
             output.push(bytes[1]);
             output.push(bytes[0]);
             Ok(())
         }
 
-        fn build_from_minecraft_packet(
+        fn deserialize_minecraft_packet_part(
             input: &mut [u8],
         ) -> Result<(Self, &mut [u8]), &'static str> {
             if input.len() < 2 {
@@ -126,7 +133,7 @@ mod integers {
     }
 
     impl<'a> MinecraftPacketPart<'a> for i32 {
-        fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             let bytes = self.to_le_bytes();
             output.push(bytes[3]);
             output.push(bytes[2]);
@@ -135,7 +142,7 @@ mod integers {
             Ok(())
         }
 
-        fn build_from_minecraft_packet(
+        fn deserialize_minecraft_packet_part(
             input: &mut [u8],
         ) -> Result<(Self, &mut [u8]), &'static str> {
             if input.len() < 4 {
@@ -163,7 +170,7 @@ mod integers {
     }
 
     impl<'a> MinecraftPacketPart<'a> for i64 {
-        fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             let bytes = self.to_le_bytes();
             output.push(bytes[7]);
             output.push(bytes[6]);
@@ -176,7 +183,7 @@ mod integers {
             Ok(())
         }
 
-        fn build_from_minecraft_packet(
+        fn deserialize_minecraft_packet_part(
             input: &mut [u8],
         ) -> Result<(Self, &mut [u8]), &'static str> {
             if input.len() < 8 {
@@ -208,7 +215,7 @@ mod integers {
     }
 
     impl<'a> MinecraftPacketPart<'a> for u128 {
-        fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             let bytes = self.to_le_bytes();
             output.push(bytes[15]);
             output.push(bytes[14]);
@@ -229,7 +236,7 @@ mod integers {
             Ok(())
         }
 
-        fn build_from_minecraft_packet(
+        fn deserialize_minecraft_packet_part(
             input: &mut [u8],
         ) -> Result<(Self, &mut [u8]), &'static str> {
             if input.len() < 16 {
@@ -269,7 +276,7 @@ mod integers {
     }
 
     impl<'a> MinecraftPacketPart<'a> for f32 {
-        fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             let bytes = self.to_le_bytes();
             output.push(bytes[3]);
             output.push(bytes[2]);
@@ -278,7 +285,7 @@ mod integers {
             Ok(())
         }
 
-        fn build_from_minecraft_packet(
+        fn deserialize_minecraft_packet_part(
             input: &mut [u8],
         ) -> Result<(Self, &mut [u8]), &'static str> {
             if input.len() < 4 {
@@ -306,7 +313,7 @@ mod integers {
     }
 
     impl<'a> MinecraftPacketPart<'a> for f64 {
-        fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             let bytes = self.to_le_bytes();
             output.push(bytes[7]);
             output.push(bytes[6]);
@@ -319,7 +326,7 @@ mod integers {
             Ok(())
         }
 
-        fn build_from_minecraft_packet(
+        fn deserialize_minecraft_packet_part(
             input: &mut [u8],
         ) -> Result<(Self, &mut [u8]), &'static str> {
             if input.len() < 8 {
@@ -351,7 +358,7 @@ mod integers {
     }
 
     impl<'a> MinecraftPacketPart<'a> for VarInt {
-        fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             let mut value: u32 = unsafe { std::mem::transmute(self.0) };
 
             loop {
@@ -368,7 +375,7 @@ mod integers {
             }
         }
 
-        fn build_from_minecraft_packet(
+        fn deserialize_minecraft_packet_part(
             mut input: &mut [u8],
         ) -> Result<(Self, &mut [u8]), &'static str> {
             let mut result: u32 = 0;
@@ -395,7 +402,7 @@ mod integers {
     }
 
     impl<'a> MinecraftPacketPart<'a> for VarLong {
-        fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             let mut value: u64 = unsafe { std::mem::transmute(self.0) };
 
             loop {
@@ -412,7 +419,7 @@ mod integers {
             }
         }
 
-        fn build_from_minecraft_packet(
+        fn deserialize_minecraft_packet_part(
             mut input: &mut [u8],
         ) -> Result<(Self, &mut [u8]), &'static str> {
             let mut result: u64 = 0;
@@ -462,7 +469,7 @@ mod integers {
             for input in &inputs {
                 let mut buffer = Vec::new();
                 VarInt(*input)
-                    .append_minecraft_packet_part(&mut buffer)
+                    .serialize_minecraft_packet_part(&mut buffer)
                     .unwrap();
                 outputs.push(buffer);
             }
@@ -491,7 +498,7 @@ mod integers {
 
             #[allow(clippy::needless_range_loop)]
             for idx in 0..inputs.len() {
-                let (result, _) = VarInt::build_from_minecraft_packet(inputs[idx]).unwrap();
+                let (result, _) = VarInt::deserialize_minecraft_packet_part(inputs[idx]).unwrap();
                 outputs.push(result.0);
             }
 
@@ -533,7 +540,7 @@ mod integers {
             for input in &inputs {
                 let mut buffer = Vec::new();
                 VarLong(*input)
-                    .append_minecraft_packet_part(&mut buffer)
+                    .serialize_minecraft_packet_part(&mut buffer)
                     .unwrap();
                 outputs.push(buffer);
             }
@@ -575,7 +582,7 @@ mod integers {
 
             #[allow(clippy::needless_range_loop)]
             for idx in 0..inputs.len() {
-                let (result, _) = VarLong::build_from_minecraft_packet(inputs[idx]).unwrap();
+                let (result, _) = VarLong::deserialize_minecraft_packet_part(inputs[idx]).unwrap();
                 outputs.push(result.0);
             }
 
@@ -587,15 +594,15 @@ mod integers {
 }
 
 impl<'a> MinecraftPacketPart<'a> for &'a str {
-    fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
         let len = VarInt(self.len().try_into().map_err(|_| "String too long")?);
-        len.append_minecraft_packet_part(output)?;
+        len.serialize_minecraft_packet_part(output)?;
         output.extend_from_slice(self.as_bytes());
         Ok(())
     }
 
-    fn build_from_minecraft_packet(input: &mut [u8]) -> Result<(&str, &mut [u8]), &'static str> {
-        let (len, input) = VarInt::build_from_minecraft_packet(input)?;
+    fn deserialize_minecraft_packet_part(input: &mut [u8]) -> Result<(&str, &mut [u8]), &'static str> {
+        let (len, input) = VarInt::deserialize_minecraft_packet_part(input)?;
         if len.0 <= 0 {
             return Ok(("", input));
         }
@@ -611,7 +618,7 @@ impl<'a> MinecraftPacketPart<'a> for &'a str {
 }
 
 impl<'a> MinecraftPacketPart<'a> for Position {
-    fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
         let mut total: u64 = (unsafe { std::mem::transmute::<i32, u32>(self.x) }
             & 0b00000011111111111111111111111111) as u64;
         total <<= 26;
@@ -632,7 +639,7 @@ impl<'a> MinecraftPacketPart<'a> for Position {
         Ok(())
     }
 
-    fn build_from_minecraft_packet(
+    fn deserialize_minecraft_packet_part(
         input: &'a mut [u8],
     ) -> Result<(Self, &'a mut [u8]), &'static str> {
         if input.len() < 8 {
@@ -665,12 +672,12 @@ impl<'a> MinecraftPacketPart<'a> for Position {
 }
 
 impl<'a> MinecraftPacketPart<'a> for RawBytes<'a> {
-    fn append_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
         output.extend_from_slice(self.data);
         Ok(())
     }
 
-    fn build_from_minecraft_packet(
+    fn deserialize_minecraft_packet_part(
         input: &'a mut [u8],
     ) -> Result<(Self, &'a mut [u8]), &'static str> {
         let data = input;

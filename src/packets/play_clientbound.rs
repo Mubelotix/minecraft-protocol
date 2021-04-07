@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Debug, MinecraftPacket)]
+#[derive(Debug, MinecraftPacketPart)]
 pub struct SpawnEntity {
     pub id: VarInt,
     pub uuid: UUID,
@@ -16,7 +16,7 @@ pub struct SpawnEntity {
     pub velocity_z: i16,
 }
 
-#[derive(Debug, MinecraftPacket)]
+#[derive(Debug, MinecraftPacketPart)]
 pub struct SpawnExperienceOrb {
     pub id: VarInt,
     pub x: f64,
@@ -25,7 +25,7 @@ pub struct SpawnExperienceOrb {
     pub count: i16,
 }
 
-#[derive(Debug, MinecraftPacket)]
+#[derive(Debug, MinecraftPacketPart)]
 pub struct SpawnLivingEntity {
     pub id: VarInt,
     pub uuid: UUID,
@@ -41,7 +41,7 @@ pub struct SpawnLivingEntity {
     pub velocity_z: i16,
 }
 
-#[derive(Debug, MinecraftPacket)]
+#[derive(Debug, MinecraftPacketPart)]
 pub struct SpawnPainting {
     pub id: VarInt,
     pub uuid: UUID,
@@ -50,7 +50,7 @@ pub struct SpawnPainting {
     pub direction: Direction,
 }
 
-#[derive(Debug, MinecraftPacket)]
+#[derive(Debug, MinecraftPacketPart)]
 pub struct SpawnPlayer {
     pub id: VarInt,
     pub uuid: UUID,
@@ -61,19 +61,19 @@ pub struct SpawnPlayer {
     pub pitch: Angle,
 }
 
-#[derive(Debug, MinecraftPacket)]
+#[derive(Debug, MinecraftPacketPart)]
 pub struct EntityAnimation {
     pub id: VarInt,
     pub animation: crate::animations::Animation,
 }
 
-#[derive(Debug, MinecraftPacket)]
+#[derive(Debug, MinecraftPacketPart)]
 pub struct Statistics<'a> {
     pub count: VarInt,
     pub statistic: RawBytes<'a>,
 }
 
-#[derive(Debug, MinecraftPacket)]
+#[derive(Debug, MinecraftPacketPart)]
 pub struct AcknowledgePlayerDigging {
     pub location: Position,
     pub block: VarInt,
@@ -86,7 +86,7 @@ pub struct AcknowledgePlayerDigging {
 /// Block break animations can still be applied on air; the animation will remain visible although there is no block being broken. However, if this is applied to a transparent block, odd graphical effects may happen, including water losing its transparency. (An effect similar to this can be seen in normal gameplay when breaking ice blocks)
 /// 
 /// If you need to display several break animations at the same time you have to give each of them a unique Entity ID. The entity ID does not need to correspond to an actual entity on the client. It is valid to use a randomly generated number.
-#[derive(Debug, MinecraftPacket)]
+#[derive(Debug, MinecraftPacketPart)]
 pub struct BlockBreakAnimation {
     /// Entity ID of the entity breaking the block
     pub id: VarInt,
@@ -97,7 +97,7 @@ pub struct BlockBreakAnimation {
 }
 
 /// Sets the block entity associated with the block at the given location.
-#[derive(Debug, MinecraftPacket)]
+#[derive(Debug, MinecraftPacketPart)]
 pub struct BlockEntityData<'a> {
     pub location: Position,
     /// The type of update to perform, see [crate::blocks::BlockEntityDataAction].
@@ -111,7 +111,7 @@ pub struct BlockEntityData<'a> {
 /// See [Block Actions](https://wiki.vg/Block_Actions) for a list of values.
 /// 
 /// **Warning**: This packet uses a block ID, not a block state.
-#[derive(Debug, MinecraftPacket)]
+#[derive(Debug, MinecraftPacketPart)]
 pub struct BlockAction {
     /// Block coordinates
     pub location: Position,
@@ -127,7 +127,7 @@ pub struct BlockAction {
 /// Changes include plant growth, cake bites, redstone repeater delay changes, block facing changes (bed, chest, hopper...) and many other values depending on the type of the block.
 /// 
 /// **Warning**: Changing a block in a chunk that is not loaded is not a stable action. The Notchian client currently uses a shared empty chunk which is modified for all block changes in unloaded chunks; while in 1.9 this chunk never renders in older versions the changed block will appear in all copies of the empty chunk. Servers should avoid sending block changes in unloaded chunks and clients should ignore such packets.
-#[derive(Debug, MinecraftPacket)]
+#[derive(Debug, MinecraftPacketPart)]
 pub struct BlockChange {
     /// Block Coordinates
     pub location: Position,
@@ -135,7 +135,7 @@ pub struct BlockChange {
     pub block_state: VarInt,
 }
 
-#[derive(Debug, MinecraftPacket)]
+#[derive(Debug, MinecraftPacketPart)]
 pub struct BossBar<'a> {
     /// Unique ID for this bar.
     pub uuid: UUID,
@@ -144,7 +144,7 @@ pub struct BossBar<'a> {
 }
 
 /// Changes the difficulty setting in the client's option menu
-#[derive(Debug, MinecraftPacket)]
+#[derive(Debug, MinecraftPacketPart)]
 pub struct ServerDifficulty {
     pub difficulty: crate::difficulty::Difficulty,
     pub difficulty_locked: bool,
@@ -153,7 +153,7 @@ pub struct ServerDifficulty {
 /// Identifying the difference between Chat/System Message is important as it helps respect the user's chat visibility options. See [processing chat](https://wiki.vg/Chat#Processing_chat) for more info about these positions.
 /// 
 /// **Warning**: Game info accepts json formatting but does not display it, although the deprecated §-based formatting works. This is not an issue when using the [Title] packet, so prefer that packet for displaying information in that slot. See MC-119145 for more information.
-#[derive(Debug, MinecraftPacket)]
+#[derive(Debug, MinecraftPacketPart)]
 pub struct ChatMessage<'a> {
     pub message: Chat<'a>,
     pub position: crate::chat::Position,
