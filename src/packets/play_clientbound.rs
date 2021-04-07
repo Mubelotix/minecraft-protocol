@@ -134,3 +134,11 @@ pub struct BlockChange {
     /// The new block state ID for the block as given in the [global palette](http://minecraft.gamepedia.com/Data_values%23Block_IDs). See that section for more information.
     pub block_state: VarInt,
 }
+
+#[derive(Debug, MinecraftPacket)]
+pub struct BossBar<'a> {
+    /// Unique ID for this bar.
+    pub uuid: UUID,
+    /// The action to apply on the boss bar.
+    pub action: crate::boss_bar::BossBarAction<'a>,
+}

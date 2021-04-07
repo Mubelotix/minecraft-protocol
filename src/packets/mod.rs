@@ -26,6 +26,9 @@ pub enum Direction {
 
 pub type UUID = u128;
 pub type Angle = u8;
+/// Json encoded data, stored in a String.
+/// See [the wiki](https://wiki.vg/Chat).
+pub type Chat<'a> = &'a str;
 
 /// This is used to replace an unsupported structure by taking all the remaining bytes of a packet.
 /// Feel free to make PRs.

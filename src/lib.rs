@@ -2,10 +2,12 @@
 
 pub mod animations;
 pub mod blocks;
+pub mod boss_bar;
 pub mod nbt;
 pub mod packets;
 pub mod paintings;
 
-pub(crate) use minecraft_packet_derive::minecraft_enum;
 pub(crate) use crate::packets::serializer::MinecraftPacketPart;
-pub(crate) use crate::packets::VarInt;
+pub(crate) use crate::packets::*;
+pub(crate) use minecraft_packet_derive::minecraft_enum;
+pub(crate) use minecraft_packet_derive::MinecraftStructuredEnum;
