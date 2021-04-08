@@ -6,6 +6,7 @@ pub mod blocks;
 pub mod boss_bar;
 pub mod chat;
 pub mod difficulty;
+pub mod game_state;
 pub mod nbt;
 pub mod packets;
 pub mod paintings;

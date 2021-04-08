@@ -317,4 +317,12 @@ enum ClientBoundPacket<'a> {
         /// Block coordinate divided by 16, rounded down.
         chunk_y: i32,
     },
+
+    /// Used for a wide variety of game state things, from weather to bed use to gamemode to demo messages.
+    ChangeGameState {
+        /// The type of change
+        reason: crate::game_state::GameState,
+        /// The meaning of this value depends on the `reason` field.
+        value: f32,
+    }
 }
