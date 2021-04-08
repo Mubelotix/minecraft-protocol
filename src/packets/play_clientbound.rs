@@ -500,4 +500,18 @@ enum ClientBoundPacket<'a> {
     EntityMovement {
         entity_id: VarInt,
     },
+
+    /// Note that all fields use absolute positioning and do not allow for relative positioning.
+    VehicleMove {
+        /// Absolute position (X coordinate)
+        x: f64,
+        /// Absolute position (Y coordinate)
+        y: f64,
+        /// Absolute position (Z coordinate)
+        z: f64,
+        /// Absolute rotation on the vertical axis, in degrees
+        yaw: f32,
+        /// Absolute rotation on the horizontal axis, in degrees
+        pitch: f32,
+    },
 }
