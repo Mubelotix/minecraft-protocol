@@ -710,3 +710,27 @@ impl<'a, T: MinecraftPacketPart<'a> + std::fmt::Debug, U: MinecraftPacketPart<'a
         }, input))
     }
 }
+
+impl<'a, T: MinecraftPacketPart<'a>> MinecraftPacketPart<'a> for Option<T> {
+    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        if let Some(value) = self {
+            true.serialize_minecraft_packet_part(output)?;
+            value.serialize_minecraft_packet_part(output)?;
+        } else {
+            false.serialize_minecraft_packet_part(output)?;
+        }
+        Ok(())
+    }
+
+    fn deserialize_minecraft_packet_part(
+        input: &'a mut [u8],
+    ) -> Result<(Self, &'a mut [u8]), &'static str> {
+        let (is_some, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
+        if is_some {
+            let (value, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
+            Ok((Some(value), input))
+        } else {
+            Ok((None, input))
+        }
+    }
+}
