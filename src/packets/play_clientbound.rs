@@ -736,4 +736,12 @@ pub enum ClientBoundPacket<'a> {
         /// The unique name for the scoreboard to be displayed
         name: &'a str,
     },
+
+    /// Updates one or more metadata properties for an existing entity.
+    /// Any properties not included in the Metadata field are left unchanged.
+    EntityMetadata {
+        entity_id: VarInt,
+        /// TODO: parse this field
+        metadata: RawBytes<'a>,
+    },
 }
