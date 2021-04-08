@@ -722,4 +722,10 @@ pub enum ClientBoundPacket<'a> {
         chunk_x: VarInt,
         chunk_z: VarInt,
     },
+
+    /// Sent by the server after login to specify the coordinates of the spawn point (the point at which players spawn at, and which the compass points to).
+    /// It can be sent at any time to update the point compasses point at.
+    SpawnPosition {
+        location: Position,
+    },
 }
