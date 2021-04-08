@@ -360,5 +360,30 @@ enum ClientBoundPacket<'a> {
         /// The final boolean field is used to disable this, and instead the effect is played from 2 blocks away in the correct direction.
         /// Currently this is only used for [crate::animations::Effect::WitherSpawn], [crate::animations::Effect::EnderdragonDeath], and [crate::animations::Effect::EndPortalOpening]; it is ignored on other effects.
         disable_relative_volume: bool,
+    },
+
+    Particle {
+        /// The particle ID listed in the [particle data type](https://wiki.vg/Protocol#Particle)
+        particle_id: i32,
+        /// If true, particle distance increases from 256 to 65536.
+        long_distance: bool,
+        /// X position of the particle
+        x: f64,
+        /// Y position of the particle
+        y: f64,
+        /// Z position of the particle
+        z: f64,
+        /// This is added to the X position after being multiplied by `random.nextGaussian()`.
+        offset_x: f32,
+        /// This is added to the Y position after being multiplied by `random.nextGaussian()`.
+        offset_y: f32,
+        /// This is added to the Z position after being multiplied by `random.nextGaussian()`.
+        offset_z: f32,
+        /// The data of each particle
+        particule_data: f32,
+        /// The number of particles to create
+        particule_count: i32,
+        /// The variable data listed in the [particle data type](https://wiki.vg/Protocol#Particle)
+        data: RawBytes<'a>,
     }
 }
