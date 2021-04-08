@@ -635,7 +635,7 @@ enum ClientBoundPacket<'a> {
 
     /// To change the player's dimension (overworld/nether/end), send them a respawn packet with the appropriate dimension, followed by prechunks/chunks for the new dimension, and finally a position and look packet.
     /// You do not need to unload chunks, the client will do it automatically.
-    /// 
+    ///
     /// **Warning**: Avoid changing player's dimension to same dimension they were already in unless they are dead.
     /// If you change the dimension to one they are already in, weird bugs can occur, such as the player being unable to attack other players in new world (until they die and respawn).
     /// If you must respawn a player in the same dimension without killing them, send two respawn packets, one to a different world and then another to the world you want.
@@ -657,5 +657,14 @@ enum ClientBoundPacket<'a> {
         /// If false, metadata is reset on the respawned player entity.
         /// Set to true for dimension changes (including the dimension change triggered by sending client status perform respawn to exit the end poem/credits), and false for normal respawns.
         copy_metadata: bool,
+    },
+
+    /// Changes the direction an entity's head is facing.
+    /// 
+    /// While sending the [ClientBoundPacket::EntityLook] packet changes the vertical rotation of the head, sending this packet appears to be necessary to rotate the head horizontally.
+    EntityHeadLook {
+        entity_id: VarInt,
+        /// New angle, not a delta
+        head_yew: Angle,
     },
 }
