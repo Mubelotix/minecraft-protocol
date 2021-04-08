@@ -534,4 +534,11 @@ enum ClientBoundPacket<'a> {
         /// The title of the window
         window_title: Chat<'a>,
     },
+
+    // Todo make add doc links
+    /// Sent when the client has placed a sign and is allowed to send Update Sign.
+    /// There must already be a sign at the given location (which the client does not do automatically) - send a Block Change first.
+    OpenSignEditor {
+        location: Position,
+    },
 }
