@@ -13,6 +13,7 @@ pub struct Slot<'a> {
 }
 
 #[minecraft_enum(VarInt)]
+#[derive(Debug)]
 pub enum Hand {
     Main,
     OffHand,

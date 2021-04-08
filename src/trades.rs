@@ -36,6 +36,7 @@ pub struct Trade<'a> {
 
 /// Appears on the trade GUI; meaning comes from the translation key `merchant.level.` + level.
 #[minecraft_enum(VarInt)]
+#[derive(Debug)]
 pub enum VillagerLevel {
     Novice = 1,
     Apprentice,

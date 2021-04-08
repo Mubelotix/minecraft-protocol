@@ -2,7 +2,7 @@ use crate::nbt::NbtTag;
 
 use super::*;
 
-#[derive(MinecraftPacketPart)]
+#[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 enum ClientBoundPacket<'a> {
     SpawnEntity {
