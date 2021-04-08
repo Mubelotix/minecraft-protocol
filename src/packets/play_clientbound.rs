@@ -723,6 +723,13 @@ pub enum ClientBoundPacket<'a> {
         chunk_z: VarInt,
     },
 
+    /// Sent by the integrated singleplayer server when changing render distance.
+    /// Does not appear to be used by the dedicated server, as view-distance in server.properties cannot be changed at runtime.
+    UpdateViewDistance {
+        /// Render distance (2..32)
+        view_distance: VarInt,
+    },
+
     /// Sent by the server after login to specify the coordinates of the spawn point (the point at which players spawn at, and which the compass points to).
     /// It can be sent at any time to update the point compasses point at.
     SpawnPosition {
