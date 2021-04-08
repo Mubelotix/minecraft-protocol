@@ -302,3 +302,12 @@ pub struct Disconnect<'a> {
     /// Displayed to the client when the connection terminates
     pub reason: Chat<'a>,
 }
+
+/// Entity statuses generally trigger an animation for an entity.
+/// The available statuses vary by the entity's type (and are available to subclasses of that type as well).
+#[derive(Debug, MinecraftPacketPart)]
+pub struct EntityStatus {
+    pub entity_id: i32,
+    /// See [Entity statuses](https://wiki.vg/Entity_statuses) for a list of which statuses are valid for each type of entity.
+    pub entity_status: u8,
+}
