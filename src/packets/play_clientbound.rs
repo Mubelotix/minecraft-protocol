@@ -614,4 +614,9 @@ enum ClientBoundPacket<'a> {
     UnlockRecipes {
         action: crate::recipes::UnlockRecipesAction<'a>,
     },
+
+    /// Sent by the server when a list of entities is to be destroyed on the client
+    DestoryEntities {
+        entity_ids: Array<'a, VarInt, VarInt>,
+    },
 }
