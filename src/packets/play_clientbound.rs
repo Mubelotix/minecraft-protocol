@@ -265,6 +265,7 @@ pub struct SetCooldown {
 /// These internal channels are in the `minecraft` namespace.
 /// 
 /// [More documentation](http://dinnerbone.com/blog/2012/01/13/minecraft-plugin-channels-messaging/)
+#[derive(Debug, MinecraftPacketPart)]
 pub struct PluginMessage<'a> {
     /// Name of the [plugin channel](https://wiki.vg/Plugin_channel) used to send the data.
     pub identifier: Identifier<'a>,
@@ -272,4 +273,24 @@ pub struct PluginMessage<'a> {
     /// `minecraft:` channels are documented [here](https://wiki.vg/Plugin_channel).
     /// The length of this array must be inferred from the packet length.
     pub data: RawBytes<'a>,
+}
+
+/// Used to play a sound effect on the client.
+/// Custom sounds may be added by resource packs.
+#[derive(Debug, MinecraftPacketPart)]
+pub struct NamedSoundEffect<'a> {
+    /// All sound effect names as of 1.16.5 can be seen [here](https://pokechu22.github.io/Burger/1.16.5.html#sounds).
+    pub sound_name: Identifier<'a>,
+    /// The category that this sound will be played from ([current categories](https://gist.github.com/konwboj/7c0c380d3923443e9d55)).
+    pub sound_category: VarInt,
+    /// Effect X multiplied by 8 ([fixed-point number](https://wiki.vg/Data_types#Fixed-point_numbers) with only 3 bits dedicated to the fractional part).
+    pub effect_position_x: i32,
+    /// Effect Y multiplied by 8 ([fixed-point number](https://wiki.vg/Data_types#Fixed-point_numbers) with only 3 bits dedicated to the fractional part).
+    pub effect_position_y: i32,
+    /// Effect Z multiplied by 8 ([fixed-point number](https://wiki.vg/Data_types#Fixed-point_numbers) with only 3 bits dedicated to the fractional part).
+    pub effect_position_z: i32,
+    /// `1.0` is 100%, can be more.
+    pub volume: f32,
+    /// Float between 0.5 and 2.0 by Notchian clients.
+    pub pitch: f32,
 }
