@@ -1,3 +1,5 @@
+use crate::nbt::NbtTag;
+
 use super::*;
 
 #[derive(MinecraftPacketPart)]
@@ -341,5 +343,9 @@ enum ClientBoundPacket<'a> {
     KeepAlive {
         /// The Notchian server uses a system-dependent time in milliseconds to generate the keep alive ID value.
         keep_alive_id: i64,
+    },
+
+    ChunkData {
+        value: crate::chunk::ChunkData<'a>,
     },
 }
