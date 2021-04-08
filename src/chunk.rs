@@ -78,3 +78,52 @@ impl<'a> MinecraftPacketPart<'a> for ChunkData<'a> {
         ))
     }
 }
+
+#[derive(Debug, MinecraftPacketPart)]
+#[discriminant(VarInt)]
+pub enum WorldBorderAction {
+    SetSize {
+        /// Length of a single side of the world border, in meters
+        diameter: f64,
+    },
+    LerpSize {
+        /// Current length of a single side of the world border, in meters
+        old_diameter: f64,
+        /// Target length of a single side of the world border, in meters
+        new_diameter: f64,
+        /// Number of real-time milliseconds until New Diameter is reached.
+        /// It appears that Notchian server does not sync world border speed to game ticks, so it gets out of sync with server lag.
+        /// If the world border is not moving, this is set to 0.
+        speed: VarLong,
+    },
+    SetCenter {
+        x: f64,
+        y: f64,
+    },
+    Initialize {
+        x: f64,
+        y: f64,
+        /// Current length of a single side of the world border, in meters
+        old_diameter: f64,
+        /// Target length of a single side of the world border, in meters
+        new_diameter: f64,
+        /// Number of real-time milliseconds until New Diameter is reached.
+        /// It appears that Notchian server does not sync world border speed to game ticks, so it gets out of sync with server lag.
+        /// If the world border is not moving, this is set to 0.
+        speed: VarLong,
+        /// Resulting coordinates from a portal teleport are limited to ±value. Usually 29999984.
+        portal_teleport_value: VarInt,
+        /// In meters
+        warning_blocks: VarInt,
+        /// In seconds as set by `/worldborder warning time`
+        warning_time: VarInt,
+    },
+    SetWarningTime {
+        /// In seconds as set by `/worldborder warning time`
+        warning_time: VarInt,
+    },
+    SetWarningBlocks {
+        /// In meters
+        warning_blocks: VarInt,
+    }
+}

@@ -688,4 +688,8 @@ pub enum ClientBoundPacket<'a> {
         /// If no or an invalid identifier is sent, the client will switch to the first tab in the GUI.
         identifier: Option<Identifier<'a>>,
     },
+
+    WorldBorder {
+        action: crate::chunk::WorldBorderAction,
+    },
 }
