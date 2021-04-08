@@ -541,4 +541,13 @@ enum ClientBoundPacket<'a> {
     OpenSignEditor {
         location: Position,
     },
+
+    // Todo make add doc links
+    /// Response to the serverbound packet (Craft Recipe Request), with the same recipe ID.
+    /// Appears to be used to notify the UI.
+    CraftRecipeResponse {
+        window_id: i8,
+        /// A recipe ID
+        recipe: Identifier<'a>,
+    },
 }
