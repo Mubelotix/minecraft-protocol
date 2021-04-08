@@ -759,4 +759,17 @@ pub enum ClientBoundPacket<'a> {
         /// ID of the entity holding the lead. Set to -1 to detach.
         holding_entity_id: i32,
     },
+
+    /// Sets the velocity of an entity
+    /// 
+    /// Velocity is believed to be in units of 1/8000 of a block per server tick (50ms); for example, -1343 would move (-1343 / 8000) = −0.167875 blocks per tick (or −3,3575 blocks per second).
+    EntityVelocity {
+        entity_id: VarInt,
+        /// Velocity on the X axis
+        velocity_x: i16,
+        /// Velocity on the Y axis
+        velocity_y: i16,
+        /// Velocity on the Z axis
+        velocity_z: i16,
+    },
 }
