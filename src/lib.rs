@@ -13,6 +13,7 @@ pub mod nbt;
 pub mod packets;
 pub mod paintings;
 pub mod slots;
+pub mod trades;
 
 pub(crate) use crate::packets::serializer::MinecraftPacketPart;
 pub(crate) use crate::packets::*;

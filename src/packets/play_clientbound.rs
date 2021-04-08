@@ -434,4 +434,22 @@ enum ClientBoundPacket<'a> {
         /// TODO: parse this
         data: RawBytes<'a>,
     },
+
+    /// Lists the trades a villager NPC is offering
+    TradeList {
+        /// The ID of the window that is open
+        window_id: VarInt,
+        /// The list of trades a villager NPC is offering
+        trades: Array<'a, crate::trades::Trade<'a>, u8>,
+        /// The villager appearance
+        villager_level: crate::trades::VillagerLevel,
+        /// Total experience for this villager (always 0 for the wandering trader)
+        experience: VarInt,
+        /// True if this is a regular villager; false for the wandering trader.
+        /// When false, hides the villager level and some other GUI elements.
+        is_regular_villager: bool,
+        /// True for regular villagers and false for the wandering trader.
+        /// If true, the "Villagers restock up to two times per day." message is displayed when hovering over disabled trades.
+        can_restock: bool,
+    }
 }
