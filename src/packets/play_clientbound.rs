@@ -560,4 +560,10 @@ enum ClientBoundPacket<'a> {
         /// A Notchian server will use the same value as the movement speed sent in the Entity Properties packet, which defaults to 0.1 for players.
         field_of_view_modifier: f32,
     },
+
+    /// Originally used for metadata for twitch streaming circa 1.8.
+    /// Now only used to display the game over screen (with enter combat and end combat completely ignored by the Notchain client)
+    CombatEvent {
+        event: crate::combat::CombatEvent<'a>,
+    },
 }
