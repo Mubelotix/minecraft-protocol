@@ -428,4 +428,10 @@ enum ClientBoundPacket<'a> {
         /// `true` if the world is a [superflat world](http://minecraft.gamepedia.com/Superflat); flat worlds have different void fog and a horizon at y=0 instead of y=63.
         is_flat: bool,
     },
+
+    /// Updates a rectangular area on a map item
+    MapData {
+        /// TODO: parse this
+        data: RawBytes<'a>,
+    },
 }
