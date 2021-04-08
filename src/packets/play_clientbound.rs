@@ -465,4 +465,21 @@ enum ClientBoundPacket<'a> {
         delta_z: i16,
         on_ground: bool,
     },
+
+    /// This packet is sent by the server when an entity rotates and moves.
+    /// Since a `i16` range is limited from -32768 to 32767, and movement is offset of fixed-point numbers, this packet allows at most 8 blocks movement in any direction. `(-32768 / (32 * 128) == -8)`
+    EntityPositionAndRotation {
+        entity_id: VarInt,
+        /// Change in X position as `(currentX * 32 - prevX * 32) * 128`
+        delta_x: i16,
+        /// Change in Y position as `(currentX * 32 - prevX * 32) * 128`
+        delta_y: i16,
+        /// Change in Z position as `(currentX * 32 - prevX * 32) * 128`
+        delta_z: i16,
+        /// New angle, not a delta
+        yaw: Angle,
+        /// New angle, not a delta
+        pitch: Angle,
+        on_ground: bool,
+    }
 }
