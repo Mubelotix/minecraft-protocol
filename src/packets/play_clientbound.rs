@@ -348,4 +348,17 @@ enum ClientBoundPacket<'a> {
     ChunkData {
         value: crate::chunk::ChunkData<'a>,
     },
+
+    /// Sent when a client is to play a sound or particle effect.
+    Effect {
+        effect_id: crate::animations::Effect,
+        /// The location of the effect
+        location: Position,
+        /// Extra data for certain effects, see [the wiki](https://wiki.vg/Protocol#Effect)
+        data: i32,
+        /// By default, the Minecraft client adjusts the volume of sound effects based on distance.
+        /// The final boolean field is used to disable this, and instead the effect is played from 2 blocks away in the correct direction.
+        /// Currently this is only used for [crate::animations::Effect::WitherSpawn], [crate::animations::Effect::EnderdragonDeath], and [crate::animations::Effect::EndPortalOpening]; it is ignored on other effects.
+        disable_relative_volume: bool,
+    }
 }
