@@ -632,4 +632,30 @@ enum ClientBoundPacket<'a> {
         /// If it's not a 40 character hexadecimal string, the client will not use it for hash verification and likely waste bandwidth — but it will still treat it as a unique id.
         hash: &'a str,
     },
+
+    /// To change the player's dimension (overworld/nether/end), send them a respawn packet with the appropriate dimension, followed by prechunks/chunks for the new dimension, and finally a position and look packet.
+    /// You do not need to unload chunks, the client will do it automatically.
+    /// 
+    /// **Warning**: Avoid changing player's dimension to same dimension they were already in unless they are dead.
+    /// If you change the dimension to one they are already in, weird bugs can occur, such as the player being unable to attack other players in new world (until they die and respawn).
+    /// If you must respawn a player in the same dimension without killing them, send two respawn packets, one to a different world and then another to the world you want.
+    /// You do not need to complete the first respawn; it only matters that you send two packets.
+    Respawn {
+        /// Valid dimensions are defined per dimension registry sent in [ClientBoundPacket::JoinGame].
+        dimension: NbtTag<'a>,
+        /// Name of the world being spawned into
+        world_name: Identifier<'a>,
+        /// First 8 bytes of the SHA-256 hash of the world's seed.
+        /// Used client side for biome noise.
+        hashed_seed: i64,
+        gamemode: crate::gamemode::Gamemode,
+        previous_gamemode: crate::gamemode::PreviousGamemode,
+        /// `true` if the world is a [debug mode world](http://minecraft.gamepedia.com/Debug_mode); debug mode worlds cannot be modified and have predefined blocks.
+        is_debug: bool,
+        /// `true` if the world is a [superflat world](http://minecraft.gamepedia.com/Superflat); flat worlds have different void fog and a horizon at y=0 instead of y=63.
+        is_flat: bool,
+        /// If false, metadata is reset on the respawned player entity.
+        /// Set to true for dimension changes (including the dimension change triggered by sending client status perform respawn to exit the end poem/credits), and false for normal respawns.
+        copy_metadata: bool,
+    },
 }
