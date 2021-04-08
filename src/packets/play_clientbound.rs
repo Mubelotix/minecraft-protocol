@@ -259,3 +259,17 @@ pub struct SetCooldown {
     /// Number of ticks to apply a cooldown for, or 0 to clear the cooldown.
     pub cooldown_ticks: VarInt,
 }
+
+/// Mods and plugins can use this to send their data.
+/// Minecraft itself uses several [plugin channels](https://wiki.vg/Plugin_channel).
+/// These internal channels are in the `minecraft` namespace.
+/// 
+/// [More documentation](http://dinnerbone.com/blog/2012/01/13/minecraft-plugin-channels-messaging/)
+pub struct PluginMessage<'a> {
+    /// Name of the [plugin channel](https://wiki.vg/Plugin_channel) used to send the data.
+    pub identifier: Identifier<'a>,
+    /// Any data, depending on the channel.
+    /// `minecraft:` channels are documented [here](https://wiki.vg/Plugin_channel).
+    /// The length of this array must be inferred from the packet length.
+    pub data: RawBytes<'a>,
+}
