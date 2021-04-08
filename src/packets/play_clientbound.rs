@@ -1,6 +1,7 @@
 use super::*;
 
 #[derive(MinecraftPacketPart)]
+#[discriminant(VarInt)]
 enum ClientBoundPacket<'a> {
     SpawnEntity {
         id: VarInt,
