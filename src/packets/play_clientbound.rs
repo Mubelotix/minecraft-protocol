@@ -230,3 +230,20 @@ pub struct WindowProperty {
     /// The [the wiki](https://wiki.vg/Protocol#Window_Property) shows the known combinations of window type and property, and how the value is to be interpreted.
     pub value: i16,
 }
+
+/// Sent by the server when an item in a slot (in a window) is added/removed.
+/// 
+/// To set the cursor (the item currently dragged with the mouse), use -1 as `window_id` and as `slot_index`.
+/// 
+/// This packet can only be used to edit the hotbar of the player's inventory if window ID is set to 0 (slots 36 through 44). If the window ID is set to -2, then any slot in the inventory can be used but no add item animation will be played.
+#[derive(Debug, MinecraftPacketPart)]
+pub struct SetSlot<'a> {
+    /// The window which is being updated. 0 for player inventory.
+    /// Note that all known window types include the player inventory.
+    /// This packet will only be sent for the currently opened window while the player is performing actions, even if it affects the player inventory.
+    /// After the window is closed, a number of these packets are sent to update the player's inventory window (0).
+    pub window_id: i8,
+    /// The slot that should be updated.
+    pub slot_index: i16,
+    pub slot_value: crate::slots::Slot<'a>,
+}
