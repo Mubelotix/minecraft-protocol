@@ -1,6 +1,6 @@
 use crate::*;
 
-#[derive(Debug, MinecraftStructuredEnum)]
+#[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum BossBarAction<'a> {
     Add {

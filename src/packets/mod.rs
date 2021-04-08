@@ -41,3 +41,8 @@ pub struct RawBytes<'a> {
 pub struct TestPacket {
     data: u8,
 }
+
+pub struct Array<'a, T: MinecraftPacketPart<'a>, U: MinecraftPacketPart<'a>> {
+    _len_prefix: std::marker::PhantomData<&'a U>,
+    pub items: Vec<T>,
+}

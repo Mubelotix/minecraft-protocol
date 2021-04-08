@@ -684,3 +684,29 @@ impl<'a> MinecraftPacketPart<'a> for RawBytes<'a> {
         Ok((RawBytes {data}, &mut []))
     }
 }
+
+impl<'a, T: MinecraftPacketPart<'a>, U: MinecraftPacketPart<'a> + From<usize> + Into<usize>> MinecraftPacketPart<'a> for Array<'a, T, U> {
+    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        let len: U = U::from(self.items.len());
+        len.serialize_minecraft_packet_part(output)?;
+        for item in self.items {
+            item.serialize_minecraft_packet_part(output)?;
+        }
+        Ok(())
+    }
+
+    fn deserialize_minecraft_packet_part(input: &'a mut [u8]) -> Result<(Self, &'a mut [u8]), &'static str> {
+        let (len, mut input) = U::deserialize_minecraft_packet_part(input)?;
+        let len: usize = len.into();
+        let mut items = Vec::new();
+        for _ in 0..len {
+            let (item, new_input) = T::deserialize_minecraft_packet_part(input)?;
+            items.push(item);
+            input = new_input;
+        }
+        Ok((Array {
+            items,
+            _len_prefix: std::marker::PhantomData,
+        }, input))
+    }
+}
