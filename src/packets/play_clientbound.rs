@@ -624,4 +624,12 @@ enum ClientBoundPacket<'a> {
         entity_id: VarInt,
         effect: crate::effect::Effect,
     },
+
+    RessourcePackSend {
+        /// The URL to the resource pack
+        url: &'a str,
+        /// A 40 character hexadecimal and lowercase SHA-1 hash of the resource pack file. (must be lower case in order to work)
+        /// If it's not a 40 character hexadecimal string, the client will not use it for hash verification and likely waste bandwidth — but it will still treat it as a unique id.
+        hash: &'a str,
+    },
 }
