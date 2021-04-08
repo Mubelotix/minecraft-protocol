@@ -571,4 +571,19 @@ enum ClientBoundPacket<'a> {
     PlayerInfo {
         value: crate::players::PlayerInfoAction<'a>,
     },
+
+    /// Used to rotate the client player to face the given location or entity (for `/teleport [<targets>] <x> <y> <z> facing`)
+    FacePlayer {
+        /// If set to eyes, aims using the head position; otherwise aims using the feet position
+        aim: crate::players::FaceAim,
+        /// X coordinate of the point to face towards
+        target_x: f64,
+        /// Y coordinate of the point to face towards
+        target_y: f64,
+        /// Z coordinate of the point to face towards
+        target_z: f64,
+        /// Used to reference a targeted entity.
+        /// If the entity target appears invalid, it should be ignored.
+        target: Option<crate::players::FaceTarget>,
+    },
 }

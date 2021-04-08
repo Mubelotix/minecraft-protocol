@@ -60,3 +60,16 @@ pub struct PlayerDisplayNameChangeInfo<'a> {
     pub name: &'a str,
     pub display_name: Option<Chat<'a>>,
 }
+
+#[minecraft_enum(VarInt)]
+#[derive(Debug)]
+pub enum FaceAim {
+    Feet,
+    Eyes
+}
+
+#[derive(Debug, MinecraftPacketPart)]
+pub struct FaceTarget {
+    pub target_entity_id: VarInt,
+    pub target_aim: FaceAim,
+}
