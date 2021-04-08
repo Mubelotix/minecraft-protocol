@@ -333,3 +333,13 @@ pub struct Explosion<'a> {
     /// Z velocity of the player being pushed by the explosion.
     pub player_acceleration_z: f32,
 }
+
+/// Tells the client to unload a chunk column.
+/// It is legal to send this packet even if the given chunk is not currently loaded.
+#[derive(Debug, MinecraftPacketPart)]
+pub struct UnloadChunk {
+    /// Block coordinate divided by 16, rounded down.
+    pub chunk_x: i32,
+    /// Block coordinate divided by 16, rounded down.
+    pub chunk_y: i32,
+}
