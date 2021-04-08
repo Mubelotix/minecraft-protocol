@@ -481,5 +481,15 @@ enum ClientBoundPacket<'a> {
         /// New angle, not a delta
         pitch: Angle,
         on_ground: bool,
-    }
+    },
+
+    /// This packet is sent by the server when an entity rotates.
+    EntityRotation {
+        entity_id: VarInt,
+        /// New angle, not a delta
+        yaw: Angle,
+        /// New angle, not a delta
+        pitch: Angle,
+        on_ground: bool,
+    },
 }
