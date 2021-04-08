@@ -586,4 +586,28 @@ enum ClientBoundPacket<'a> {
         /// If the entity target appears invalid, it should be ignored.
         target: Option<crate::players::FaceTarget>,
     },
+
+    /// Updates the player's position on the server.
+    /// This packet will also close the “Downloading Terrain” screen when joining/respawning.
+    /// 
+    /// If the distance between the last known position of the player on the server and the new position set by this packet is greater than 100 meters, the client will be kicked for `You moved too quickly`.
+    PlayerPositionAndLook {
+        /// Absolute or relative position, depending on the `flags` field. If the last bit (`0b00000001`) is set, this value is relative.
+        x: f64,
+        /// Absolute or relative position, depending on the `flags` field. If the senventh bit (`0b00000010`) is set, this value is relative.
+        y: f64,
+        /// Absolute or relative position, depending on the `flags` field. If the sixth bit (`0b00000100`) is set, this value is relative.
+        z: f64,
+        /// Absolute or relative rotation on the X axis, depending on the `flags` field. If the fourth bit (`0b00010000`) is set, this value is relative.
+        /// 
+        /// Yaw is measured in degrees, and does not follow classical trigonometry rules.
+        /// The unit circle of yaw on the XZ-plane starts at (0, 1) and turns counterclockwise, with 90 at (-1, 0), 180 at (0, -1) and 270 at (1, 0). Additionally, yaw is not clamped to between 0 and 360 degrees; any number is valid, including negative numbers and numbers greater than 360.
+        yaw: f32,
+        /// Absolute or relative rotation on the Y axis, depending on the `flags` field. If the fifth bit (`0b00001000`) is set, this value is relative.
+        /// 
+        /// Pitch is measured in degrees, where 0 is looking straight ahead, -90 is looking straight up, and 90 is looking straight down.
+        pitch: f32,
+        flags: u8,
+        teleport_id: VarInt,
+    },
 }
