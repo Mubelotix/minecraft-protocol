@@ -324,5 +324,13 @@ enum ClientBoundPacket<'a> {
         reason: crate::game_state::GameState,
         /// The meaning of this value depends on the `reason` field.
         value: f32,
+    },
+
+    /// This packet is used exclusively for opening the horse GUI.
+    /// [Self::OpenWindow] is used for all other GUIs.
+    OpenHorseWindow {
+        window_id: u8,
+        slot_count: VarInt,
+        entity_id: i32,
     }
 }
