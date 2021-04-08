@@ -566,4 +566,9 @@ enum ClientBoundPacket<'a> {
     CombatEvent {
         event: crate::combat::CombatEvent<'a>,
     },
+
+    /// Sent by the server to update the user list (<tab> in the client).
+    PlayerInfo {
+        value: crate::players::PlayerInfoAction<'a>,
+    },
 }

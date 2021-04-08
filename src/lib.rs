@@ -13,6 +13,7 @@ pub mod gamemode;
 pub mod nbt;
 pub mod packets;
 pub mod paintings;
+pub mod players;
 pub mod slots;
 pub mod trades;
 
