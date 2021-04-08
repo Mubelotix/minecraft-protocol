@@ -4,7 +4,7 @@ use super::*;
 
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
-enum ClientBoundPacket<'a> {
+pub enum ClientBoundPacket<'a> {
     SpawnEntity {
         id: VarInt,
         uuid: UUID,
