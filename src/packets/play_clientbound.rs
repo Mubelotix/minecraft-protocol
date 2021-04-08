@@ -311,3 +311,25 @@ pub struct EntityStatus {
     /// See [Entity statuses](https://wiki.vg/Entity_statuses) for a list of which statuses are valid for each type of entity.
     pub entity_status: u8,
 }
+
+/// Sent when an explosion occurs (creepers, TNT, and ghast fireballs).
+/// Each block in Records is set to air. Coordinates for each axis in record is int(X) + record.x
+#[derive(Debug, MinecraftPacketPart)]
+pub struct Explosion<'a> {
+    /// The coordinate x of the explosion
+    pub x: f32,
+    /// The coordinate y of the explosion
+    pub y: f32,
+    /// The coordinate z of the explosion
+    pub z: f32,
+    /// A strength greater than or equal to 2.0 spawns a `minecraft:explosion_emitter` particle, while a lesser strength spawns a `minecraft:explosion` particle.
+    pub strenght: f32,
+    /// Each record is 3 signed bytes long; the 3 bytes are the XYZ (respectively) signed offsets of affected blocks.
+    pub affected_blocks: Array<'a, (i8, i8, i8), i32>,
+    /// X velocity of the player being pushed by the explosion.
+    pub player_acceleration_x: f32,
+    /// Y velocity of the player being pushed by the explosion.
+    pub player_acceleration_y: f32,
+    /// Z velocity of the player being pushed by the explosion.
+    pub player_acceleration_z: f32,
+}

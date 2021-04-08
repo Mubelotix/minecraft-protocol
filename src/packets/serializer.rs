@@ -72,6 +72,30 @@ mod integers {
         }
     }
 
+    impl<'a> MinecraftPacketPart<'a> for (i8, i8, i8) {
+        fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+            output.push(self.0.to_le_bytes()[0]);
+            output.push(self.1.to_le_bytes()[0]);
+            output.push(self.2.to_le_bytes()[0]);
+            Ok(())
+        }
+
+        fn deserialize_minecraft_packet_part(
+            input: &mut [u8],
+        ) -> Result<(Self, &mut [u8]), &'static str> {
+            let (first_byte, input) = input
+                .split_first_mut()
+                .ok_or("Missing byte while parsing (i8, i8, i8).")?;
+            let (second_byte, input) = input
+                .split_first_mut()
+                .ok_or("Missing byte while parsing (i8, i8, i8).")?;
+            let (third_byte, input) = input
+                .split_first_mut()
+                .ok_or("Missing byte while parsing (i8, i8, i8).")?;
+            Ok(((i8::from_be_bytes([*first_byte]), i8::from_be_bytes([*second_byte]), i8::from_be_bytes([*third_byte])), input))
+        }
+    }
+
     impl<'a> MinecraftPacketPart<'a> for i16 {
         fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             let bytes = self.to_le_bytes();
