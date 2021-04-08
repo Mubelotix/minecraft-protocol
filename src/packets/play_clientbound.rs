@@ -160,3 +160,19 @@ pub struct ChatMessage<'a> {
     /// Used by the Notchian client for the disableChat launch option. Setting 0 will always display the message regardless of the setting.
     pub sender: UUID,
 }
+
+/// The server responds with a list of auto-completions of the last word sent to it.
+/// In the case of regular chat, this is a player username.
+/// Command names and parameters are also supported.
+/// The client sorts these alphabetically before listing them.
+#[derive(Debug, MinecraftPacketPart)]
+pub struct TabComplete<'a> {
+    /// Transaction ID
+    pub id: VarInt,
+    /// Start of the text to replace
+    pub start: VarInt,
+    /// Length of the text to replace
+    pub lenght: VarInt,
+    /// Eligible values to insert, note that each command is sent separately instead of in a single string, hence the need for an [Array].
+    pub matches: Array<'a, crate::auto_completion::Match<'a>, VarInt>,
+}

@@ -1,6 +1,7 @@
 #![allow(clippy::upper_case_acronyms)]
 
 pub mod animations;
+pub mod auto_completion;
 pub mod blocks;
 pub mod boss_bar;
 pub mod chat;

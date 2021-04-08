@@ -685,7 +685,7 @@ impl<'a> MinecraftPacketPart<'a> for RawBytes<'a> {
     }
 }
 
-impl<'a, T: MinecraftPacketPart<'a>, U: MinecraftPacketPart<'a> + From<usize> + Into<usize>> MinecraftPacketPart<'a> for Array<'a, T, U> {
+impl<'a, T: MinecraftPacketPart<'a> + std::fmt::Debug, U: MinecraftPacketPart<'a> + From<usize> + Into<usize>> MinecraftPacketPart<'a> for Array<'a, T, U> {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
         let len: U = U::from(self.items.len());
         len.serialize_minecraft_packet_part(output)?;
