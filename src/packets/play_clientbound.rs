@@ -294,3 +294,11 @@ pub struct NamedSoundEffect<'a> {
     /// Float between 0.5 and 2.0 by Notchian clients.
     pub pitch: f32,
 }
+
+/// Sent by the server before it disconnects a client.
+/// The client assumes that the server has already closed the connection by the time the packet arrives.
+#[derive(Debug, MinecraftPacketPart)]
+pub struct Disconnect<'a> {
+    /// Displayed to the client when the connection terminates
+    pub reason: Chat<'a>,
+}
