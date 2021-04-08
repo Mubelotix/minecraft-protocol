@@ -514,4 +514,10 @@ enum ClientBoundPacket<'a> {
         /// Absolute rotation on the horizontal axis, in degrees
         pitch: f32,
     },
+
+    /// Sent when a player right clicks with a signed book.
+    /// This tells the client to open the book GUI.
+    OpenBook {
+        hand: crate::slots::Hand,
+    },
 }

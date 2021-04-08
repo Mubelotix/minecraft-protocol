@@ -12,6 +12,12 @@ pub struct Slot<'a> {
     pub nbt_data: NbtTag<'a>,
 }
 
+#[minecraft_enum(VarInt)]
+pub enum Hand {
+    Main,
+    OffHand,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
