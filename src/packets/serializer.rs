@@ -238,6 +238,51 @@ mod integers {
         }
     }
 
+    impl<'a> MinecraftPacketPart<'a> for u64 {
+        fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+            let bytes = self.to_le_bytes();
+            output.push(bytes[7]);
+            output.push(bytes[6]);
+            output.push(bytes[5]);
+            output.push(bytes[4]);
+            output.push(bytes[3]);
+            output.push(bytes[2]);
+            output.push(bytes[1]);
+            output.push(bytes[0]);
+            Ok(())
+        }
+
+        fn deserialize_minecraft_packet_part(
+            input: &mut [u8],
+        ) -> Result<(Self, &mut [u8]), &'static str> {
+            if input.len() < 8 {
+                return Err("Missing byte while parsing i64.");
+            }
+            unsafe {
+                let len = input.len();
+                let ptr = input.as_mut_ptr();
+                let (bytes, input) = (
+                    std::slice::from_raw_parts_mut(ptr, 8),
+                    std::slice::from_raw_parts_mut(ptr.add(8), len - 8),
+                );
+
+                Ok((
+                    u64::from_le_bytes([
+                        *bytes.get_unchecked(7),
+                        *bytes.get_unchecked(6),
+                        *bytes.get_unchecked(5),
+                        *bytes.get_unchecked(4),
+                        *bytes.get_unchecked(3),
+                        *bytes.get_unchecked(2),
+                        *bytes.get_unchecked(1),
+                        *bytes.get_unchecked(0),
+                    ]),
+                    input,
+                ))
+            }
+        }
+    }
+
     impl<'a> MinecraftPacketPart<'a> for u128 {
         fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             let bytes = self.to_le_bytes();

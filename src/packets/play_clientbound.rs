@@ -342,7 +342,7 @@ enum ClientBoundPacket<'a> {
     /// Vice versa, if the server does not send any keep-alives for 20 seconds, the client will disconnect and yields a "Timed out" exception.
     KeepAlive {
         /// The Notchian server uses a system-dependent time in milliseconds to generate the keep alive ID value.
-        keep_alive_id: i64,
+        keep_alive_id: u64,
     },
 
     ChunkData {
@@ -413,7 +413,7 @@ enum ClientBoundPacket<'a> {
         world_name: Identifier<'a>,
         /// First 8 bytes of the SHA-256 hash of the world's seed.
         /// Used client side for biome noise.
-        hashed_seed: i64,
+        hashed_seed: u64,
         /// Was once used by the client to draw the player list, but now is ignored.
         max_players: VarInt,
         /// Render distance (2..32).
@@ -647,7 +647,7 @@ enum ClientBoundPacket<'a> {
         world_name: Identifier<'a>,
         /// First 8 bytes of the SHA-256 hash of the world's seed.
         /// Used client side for biome noise.
-        hashed_seed: i64,
+        hashed_seed: u64,
         gamemode: crate::gamemode::Gamemode,
         previous_gamemode: crate::gamemode::PreviousGamemode,
         /// `true` if the world is a [debug mode world](http://minecraft.gamepedia.com/Debug_mode); debug mode worlds cannot be modified and have predefined blocks.
@@ -660,11 +660,18 @@ enum ClientBoundPacket<'a> {
     },
 
     /// Changes the direction an entity's head is facing.
-    /// 
+    ///
     /// While sending the [ClientBoundPacket::EntityLook] packet changes the vertical rotation of the head, sending this packet appears to be necessary to rotate the head horizontally.
     EntityHeadLook {
         entity_id: VarInt,
         /// New angle, not a delta
         head_yew: Angle,
+    },
+
+    /// Fired whenever 2 or more blocks are changed within the same chunk on the same tick.
+    /// 
+    /// **Warnin**: Changing blocks in chunks not loaded by the client is unsafe.
+    MultiBlockChange {
+        value: crate::blocks::MultiBlockChange<'a>,
     },
 }
