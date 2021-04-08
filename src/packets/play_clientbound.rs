@@ -492,4 +492,12 @@ enum ClientBoundPacket<'a> {
         pitch: Angle,
         on_ground: bool,
     },
+
+    /// This packet may be used to initialize an entity.
+    /// 
+    /// For player entities, either this packet or any move/look packet is sent every game tick.
+    /// So the meaning of this packet is basically that the entity did not move/look since the last such packet.
+    EntityMovement {
+        entity_id: VarInt,
+    },
 }
