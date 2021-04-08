@@ -744,4 +744,12 @@ pub enum ClientBoundPacket<'a> {
         /// TODO: parse this field
         metadata: RawBytes<'a>,
     },
+
+    /// This packet is sent when an entity has been leashed to another entity.
+    AttachEntity {
+        /// Attached entity's EID.
+        attached_entity_id: i32,
+        /// ID of the entity holding the lead. Set to -1 to detach.
+        holding_entity_id: i32,
+    },
 }
