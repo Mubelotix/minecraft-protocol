@@ -393,5 +393,39 @@ enum ClientBoundPacket<'a> {
         /// TODO: parse this
         data: RawBytes<'a>,
     },
-    
+
+    /// See [Protocol Encryption](https://wiki.vg/Protocol_Encryption) for information on logging in.
+    JoinGame {
+        /// The player's Entity ID (EID)
+        player_id: i32,
+        is_harcore: bool,
+        gamemode: crate::gamemode::Gamemode,
+        previous_gamemode: crate::gamemode::PreviousGamemode,
+        /// Identifiers for all worlds on the server
+        worlds_names: Array<'a, Identifier<'a>, VarInt>,
+        /// The full extent of these is still unknown, but the tag represents a dimension and biome registry.
+        /// See [the wiki](https://wiki.vg/Protocol#Join_Game) for the vanilla default.
+        dimension_coded: NbtTag<'a>,
+        /// Valid dimensions are defined per dimension registry sent before this.
+        /// The structure of this tag is a dimension type (see [the wiki](https://wiki.vg/Protocol#Join_Game)).
+        dimension: NbtTag<'a>,
+        /// Name of the world being spawned into
+        world_name: Identifier<'a>,
+        /// First 8 bytes of the SHA-256 hash of the world's seed.
+        /// Used client side for biome noise.
+        hashed_seed: i64,
+        /// Was once used by the client to draw the player list, but now is ignored.
+        max_players: VarInt,
+        /// Render distance (2..32).
+        render_distance: VarInt,
+        /// If `true`, a Notchian client shows reduced information on the debug screen.
+        /// For servers in development, this should almost always be `false`.
+        reduced_debug_info: bool,
+        /// Set to false when the `doImmediateRespawn` gamerule is `true`.
+        enable_respawn_screen: bool,
+        /// `true` if the world is a [debug mode world](http://minecraft.gamepedia.com/Debug_mode); debug mode worlds cannot be modified and have predefined blocks.
+        is_debug: bool,
+        /// `true` if the world is a [superflat world](http://minecraft.gamepedia.com/Superflat); flat worlds have different void fog and a horizon at y=0 instead of y=63.
+        is_flat: bool,
+    },
 }

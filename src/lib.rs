@@ -8,6 +8,7 @@ pub mod chat;
 pub mod chunk;
 pub mod difficulty;
 pub mod game_state;
+pub mod gamemode;
 pub mod nbt;
 pub mod packets;
 pub mod paintings;
