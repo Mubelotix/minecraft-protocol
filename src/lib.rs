@@ -14,6 +14,7 @@ pub mod nbt;
 pub mod packets;
 pub mod paintings;
 pub mod players;
+pub mod recipes;
 pub mod slots;
 pub mod trades;
 

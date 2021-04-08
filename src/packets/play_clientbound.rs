@@ -610,4 +610,8 @@ enum ClientBoundPacket<'a> {
         flags: u8,
         teleport_id: VarInt,
     },
+
+    UnlockRecipes {
+        action: crate::recipes::UnlockRecipesAction<'a>,
+    },
 }
