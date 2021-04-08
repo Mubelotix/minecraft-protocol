@@ -451,5 +451,18 @@ enum ClientBoundPacket<'a> {
         /// True for regular villagers and false for the wandering trader.
         /// If true, the "Villagers restock up to two times per day." message is displayed when hovering over disabled trades.
         can_restock: bool,
-    }
+    },
+
+    /// This packet is sent by the server when an entity moves less then 8 blocks; if an entity moves more than 8 blocks Entity Teleport should be sent instead.
+    /// This packet allows at most 8 blocks movement in any direction, because `i16` range is from -32768 to 32767. And 32768 / (128 * 32) = 8.
+    EntityPosition {
+        entity_id: VarInt,
+        /// Change in X position as `(currentX * 32 - prevX * 32) * 128`
+        delta_x: i16,
+        /// Change in Y position as `(currentX * 32 - prevX * 32) * 128`
+        delta_y: i16,
+        /// Change in Z position as `(currentX * 32 - prevX * 32) * 128`
+        delta_z: i16,
+        on_ground: bool,
+    },
 }
