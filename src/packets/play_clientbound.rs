@@ -362,6 +362,7 @@ enum ClientBoundPacket<'a> {
         disable_relative_volume: bool,
     },
 
+    /// Displays the named particle
     Particle {
         /// The particle ID listed in the [particle data type](https://wiki.vg/Protocol#Particle)
         particle_id: i32,
@@ -385,5 +386,12 @@ enum ClientBoundPacket<'a> {
         particule_count: i32,
         /// The variable data listed in the [particle data type](https://wiki.vg/Protocol#Particle)
         data: RawBytes<'a>,
-    }
+    },
+
+    /// Updates light levels for a chunk
+    UpdateLight {
+        /// TODO: parse this
+        data: RawBytes<'a>,
+    },
+    
 }
