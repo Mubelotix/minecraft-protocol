@@ -550,4 +550,14 @@ enum ClientBoundPacket<'a> {
         /// A recipe ID
         recipe: Identifier<'a>,
     },
+
+    PlayerAbilities {
+        /// Bit field, see [the wiki](https://wiki.vg/Protocol#Player_Abilities_.28clientbound.29).
+        flags: u8,
+        /// 0.05 by default
+        flying_speed: f32,
+        /// Modifies the field of view, like a speed potion.
+        /// A Notchian server will use the same value as the movement speed sent in the Entity Properties packet, which defaults to 0.1 for players.
+        field_of_view_modifier: f32,
+    },
 }
