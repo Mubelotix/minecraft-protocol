@@ -1,5 +1,5 @@
-use crate::*;
 use super::NbtTag;
+use crate::*;
 
 impl<'a> MinecraftPacketPart<'a> for NbtTag<'a> {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {

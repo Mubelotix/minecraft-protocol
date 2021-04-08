@@ -62,7 +62,7 @@ pub enum Effect {
     HuskConvertsToZombieByDrowning,
     GrindStoneUsed,
     BookPageTurned,
-    
+
     ComposerComposts = 1500,
     /// either water to stone, or removes existing blocks such as torches
     LavaConvertsBlock,
@@ -86,5 +86,5 @@ pub enum Effect {
     WetSpongeVaporizesInNether,
 
     EndGatewaySpawn = 3000,
-    EnderdragonGrowl
+    EnderdragonGrowl,
 }

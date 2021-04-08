@@ -13,7 +13,7 @@ pub enum Gamemode {
 #[derive(Debug)]
 pub enum PreviousGamemode {
     None = -1,
-    
+
     Survival = 0,
     Creative,
     Adventure,

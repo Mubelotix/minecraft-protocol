@@ -17,7 +17,7 @@ pub enum PlayerInfoAction<'a> {
     },
     RemovePlayers {
         players_to_remove: Array<'a, &'a str, VarInt>,
-    }
+    },
 }
 
 /// The Property field looks as in the response of M[ojang API#UUID -> Profile + Skin/Cape](https://wiki.vg/Mojang_API#UUID_-.3E_Profile_.2B_Skin.2FCape), except of course using the protocol format instead of JSON.
@@ -65,7 +65,7 @@ pub struct PlayerDisplayNameChangeInfo<'a> {
 #[derive(Debug)]
 pub enum FaceAim {
     Feet,
-    Eyes
+    Eyes,
 }
 
 #[derive(Debug, MinecraftPacketPart)]

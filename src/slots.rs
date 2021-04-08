@@ -1,4 +1,4 @@
-use crate::{*, nbt::NbtTag};
+use crate::{nbt::NbtTag, *};
 
 /// The [Slot] data structure is how Minecraft represents an item and its associated data in the [Minecraft Protocol](https://wiki.vg/Protocol).
 #[derive(Debug, MinecraftPacketPart)]
@@ -26,7 +26,9 @@ mod tests {
     #[test]
     fn test_slot() {
         let serialized = &mut [0x01, 0x01, 0x01, 0x00];
-        let deserialized = <Option<Slot>>::deserialize_minecraft_packet(serialized).unwrap().unwrap();
+        let deserialized = <Option<Slot>>::deserialize_minecraft_packet(serialized)
+            .unwrap()
+            .unwrap();
         assert_eq!(deserialized.item_id.0, 1);
         assert_eq!(deserialized.item_count.0, 1);
         assert!(matches!(deserialized.nbt_data, NbtTag::Null));

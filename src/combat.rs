@@ -16,5 +16,5 @@ pub enum CombatEvent<'a> {
         /// The killing entity's ID, or -1 if there is no obvious killer
         killer_entity_id: VarInt,
         death_message: Chat<'a>,
-    }
+    },
 }

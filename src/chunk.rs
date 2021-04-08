@@ -1,7 +1,7 @@
-use crate::{*, nbt::NbtTag};
+use crate::{nbt::NbtTag, *};
 
 /// A complex data structure including block data and optionally entities of a chunk.
-/// 
+///
 /// Note that the Notchian client requires an Update View Position packet when it crosses a chunk border, otherwise it'll only display render distance + 2 chunks around the chunk it spawned in.
 #[derive(Debug)]
 pub struct ChunkData<'a> {
@@ -32,7 +32,9 @@ impl<'a> MinecraftPacketPart<'a> for ChunkData<'a> {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
         self.chunk_x.serialize_minecraft_packet_part(output)?;
         self.chunk_y.serialize_minecraft_packet_part(output)?;
-        self.biomes.is_some().serialize_minecraft_packet_part(output)?;
+        self.biomes
+            .is_some()
+            .serialize_minecraft_packet_part(output)?;
         self.primary_bit_mask
             .serialize_minecraft_packet_part(output)?;
         self.heightmaps.serialize_minecraft_packet_part(output)?;
@@ -49,16 +51,15 @@ impl<'a> MinecraftPacketPart<'a> for ChunkData<'a> {
     ) -> Result<(Self, &'a mut [u8]), &'static str> {
         let (chunk_x, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         let (chunk_y, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
-        let (full_chunk, input) =
-            MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
+        let (full_chunk, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         let (primary_bit_mask, input) =
             MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
-        let (heightmaps, input) =
-            MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
+        let (heightmaps, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         let (biomes, input) = match full_chunk {
             false => (None, input),
             true => {
-                let (biomes, input) = <Array<'a, VarInt, VarInt>>::deserialize_minecraft_packet_part(input)?;
+                let (biomes, input) =
+                    <Array<'a, VarInt, VarInt>>::deserialize_minecraft_packet_part(input)?;
                 (Some(biomes), input)
             }
         };
@@ -125,5 +126,5 @@ pub enum WorldBorderAction {
     SetWarningBlocks {
         /// In meters
         warning_blocks: VarInt,
-    }
+    },
 }

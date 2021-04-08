@@ -8,5 +8,5 @@ pub enum Position {
     /// A system message (chat box)
     System,
     /// Game info displayed above the hotbar
-    GameInfo
+    GameInfo,
 }

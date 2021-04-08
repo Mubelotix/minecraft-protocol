@@ -1,8 +1,8 @@
 pub mod play_clientbound;
 pub mod serializer;
-use std::convert::TryFrom;
 pub use minecraft_packet_derive::*;
 use serializer::*;
+use std::convert::TryFrom;
 
 #[derive(Debug)]
 pub struct VarInt(pub i32);
