@@ -669,9 +669,23 @@ pub enum ClientBoundPacket<'a> {
     },
 
     /// Fired whenever 2 or more blocks are changed within the same chunk on the same tick.
-    /// 
+    ///
     /// **Warnin**: Changing blocks in chunks not loaded by the client is unsafe.
     MultiBlockChange {
         value: crate::blocks::MultiBlockChange<'a>,
+    },
+
+    /// Sent by the server to indicate that the client should switch advancement tab.
+    /// Sent either when the client switches tab in the GUI or when an advancement in another tab is made.
+    SelectAdvancementTab {
+        /// The Identifier can be one of the following:
+        /// - "minecraft:story/root"
+        /// - "minecraft:nether/root"
+        /// - "minecraft:end/root"
+        /// - "minecraft:adventure/root"
+        /// - "minecraft:husbandry/root"
+        ///
+        /// If no or an invalid identifier is sent, the client will switch to the first tab in the GUI.
+        identifier: Option<Identifier<'a>>,
     },
 }
