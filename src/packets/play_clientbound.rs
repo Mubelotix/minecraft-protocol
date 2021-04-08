@@ -216,3 +216,17 @@ pub struct WindowItems<'a> {
     /// See [inventory windows](https://wiki.vg/Inventory#Windows) for further information about how slots are indexed.
     pub slots: Array<'a, Option<crate::slots::Slot<'a>>, i16>,
 }
+
+/// This packet is used to inform the client that part of a GUI window should be updated.
+#[derive(Debug, MinecraftPacketPart)]
+pub struct WindowProperty {
+    pub window_id: u8,
+    /// The property to be updated.
+    /// The meaning of this field depends on the type of the window.
+    /// The [the wiki](https://wiki.vg/Protocol#Window_Property) shows the known combinations of window type and property, and how the value is to be interpreted.
+    pub property: i16,
+    /// The new value for the property.
+    /// The meaning of this field depends on the type of the window.
+    /// The [the wiki](https://wiki.vg/Protocol#Window_Property) shows the known combinations of window type and property, and how the value is to be interpreted.
+    pub value: i16,
+}
