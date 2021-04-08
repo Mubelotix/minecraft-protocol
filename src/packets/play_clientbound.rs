@@ -714,4 +714,12 @@ pub enum ClientBoundPacket<'a> {
         /// The slot which the player has selected (0–8)
         slot: u8,
     },
+
+    /// Updates the client's location.
+    /// This is used to determine what chunks should remain loaded and if a chunk load should be ignored; chunks outside of the view distance may be unloaded.
+    /// Sent whenever the player moves across a chunk border horizontally, and also (according to testing) for any integer change in the vertical axis, even if it doesn't go across a chunk section border.
+    UpdateViewPosition {
+        chunk_x: VarInt,
+        chunk_z: VarInt,
+    },
 }
