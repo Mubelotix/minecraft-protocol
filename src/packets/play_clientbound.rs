@@ -205,3 +205,14 @@ pub struct CloseWindow {
     /// This is the ID of the window that was closed. 0 for inventory.
     pub window_id: u8,
 }
+
+/// Sent by the server when items in multiple slots (in a window) are added/removed.
+/// This includes the main inventory, equipped armour and crafting slots.
+#[derive(Debug, MinecraftPacketPart)]
+pub struct WindowItems<'a> {
+    /// The ID of window which items are being sent for. 0 for player inventory.
+    pub window_id: u8,
+    /// The [crate::slots::Slot]s in this window.
+    /// See [inventory windows](https://wiki.vg/Inventory#Windows) for further information about how slots are indexed.
+    pub slots: Array<'a, Option<crate::slots::Slot<'a>>, i16>,
+}

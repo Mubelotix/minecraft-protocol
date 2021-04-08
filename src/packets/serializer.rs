@@ -1,4 +1,4 @@
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 
 use super::*;
 
@@ -685,9 +685,9 @@ impl<'a> MinecraftPacketPart<'a> for RawBytes<'a> {
     }
 }
 
-impl<'a, T: MinecraftPacketPart<'a> + std::fmt::Debug, U: MinecraftPacketPart<'a> + From<usize> + Into<usize>> MinecraftPacketPart<'a> for Array<'a, T, U> {
+impl<'a, T: MinecraftPacketPart<'a> + std::fmt::Debug, U: MinecraftPacketPart<'a> + TryFrom<usize> + TryInto<usize>> MinecraftPacketPart<'a> for Array<'a, T, U> {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
-        let len: U = U::from(self.items.len());
+        let len: U = U::try_from(self.items.len()).map_err(|_| "The array lenght cannot be serialized due to its type.")?;
         len.serialize_minecraft_packet_part(output)?;
         for item in self.items {
             item.serialize_minecraft_packet_part(output)?;
@@ -697,7 +697,7 @@ impl<'a, T: MinecraftPacketPart<'a> + std::fmt::Debug, U: MinecraftPacketPart<'a
 
     fn deserialize_minecraft_packet_part(input: &'a mut [u8]) -> Result<(Self, &'a mut [u8]), &'static str> {
         let (len, mut input) = U::deserialize_minecraft_packet_part(input)?;
-        let len: usize = len.into();
+        let len: usize = len.try_into().map_err(|_| "The array lenght cannot be deserialized due to its type.")?;
         let mut items = Vec::new();
         for _ in 0..len {
             let (item, new_input) = T::deserialize_minecraft_packet_part(input)?;

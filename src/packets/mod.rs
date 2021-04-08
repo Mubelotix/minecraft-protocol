@@ -1,13 +1,15 @@
 pub mod play_clientbound;
 pub mod serializer;
+use std::convert::TryFrom;
 pub use minecraft_packet_derive::*;
 use serializer::*;
 
 #[derive(Debug)]
 pub struct VarInt(pub i32);
-impl From<VarInt> for usize {
-    fn from(val: VarInt) -> Self {
-        val.0 as usize
+impl TryFrom<VarInt> for usize {
+    type Error = std::num::TryFromIntError;
+    fn try_from(value: VarInt) -> Result<Self, Self::Error> {
+        TryFrom::try_from(value.0)
     }
 }
 impl From<usize> for VarInt {
@@ -18,14 +20,17 @@ impl From<usize> for VarInt {
 
 #[derive(Debug)]
 pub struct VarLong(pub i64);
-impl From<VarLong> for usize {
-    fn from(val: VarLong) -> Self {
-        val.0 as usize
+impl TryFrom<VarLong> for usize {
+    type Error = std::num::TryFromIntError;
+    fn try_from(value: VarLong) -> Result<Self, Self::Error> {
+        TryFrom::try_from(value.0)
     }
 }
-impl From<usize> for VarLong {
-    fn from(value: usize) -> Self {
-        VarLong(value as i64)
+impl TryFrom<usize> for VarLong {
+    type Error = std::num::TryFromIntError;
+    fn try_from(value: usize) -> Result<Self, Self::Error> {
+        let value: i64 = TryFrom::try_from(value)?;
+        Ok(VarLong(value))
     }
 }
 

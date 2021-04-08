@@ -9,6 +9,7 @@ pub mod difficulty;
 pub mod nbt;
 pub mod packets;
 pub mod paintings;
+pub mod slots;
 
 pub(crate) use crate::packets::serializer::MinecraftPacketPart;
 pub(crate) use crate::packets::*;
