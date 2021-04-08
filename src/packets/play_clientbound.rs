@@ -520,4 +520,18 @@ enum ClientBoundPacket<'a> {
     OpenBook {
         hand: crate::slots::Hand,
     },
+
+    /// This is sent to the client when it should open an inventory, such as a chest, workbench, or furnace.
+    /// This message is not sent anywhere for clients opening their own inventory.
+    /// For horses, use [ClientBoundPacket::OpenHorseWindow].
+    OpenWindow {
+        /// A unique id number for the window to be displayed.
+        /// Notchian server implementation is a counter, starting at 1.
+        window_id: VarInt,
+        /// The window type to use for display.
+        /// TODO: replace by an enum
+        window_type: VarInt,
+        /// The title of the window
+        window_title: Chat<'a>,
+    },
 }
