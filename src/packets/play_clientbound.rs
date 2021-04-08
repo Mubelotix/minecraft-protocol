@@ -728,4 +728,12 @@ pub enum ClientBoundPacket<'a> {
     SpawnPosition {
         location: Position,
     },
+
+    /// This is sent to the client when it should display a scoreboard
+    DisplayScoreboard {
+        /// The position of the scoreboard
+        position: crate::combat::ScoreboardPosition,
+        /// The unique name for the scoreboard to be displayed
+        name: &'a str,
+    },
 }
