@@ -176,3 +176,13 @@ pub struct TabComplete<'a> {
     /// Eligible values to insert, note that each command is sent separately instead of in a single string, hence the need for an [Array].
     pub matches: Array<'a, crate::auto_completion::Match<'a>, VarInt>,
 }
+
+/// Lists all of the commands on the server, and how they are parsed.
+/// This is a directed graph, with one root node. Each redirect or child node must refer only to nodes that have already been declared.
+#[derive(Debug, MinecraftPacketPart)]
+pub struct DeclareCommands<'a> {
+    pub count: VarInt,
+    /// An array of [Node](https://wiki.vg/Command_Data) followed by the index of the `root` node in the array.
+    /// Parsing is unimplemented yet.
+    pub data: RawBytes<'a>,
+}
