@@ -247,3 +247,15 @@ pub struct SetSlot<'a> {
     pub slot_index: i16,
     pub slot_value: crate::slots::Slot<'a>,
 }
+
+/// Applies a cooldown period to all items with the given type.
+/// Used by the Notchian server with enderpearls.
+/// This packet should be sent when the cooldown starts and also when the cooldown ends (to compensate for lag), although the client will end the cooldown automatically.
+/// Can be applied to any item, note that interactions still get sent to the server with the item but the client does not play the animation nor attempt to predict results (i.e block placing).
+#[derive(Debug, MinecraftPacketPart)]
+pub struct SetCooldown {
+    /// Numeric ID of the item to apply a cooldown to.
+    pub item_id: VarInt,
+    /// Number of ticks to apply a cooldown for, or 0 to clear the cooldown.
+    pub cooldown_ticks: VarInt,
+}
