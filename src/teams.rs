@@ -14,6 +14,22 @@ pub enum ScoreboardAction<'a> {
     },
 }
 
+#[derive(Debug, MinecraftPacketPart)]
+#[discriminant(u8)]
+pub enum ScoreboardScoreAction<'a> {
+    /// Update or Create
+    Update {
+        /// The name of the objective the score belongs to
+        objective_name: Chat<'a>,
+        /// The score to be displayed next to the entry
+        value: VarInt,
+    },
+    Remove {
+        /// The name of the objective the score belongs to
+        objective_name: Chat<'a>,
+    }
+}
+
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum ScoreboardType {

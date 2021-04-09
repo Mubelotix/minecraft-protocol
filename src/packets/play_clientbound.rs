@@ -821,4 +821,11 @@ pub enum ClientBoundPacket<'a> {
         team_name: &'a str,
         action: crate::teams::TeamAction<'a>,
     },
+
+    /// This is sent to the client when it should update a scoreboard item
+    UpdateScore {
+        /// The entity whose score this is. For players, this is their username; for other entities, it is their UUID.
+        entity_name: &'a str,
+        score_action: crate::teams::ScoreboardScoreAction<'a>,
+    },
 }
