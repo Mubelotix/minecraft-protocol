@@ -28,6 +28,7 @@ pub enum ClientBoundPacket<'a> {
         count: i16,
     },
 
+    /// Sent by the server when a living entity is spawned
     SpawnLivingEntity {
         id: VarInt,
         uuid: UUID,
@@ -38,8 +39,11 @@ pub enum ClientBoundPacket<'a> {
         yaw: Angle,
         pitch: Angle,
         head_pitch: Angle,
+        /// Velocity is believed to be in units of 1/8000 of a block per server tick (50ms); for example, -1343 would move (-1343 / 8000) = −0.167875 blocks per tick (or −3,3575 blocks per second).
         velocity_x: i16,
+        /// Velocity is believed to be in units of 1/8000 of a block per server tick (50ms); for example, -1343 would move (-1343 / 8000) = −0.167875 blocks per tick (or −3,3575 blocks per second).
         velocity_y: i16,
+        /// Velocity is believed to be in units of 1/8000 of a block per server tick (50ms); for example, -1343 would move (-1343 / 8000) = −0.167875 blocks per tick (or −3,3575 blocks per second).
         velocity_z: i16,
     },
 
