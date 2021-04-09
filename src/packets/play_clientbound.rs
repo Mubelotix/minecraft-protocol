@@ -459,7 +459,7 @@ pub enum ClientBoundPacket<'a> {
         is_flat: bool,
     },
 
-    /// Updates a rectangular area on a map item
+    /// Updates a rectangular area on a map **item**
     MapData {
         /// TODO: parse this
         data: RawBytes<'a>,
