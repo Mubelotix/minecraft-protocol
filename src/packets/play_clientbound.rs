@@ -66,9 +66,11 @@ pub enum ClientBoundPacket<'a> {
         animation: crate::animations::Animation,
     },
 
+    // Todo add doc links
+    /// Sent as a response to Client Status 0x04 (id 1).
+    /// Will only send the changed values if previously requested.
     Statistics {
-        count: VarInt,
-        statistic: RawBytes<'a>,
+        statistics: Array<'a, crate::advancements::Statistic, VarInt>,
     },
 
     AcknowledgePlayerDigging {

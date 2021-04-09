@@ -91,3 +91,27 @@ pub enum AdvancementFrameType {
     Challenge,
     Goal,
 }
+
+#[minecraft_enum(VarInt)]
+#[derive(Debug)]
+pub enum StatisticCategory {
+    Mined,
+    Crafted,
+    Used,
+    Broken,
+    PickedUp,
+    Dropped,
+    Killed,
+    KilledBy,
+    Custom
+}
+
+#[derive(Debug, MinecraftPacketPart)]
+pub struct Statistic {
+    pub category: StatisticCategory,
+    /// Used when `category` is [StatisticCategory::Custom].
+    /// See [the wiki](https://wiki.vg/Protocol#Statistics) for meaning 
+    pub statistic_id: VarInt,
+    /// Units depends on previous fields.
+    pub value: VarInt,
+}
