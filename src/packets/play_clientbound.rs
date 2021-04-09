@@ -20,11 +20,13 @@ pub enum ClientBoundPacket<'a> {
         velocity_z: i16,
     },
 
+    /// Spawns one or more experience orbs
     SpawnExperienceOrb {
         id: VarInt,
         x: f64,
         y: f64,
         z: f64,
+        /// The amount of experience this orb will reward once collected.
         count: i16,
     },
 
