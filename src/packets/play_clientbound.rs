@@ -43,11 +43,14 @@ pub enum ClientBoundPacket<'a> {
         velocity_z: i16,
     },
 
+    /// This packet shows location, name, and type of painting.
     SpawnPainting {
         id: VarInt,
         uuid: UUID,
         motive: crate::paintings::Painting,
+        /// Center coordinates
         location: Position,
+        /// Direction the painting faces
         direction: Direction,
     },
 
