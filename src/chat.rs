@@ -10,3 +10,30 @@ pub enum Position {
     /// Game info displayed above the hotbar
     GameInfo,
 }
+
+#[derive(Debug, MinecraftPacketPart)]
+pub enum TitleAction<'a> {
+    SetTitle {
+        title: Chat<'a>,
+    },
+    SetSubtitle {
+        subtitle: Chat<'a>,
+    },
+    SetActionBar {
+        /// Displays a message above the hotbar (the same as [Position::GameInfo] in [ClientBoundPacket::ChatMessage], except that it correctly renders formatted chat; see MC-119145 for more information).
+        action_bar_text: Chat<'a>,
+    },
+    SetTimes {
+        /// Ticks to spend fading in
+        fade_int: i32,
+        /// Ticks to keep the title displayed
+        stay: i32,
+        /// Ticks to spend out, not when to start fading out
+        fade_out: i32,
+    },
+    /// Sending [TitleAction::Hide] once makes the text disappear.
+    /// Sending another time will make the text reappear.
+    Hide,
+    /// Erases the text
+    Reset,
+}

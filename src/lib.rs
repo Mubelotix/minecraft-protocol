@@ -22,4 +22,5 @@ pub mod trades;
 
 pub(crate) use crate::packets::serializer::MinecraftPacketPart;
 pub(crate) use crate::packets::*;
+pub(crate) use crate::packets::play_clientbound::ClientBoundPacket;
 pub(crate) use minecraft_packet_derive::*;

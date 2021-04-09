@@ -840,4 +840,8 @@ pub enum ClientBoundPacket<'a> {
         /// If negative the sun will stop moving.
         time_of_day: i64,
     },
+
+    Title {
+        action: crate::chat::TitleAction<'a>,
+    },
 }
