@@ -74,9 +74,12 @@ pub enum ClientBoundPacket<'a> {
     },
 
     AcknowledgePlayerDigging {
+        /// Position where the digging was happening
         location: Position,
+        /// Block state ID of the block that should be at that position now
         block: VarInt,
         status: crate::blocks::PartialDiggingState,
+        /// True if the digging succeeded; false if the client should undo any changes it made locally.
         successful: bool,
     },
 
