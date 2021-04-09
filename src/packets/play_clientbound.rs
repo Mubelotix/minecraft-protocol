@@ -761,7 +761,7 @@ pub enum ClientBoundPacket<'a> {
     },
 
     /// Sets the velocity of an entity
-    /// 
+    ///
     /// Velocity is believed to be in units of 1/8000 of a block per server tick (50ms); for example, -1343 would move (-1343 / 8000) = −0.167875 blocks per tick (or −3,3575 blocks per second).
     EntityVelocity {
         entity_id: VarInt,
@@ -771,5 +771,11 @@ pub enum ClientBoundPacket<'a> {
         velocity_y: i16,
         /// Velocity on the Z axis
         velocity_z: i16,
+    },
+
+    EntityEquipment {
+        /// Entity's EID.
+        entity_id: VarInt,
+        equipment: crate::slots::EquipmentSlotArray<'a>,
     },
 }
