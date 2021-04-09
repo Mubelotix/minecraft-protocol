@@ -814,4 +814,11 @@ pub enum ClientBoundPacket<'a> {
         /// The IDs of entity's passengers
         passagers: Array<'a, VarInt, VarInt>,
     },
+
+    /// Creates and updates teams
+    Teams {
+        /// A unique name for the team (Shared with scoreboard)
+        team_name: &'a str,
+        action: crate::teams::TeamAction<'a>,
+    },
 }
