@@ -961,4 +961,9 @@ pub enum ClientBoundPacket<'a> {
         /// (should not be particularly useful)
         flags: u8,
     },
+
+    DeclareRecipes {
+        /// TODO
+        data: RawBytes<'a>,
+    },
 }
