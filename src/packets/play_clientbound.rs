@@ -61,6 +61,7 @@ pub enum ClientBoundPacket<'a> {
         pitch: Angle,
     },
 
+    /// Sent whenever an entity should change animation
     EntityAnimation {
         id: VarInt,
         animation: crate::animations::Animation,
