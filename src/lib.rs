@@ -17,10 +17,11 @@ pub mod paintings;
 pub mod players;
 pub mod recipes;
 pub mod slots;
+pub mod sound;
 pub mod teams;
 pub mod trades;
 
+pub(crate) use crate::packets::play_clientbound::ClientBoundPacket;
 pub(crate) use crate::packets::serializer::MinecraftPacketPart;
 pub(crate) use crate::packets::*;
-pub(crate) use crate::packets::play_clientbound::ClientBoundPacket;
 pub(crate) use minecraft_packet_derive::*;

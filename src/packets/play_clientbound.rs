@@ -261,8 +261,7 @@ pub enum ClientBoundPacket<'a> {
     NamedSoundEffect {
         /// All sound effect names as of 1.16.5 can be seen [here](https://pokechu22.github.io/Burger/1.16.5.html#sounds).
         sound_name: Identifier<'a>,
-        /// The category that this sound will be played from ([current categories](https://gist.github.com/konwboj/7c0c380d3923443e9d55)).
-        sound_category: VarInt,
+        sound_category: crate::sound::SoundCategory,
         /// Effect X multiplied by 8 ([fixed-point number](https://wiki.vg/Data_types#Fixed-point_numbers) with only 3 bits dedicated to the fractional part).
         effect_position_x: i32,
         /// Effect Y multiplied by 8 ([fixed-point number](https://wiki.vg/Data_types#Fixed-point_numbers) with only 3 bits dedicated to the fractional part).
@@ -843,5 +842,26 @@ pub enum ClientBoundPacket<'a> {
 
     Title {
         action: crate::chat::TitleAction<'a>,
+    },
+
+    /// This packet is used to play sound events with hardcoded IDs.
+    ///
+    /// Numeric sound effect IDs are liable to change between versions.
+    /// For custom sounds, use [ClientBoundPacket::NamedSoundEffect].
+    SoundEffect {
+        /// ID of hardcoded sound event ([events](https://pokechu22.github.io/Burger/1.16.5.html#sounds) as of 1.16.5).
+        /// TODO: generate an enum
+        sound_id: VarInt,
+        sound_category: crate::sound::SoundCategory,
+        /// Effect X multiplied by 8 (fixed-point number with only 3 bits dedicated to the fractional part)
+        effect_x: i32,
+        /// Effect Y multiplied by 8 (fixed-point number with only 3 bits dedicated to the fractional part)
+        effect_y: i32,
+        /// Effect Z multiplied by 8 (fixed-point number with only 3 bits dedicated to the fractional part)
+        effect_z: i32,
+        /// 1.0 is 100%, capped between 0.0 and 1.0 by Notchian clients
+        volume: f32,
+        /// Float between 0.5 and 2.0 by Notchian clients
+        pitch: f32,
     },
 }
