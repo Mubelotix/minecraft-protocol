@@ -938,4 +938,14 @@ pub enum ClientBoundPacket<'a> {
         progress_mapping:
             Map<'a, Identifier<'a>, crate::advancements::AdvancementProgress<'a>, VarInt>,
     },
+
+    /// Sets [attributes](https://minecraft.fandom.com/wiki/Attribute) on the given entity
+    EntityAttributes {
+        entity_id: VarInt,
+        /// [Attributes](crate::entity::EntityAttribute) are a system of buffs/debuffs that are properties on mobs and players.
+        /// [Attributes](crate::entity::EntityAttribute) also have [Attributes](crate::entity::EntityAttributeModifier) that adjust the strength of their effect.
+        ///
+        /// [More information](https://minecraft.fandom.com/wiki/Attribute)
+        attributes: Map<'a, Identifier<'a>, crate::entity::EntityAttribute<'a>, i32>,
+    },
 }
