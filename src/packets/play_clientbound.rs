@@ -5,18 +5,25 @@ use super::*;
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum ClientBoundPacket<'a> {
+    /// Sent by the server when a vehicle or other **non-living entity** is created
     SpawnEntity {
         id: VarInt,
         uuid: UUID,
+        /// The type of the entity.
+        /// See [the list](https://wiki.vg/Entity_metadata#Mobs)
         entity_type: VarInt,
         x: f64,
         y: f64,
         z: f64,
         pitch: Angle,
         yaw: Angle,
+        /// Meaning dependent on the value of the `type` field, see [Object Data](https://wiki.vg/Object_Data) for details.
         data: i32,
+        /// Velocity is believed to be in units of 1/8000 of a block per server tick (50ms); for example, -1343 would move (-1343 / 8000) = −0.167875 blocks per tick (or −3,3575 blocks per second).
         velocity_x: i16,
+        /// Velocity is believed to be in units of 1/8000 of a block per server tick (50ms); for example, -1343 would move (-1343 / 8000) = −0.167875 blocks per tick (or −3,3575 blocks per second).
         velocity_y: i16,
+        /// Velocity is believed to be in units of 1/8000 of a block per server tick (50ms); for example, -1343 would move (-1343 / 8000) = −0.167875 blocks per tick (or −3,3575 blocks per second).
         velocity_z: i16,
     },
 
