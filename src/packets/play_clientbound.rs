@@ -808,4 +808,10 @@ pub enum ClientBoundPacket<'a> {
         objective_name: &'a str,
         action: crate::teams::ScoreboardAction<'a>,
     },
+
+    SetPassagers {
+        vehicle_entity_id: VarInt,
+        /// The IDs of entity's passengers
+        passagers: Array<'a, VarInt, VarInt>,
+    },
 }
