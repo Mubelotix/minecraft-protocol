@@ -915,4 +915,17 @@ pub enum ClientBoundPacket<'a> {
         /// Seems to be 1 for XP orbs, otherwise the number of items in the stack
         pickup_item_count: VarInt,
     },
+
+    /// This packet is sent by the server when an entity moves more than 8 blocks.
+    TeleportEntity {
+        entity_id: VarInt,
+        x: f64,
+        y: f64,
+        z: f64,
+        /// New angle, not a delta
+        yaw: Angle,
+        /// New angle, not a delta
+        pitch: Angle,
+        on_ground: bool,
+    },
 }
