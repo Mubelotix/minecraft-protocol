@@ -778,4 +778,13 @@ pub enum ClientBoundPacket<'a> {
         entity_id: VarInt,
         equipment: crate::slots::EquipmentSlotArray<'a>,
     },
+
+    /// Sent by the server when the client should change experience levels
+    SetExperience {
+        /// Between 0.0 and 1.0
+        experience_bar: f32,
+        experience_level: VarInt,
+        /// See [Experience#Leveling up on the Minecraft Wiki](http://minecraft.gamepedia.com/Experience%23Leveling_up) for `total_experience` to `experience_level`.
+        total_experience: VarInt,
+    },
 }
