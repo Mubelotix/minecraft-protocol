@@ -1,5 +1,6 @@
 use crate::*;
 
+/// [Read about effects](https://minecraft.fandom.com/wiki/Effect)
 #[minecraft_enum(u8)]
 #[derive(Debug)]
 pub enum Effect {

@@ -948,4 +948,17 @@ pub enum ClientBoundPacket<'a> {
         /// [More information](https://minecraft.fandom.com/wiki/Attribute)
         attributes: Map<'a, Identifier<'a>, crate::entity::EntityAttribute<'a>, i32>,
     },
+
+    EntityEffect {
+        entity_id: VarInt,
+        effect_id: crate::effect::Effect,
+        /// Notchian client displays effect level as `amplifier + 1`.
+        /// For example, `Strength II` has an amplifier of 1.
+        amplifier: i8,
+        /// in thicks (1 thick = 50 ms)
+        duration: VarInt,
+        /// Bit field, see [the wiki](https://wiki.vg/Protocol#Entity_Properties).
+        /// (should not be particularly useful)
+        flags: u8,
+    },
 }
