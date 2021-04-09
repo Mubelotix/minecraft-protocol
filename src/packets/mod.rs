@@ -79,3 +79,9 @@ pub struct Array<'a, T: MinecraftPacketPart<'a> + std::fmt::Debug, U: MinecraftP
     _len_prefix: std::marker::PhantomData<&'a U>,
     pub items: Vec<T>,
 }
+
+#[derive(Debug)]
+pub struct Map<'a, K: MinecraftPacketPart<'a> + std::fmt::Debug, V: MinecraftPacketPart<'a> + std::fmt::Debug, U: MinecraftPacketPart<'a>> {
+    _len_prefix: std::marker::PhantomData<&'a U>,
+    pub items: std::collections::BTreeMap<K, V>,
+}

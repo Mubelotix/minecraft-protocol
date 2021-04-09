@@ -804,6 +804,53 @@ impl<
     }
 }
 
+
+impl<
+        'a,
+        K: MinecraftPacketPart<'a> + std::fmt::Debug + std::cmp::Ord,
+        V: MinecraftPacketPart<'a> + std::fmt::Debug,
+        U: MinecraftPacketPart<'a> + TryFrom<usize> + TryInto<usize>,
+    > MinecraftPacketPart<'a> for Map<'a, K, V, U>
+{
+    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        let len = U::try_from(self.items.len()).map_err(|_| "The map lenght cannot be serialized due to its type.")?;
+        len.serialize_minecraft_packet_part(output)?;
+        for (key, value) in self.items.into_iter() {
+            key.serialize_minecraft_packet_part(output)?;
+            value.serialize_minecraft_packet_part(output)?;
+        }
+        Ok(())
+    }
+
+    fn deserialize_minecraft_packet_part(
+        input: &'a mut [u8],
+    ) -> Result<(Self, &'a mut [u8]), &'static str> {
+        let mut items = std::collections::BTreeMap::new();
+        let (len, mut input) = VarInt::deserialize_minecraft_packet_part(input)?;
+        if len.0 <= 0 {
+            return Ok((Map {
+                items,
+                _len_prefix: std::marker::PhantomData,
+            }, input));
+        }
+        let len = len.0 as usize;
+
+        for _ in 0..len {
+            let (key, new_input) = K::deserialize_minecraft_packet_part(input)?;
+            let (value, new_input) =
+                V::deserialize_minecraft_packet_part(new_input)?;
+            input = new_input;
+            items.insert(key, value);
+        }
+
+        Ok((Map {
+            items,
+            _len_prefix: std::marker::PhantomData,
+        }, input))
+    }
+}
+
+
 impl<'a, T: MinecraftPacketPart<'a>> MinecraftPacketPart<'a> for Option<T> {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
         if let Some(value) = self {

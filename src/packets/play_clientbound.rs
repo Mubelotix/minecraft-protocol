@@ -928,4 +928,14 @@ pub enum ClientBoundPacket<'a> {
         pitch: Angle,
         on_ground: bool,
     },
+
+    Advancements {
+        /// Whether to reset/clear the current advancements
+        reset: bool,
+        advancement_mapping: Map<'a, Identifier<'a>, crate::advancements::Advancement<'a>, VarInt>,
+        /// The identifiers of the advancements that should be removed
+        advancements_to_remove: Array<'a, Identifier<'a>, VarInt>,
+        progress_mapping:
+            Map<'a, Identifier<'a>, crate::advancements::AdvancementProgress<'a>, VarInt>,
+    },
 }
