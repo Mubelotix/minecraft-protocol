@@ -877,4 +877,8 @@ pub enum ClientBoundPacket<'a> {
         /// Float between 0.5 and 2.0 by Notchian clients
         pitch: f32,
     },
+
+    StopSound {
+        value: crate::sound::StopSoundPacket<'a>,
+    }
 }
