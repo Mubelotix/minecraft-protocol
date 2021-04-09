@@ -787,4 +787,18 @@ pub enum ClientBoundPacket<'a> {
         /// See [Experience#Leveling up on the Minecraft Wiki](http://minecraft.gamepedia.com/Experience%23Leveling_up) for `total_experience` to `experience_level`.
         total_experience: VarInt,
     },
+
+    /// Sent by the server to update/set the health of the player it is sent to
+    UpdateHealth {
+        /// 0 or less = dead, 20 = full HP
+        health: VarInt,
+        /// 0–20
+        food: VarInt,
+        /// Seems to vary from 0.0 to 5.0 in integer increments.
+        /// Food saturation acts as a food “overcharge”.
+        /// Food values will not decrease while the saturation is over zero.
+        /// Players logging in automatically get a saturation of 5.0.
+        /// Eating food increases the saturation as well as the food bar.
+        food_saturation: f32,
+    },
 }
