@@ -890,4 +890,15 @@ pub enum ClientBoundPacket<'a> {
         /// To remove the footer, send a empty text component: `{"text":""}`
         footer: Chat<'a>,
     },
+
+    // Todo add doc links
+    /// Sent in response to Query Block NBT or Query Entity NBT.
+    NbtQueryResponse {
+        // Todo add doc link
+        /// Can be compared to the one sent in the original query packet.
+        query_id: VarInt,
+        /// The NBT of the block or entity.
+        /// May be a [NbtTag::Null] in which case no NBT is present.
+        nbt_data: NbtTag<'a>,  
+    },
 }
