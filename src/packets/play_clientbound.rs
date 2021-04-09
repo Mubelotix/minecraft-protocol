@@ -880,5 +880,14 @@ pub enum ClientBoundPacket<'a> {
 
     StopSound {
         value: crate::sound::StopSoundPacket<'a>,
-    }
+    },
+
+    /// This packet may be used by custom servers to display additional information above/below the player list.
+    /// It is never sent by the Notchian server.
+    PlayerListSetHeaderAndFooter {
+        /// To remove the header, send a empty text component: `{"text":""}`
+        header: Chat<'a>,
+        /// To remove the footer, send a empty text component: `{"text":""}`
+        footer: Chat<'a>,
+    },
 }
