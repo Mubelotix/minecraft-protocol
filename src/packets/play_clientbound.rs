@@ -739,7 +739,7 @@ pub enum ClientBoundPacket<'a> {
     /// This is sent to the client when it should display a scoreboard
     DisplayScoreboard {
         /// The position of the scoreboard
-        position: crate::combat::ScoreboardPosition,
+        position: crate::teams::ScoreboardPosition,
         /// The unique name for the scoreboard to be displayed
         name: &'a str,
     },
@@ -800,5 +800,12 @@ pub enum ClientBoundPacket<'a> {
         /// Players logging in automatically get a saturation of 5.0.
         /// Eating food increases the saturation as well as the food bar.
         food_saturation: f32,
+    },
+
+    /// This is sent to the client when it should create a new scoreboard objective or remove one
+    ScoreboardObjective {
+        /// A unique name for the objective
+        objective_name: &'a str,
+        action: crate::teams::ScoreboardAction<'a>,
     },
 }

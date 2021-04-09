@@ -17,6 +17,7 @@ pub mod paintings;
 pub mod players;
 pub mod recipes;
 pub mod slots;
+pub mod teams;
 pub mod trades;
 
 pub(crate) use crate::packets::serializer::MinecraftPacketPart;

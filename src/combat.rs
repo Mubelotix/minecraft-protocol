@@ -18,27 +18,3 @@ pub enum CombatEvent<'a> {
         death_message: Chat<'a>,
     },
 }
-
-#[minecraft_enum(u8)]
-#[derive(Debug)]
-pub enum ScoreboardPosition {
-    List,
-    Sidebar,
-    BelowName,
-    BlackTeam,
-    DarkBlueTeam,
-    DarkGreenTeam,
-    DarkCyanTeam,
-    DarkRedTeam,
-    PurpleTeam,
-    GoldTeam,
-    GrayTeam,
-    DarkGrayTeam,
-    BlueTeam,
-    GreenTeam,
-    CyanTeam,
-    RedTeam,
-    PinkTeam,
-    YellowTeam,
-    WhiteTeam,
-}

@@ -74,29 +74,3 @@ pub struct FaceTarget {
     pub target_aim: FaceAim,
 }
 
-#[minecraft_enum(VarInt)]
-#[derive(Debug)]
-pub enum TeamColor {
-    Black,
-    DarkBlue,
-    DarkGreen,
-    DarkCyan,
-    DarkRed,
-    Purple,
-    Gold,
-    Gray,
-    DarkGray,
-    Blue,
-    Green,
-    Cyan,
-    Red,
-    Pink,
-    Yellow,
-    White,
-    Obfuscated,
-    Bold,
-    Strikethrough,
-    Underlined,
-    Italic,
-    Reset,
-}
