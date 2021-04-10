@@ -7,10 +7,10 @@ pub enum PlayerInfoAction<'a> {
         modifications: Array<'a, PlayerAdditionInfo<'a>, VarInt>,
     },
     UpdateGamemodes {
-        modifications: Array<'a, PlayerGamemodeChangeInfo<'a>, VarInt>,
+        modifications: Array<'a, PlayerGamemodeChangeInfo, VarInt>,
     },
     UpdateLatencies {
-        modifications: Array<'a, PlayerLatencyUpdateInfo<'a>, VarInt>,
+        modifications: Array<'a, PlayerLatencyUpdateInfo, VarInt>,
     },
     UpdateDisplayNames {
         modifications: Array<'a, PlayerDisplayNameChangeInfo<'a>, VarInt>,
@@ -45,23 +45,20 @@ pub struct PlayerAdditionInfo<'a> {
 }
 
 #[derive(Debug, MinecraftPacketPart)]
-pub struct PlayerGamemodeChangeInfo<'a> {
+pub struct PlayerGamemodeChangeInfo {
     pub uuid: UUID,
-    pub name: &'a str,
     pub gamemode: crate::gamemode::Gamemode,
 }
 
 #[derive(Debug, MinecraftPacketPart)]
-pub struct PlayerLatencyUpdateInfo<'a> {
+pub struct PlayerLatencyUpdateInfo {
     pub uuid: UUID,
-    pub name: &'a str,
     /// Measured in milliseconds
     pub ping: VarInt,
 }
 #[derive(Debug, MinecraftPacketPart)]
 pub struct PlayerDisplayNameChangeInfo<'a> {
     pub uuid: UUID,
-    pub name: &'a str,
     pub display_name: Option<Chat<'a>>,
 }
 
