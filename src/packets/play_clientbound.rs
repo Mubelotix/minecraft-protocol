@@ -804,7 +804,6 @@ pub enum ClientBoundPacket<'a> {
     },
 
     EntityEquipment {
-        /// Entity's EID.
         entity_id: VarInt,
         equipment: crate::slots::EquipmentSlotArray<'a>,
     },

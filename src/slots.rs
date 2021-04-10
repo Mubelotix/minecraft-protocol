@@ -3,8 +3,13 @@ use crate::{nbt::NbtTag, *};
 /// The [Slot] data structure is how Minecraft represents an item and its associated data in the [Minecraft Protocol](https://wiki.vg/Protocol).
 #[derive(Debug, MinecraftPacketPart)]
 pub struct Slot<'a> {
+    /// `Some(item)` if there is an item in this slot; `None` if it is empty.
+    pub item: Option<Item<'a>>,
+}
+
+#[derive(Debug, MinecraftPacketPart)]
+pub struct Item<'a> {
     /// The [item ID](http://minecraft.gamepedia.com/Java_Edition_data_values%23Blocks).
-    /// Omitted if present is false.
     /// Item IDs are distinct from block IDs; see [Data Generators](https://wiki.vg/Data_Generators) for more information
     pub item_id: VarInt,
     pub item_count: VarInt,
@@ -74,6 +79,7 @@ impl<'a> MinecraftPacketPart<'a> for EquipmentSlotArray<'a> {
         loop {
             let (number, new_input) = u8::deserialize_minecraft_packet_part(input)?;
             let (slot, new_input) = Slot::deserialize_minecraft_packet_part(new_input)?;
+            input = new_input;
 
             let slot_index = 0b0111_1111 & number;
             let slot_index_variant: EquipmentSlot = if slot_index <= 5 {
@@ -81,10 +87,9 @@ impl<'a> MinecraftPacketPart<'a> for EquipmentSlotArray<'a> {
             } else {
                 return Err("The slot index cannot be higher than 5.");
             };
-            input = new_input;
             slots.insert(slot_index_variant, slot);
 
-            if slot_index >= 0b1000_0000 {
+            if slot_index < 0b1000_0000 {
                 break;
             }
         }
@@ -97,10 +102,19 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_equipment_slot_array() {
+        let mut data = [0, 1, 190, 4, 1, 10, 0, 0, 3, 0, 6, 68, 97, 109, 97, 103, 101, 0, 0, 0, 0, 0];
+        let slot_array = EquipmentSlotArray::deserialize_uncompressed_minecraft_packet(&mut data).unwrap();
+        assert_eq!(slot_array.slots.len(), 1);
+        assert_eq!(slot_array.slots.get(&EquipmentSlot::MainHand).unwrap().item.as_ref().unwrap().item_count.0, 1)
+    }
+
+    #[test]
     fn test_slot() {
         let serialized = &mut [0x01, 0x01, 0x01, 0x00];
-        let deserialized = <Option<Slot>>::deserialize_uncompressed_minecraft_packet(serialized)
+        let deserialized = Slot::deserialize_uncompressed_minecraft_packet(serialized)
             .unwrap()
+            .item
             .unwrap();
         assert_eq!(deserialized.item_id.0, 1);
         assert_eq!(deserialized.item_count.0, 1);
