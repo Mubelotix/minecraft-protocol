@@ -819,8 +819,8 @@ pub enum ClientBoundPacket<'a> {
 
     /// Sent by the server to update/set the health of the player it is sent to
     UpdateHealth {
-        /// 0 or less = dead, 20 = full HP
-        health: VarInt,
+        /// 0.0 or less = dead, 20.0 = full HP
+        health: f32,
         /// 0–20
         food: VarInt,
         /// Seems to vary from 0.0 to 5.0 in integer increments.
