@@ -8,10 +8,14 @@ pub trait MinecraftPacketPart<'a>: Sized {
         input: &'a mut [u8],
     ) -> Result<(Self, &'a mut [u8]), &'static str>;
 
-    fn serialize_minecraft_packet(self) -> Result<Vec<u8>, &'static str> {
+    fn serialize_uncompressed_minecraft_packet(self) -> Result<Vec<u8>, &'static str> {
+        // TODO optimize this method
         let mut buffer = Vec::new();
         self.serialize_minecraft_packet_part(&mut buffer)?;
-        Ok(buffer)
+        let mut len_buffer = Vec::new();
+        VarInt(buffer.len() as i32).serialize_minecraft_packet_part(&mut len_buffer)?;
+        len_buffer.extend(buffer);
+        Ok(len_buffer)
     }
 
     fn deserialize_minecraft_packet(input: &'a mut [u8]) -> Result<Self, &'static str> {
