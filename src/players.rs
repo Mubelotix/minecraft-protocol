@@ -16,7 +16,7 @@ pub enum PlayerInfoAction<'a> {
         modifications: Array<'a, PlayerDisplayNameChangeInfo<'a>, VarInt>,
     },
     RemovePlayers {
-        players_to_remove: Array<'a, &'a str, VarInt>,
+        players_to_remove: Array<'a, UUID, VarInt>,
     },
 }
 
@@ -32,6 +32,7 @@ pub struct Property<'a> {
 
 #[derive(Debug, MinecraftPacketPart)]
 pub struct PlayerAdditionInfo<'a> {
+    pub uuid: UUID,
     pub name: &'a str,
     /// The Property field looks as in the response of M[ojang API#UUID -> Profile + Skin/Cape](https://wiki.vg/Mojang_API#UUID_-.3E_Profile_.2B_Skin.2FCape), except of course using the protocol format instead of JSON.
     /// That is, each player will usually have one property with Name “textures” and Value being a base64-encoded JSON string as documented at [Mojang API#UUID -> Profile + Skin/Cape](https://wiki.vg/Mojang_API#UUID_-.3E_Profile_.2B_Skin.2FCape).
@@ -45,18 +46,21 @@ pub struct PlayerAdditionInfo<'a> {
 
 #[derive(Debug, MinecraftPacketPart)]
 pub struct PlayerGamemodeChangeInfo<'a> {
+    pub uuid: UUID,
     pub name: &'a str,
     pub gamemode: crate::gamemode::Gamemode,
 }
 
 #[derive(Debug, MinecraftPacketPart)]
 pub struct PlayerLatencyUpdateInfo<'a> {
+    pub uuid: UUID,
     pub name: &'a str,
     /// Measured in milliseconds
     pub ping: VarInt,
 }
 #[derive(Debug, MinecraftPacketPart)]
 pub struct PlayerDisplayNameChangeInfo<'a> {
+    pub uuid: UUID,
     pub name: &'a str,
     pub display_name: Option<Chat<'a>>,
 }
