@@ -18,7 +18,7 @@ pub trait MinecraftPacketPart<'a>: Sized {
         Ok(len_buffer)
     }
 
-    fn deserialize_minecraft_packet(input: &'a mut [u8]) -> Result<Self, &'static str> {
+    fn deserialize_uncompressed_minecraft_packet(input: &'a mut [u8]) -> Result<Self, &'static str> {
         let (result, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         if !input.is_empty() {
             return Err("There are still unparsed bytes after parsing.");
