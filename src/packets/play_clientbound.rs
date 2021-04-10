@@ -928,7 +928,7 @@ pub enum ClientBoundPacket<'a> {
     // Todo add doc links
     /// Sent in response to Query Block NBT or Query Entity NBT.
     /// 
-    /// *Response to [ServerboundPacket::QueryBlockNbt]*
+    /// *Response to [ServerboundPacket::QueryBlockNbt] and [ServerboundPacket::QueryEntityNbt]*
     NbtQueryResponse {
         // Todo add doc link
         /// Can be compared to the one sent in the original query packet.

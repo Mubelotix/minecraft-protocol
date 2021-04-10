@@ -19,4 +19,11 @@ pub enum ServerboundPacket {
         /// The location of the block to check
         position: Position,
     },
+
+    /// *Request for [ClientBoundPacket::NbtQueryResponse]*
+    QueryEntityNbt {
+        /// An incremental ID so that the client can verify that the response matches
+        transaction_id: VarInt,
+        entity_id: VarInt,
+    },
 }
