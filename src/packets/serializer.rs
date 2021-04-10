@@ -464,7 +464,7 @@ mod integers {
             let mut num_read: u32 = 0;
 
             loop {
-                let (read, new_input) = input.split_first_mut().unwrap();
+                let (read, new_input) = input.split_first_mut().ok_or("Not enough bytes for varint!")?;
                 let read = *read;
                 input = new_input;
                 let value: u32 = (read & 0b01111111) as u32;
