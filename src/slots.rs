@@ -99,7 +99,7 @@ mod tests {
     #[test]
     fn test_slot() {
         let serialized = &mut [0x01, 0x01, 0x01, 0x00];
-        let deserialized = <Option<Slot>>::deserialize_minecraft_packet(serialized)
+        let deserialized = <Option<Slot>>::deserialize_uncompressed_minecraft_packet(serialized)
             .unwrap()
             .unwrap();
         assert_eq!(deserialized.item_id.0, 1);
