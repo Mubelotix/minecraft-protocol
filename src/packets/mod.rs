@@ -3,6 +3,7 @@ pub mod serializer;
 pub use minecraft_packet_derive::*;
 use serializer::*;
 use std::convert::TryFrom;
+pub mod handshake;
 
 #[derive(Debug)]
 pub struct VarInt(pub i32);
@@ -81,7 +82,12 @@ pub struct Array<'a, T: MinecraftPacketPart<'a> + std::fmt::Debug, U: MinecraftP
 }
 
 #[derive(Debug)]
-pub struct Map<'a, K: MinecraftPacketPart<'a> + std::fmt::Debug, V: MinecraftPacketPart<'a> + std::fmt::Debug, U: MinecraftPacketPart<'a>> {
+pub struct Map<
+    'a,
+    K: MinecraftPacketPart<'a> + std::fmt::Debug,
+    V: MinecraftPacketPart<'a> + std::fmt::Debug,
+    U: MinecraftPacketPart<'a>,
+> {
     _len_prefix: std::marker::PhantomData<&'a U>,
     pub items: std::collections::BTreeMap<K, V>,
 }
