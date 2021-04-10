@@ -1,3 +1,5 @@
+#[allow(unused_imports)]
+use super::play_serverbound::ServerboundPacket;
 use crate::nbt::NbtTag;
 
 use super::*;
@@ -621,6 +623,8 @@ pub enum ClientBoundPacket<'a> {
     /// This packet will also close the “Downloading Terrain” screen when joining/respawning.
     ///
     /// If the distance between the last known position of the player on the server and the new position set by this packet is greater than 100 meters, the client will be kicked for `You moved too quickly`.
+    /// 
+    /// *Request for [ServerboundPacket::TeleportConfirm]*
     PlayerPositionAndLook {
         /// Absolute or relative position, depending on the `flags` field. If the last bit (`0b00000001`) is set, this value is relative.
         x: f64,
@@ -923,6 +927,8 @@ pub enum ClientBoundPacket<'a> {
 
     // Todo add doc links
     /// Sent in response to Query Block NBT or Query Entity NBT.
+    /// 
+    /// *Response to [ServerboundPacket::QueryBlockNbt]*
     NbtQueryResponse {
         // Todo add doc link
         /// Can be compared to the one sent in the original query packet.
