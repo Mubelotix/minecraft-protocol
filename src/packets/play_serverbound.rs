@@ -26,4 +26,9 @@ pub enum ServerboundPacket {
         transaction_id: VarInt,
         entity_id: VarInt,
     },
+
+    /// Appears to only be used on singleplayer; the difficulty buttons are still disabled in multiplayer.
+    SetDifficulty {
+        new_difficulty: crate::difficulty::Difficulty,
+    },
 }
