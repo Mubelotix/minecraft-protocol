@@ -830,14 +830,10 @@ impl<
         input: &'a mut [u8],
     ) -> Result<(Self, &'a mut [u8]), &'static str> {
         let mut items = std::collections::BTreeMap::new();
-        let (len, mut input) = VarInt::deserialize_minecraft_packet_part(input)?;
-        if len.0 <= 0 {
-            return Ok((Map {
-                items,
-                _len_prefix: std::marker::PhantomData,
-            }, input));
-        }
-        let len = len.0 as usize;
+        let (len, mut input) = U::deserialize_minecraft_packet_part(input)?;
+        let len: usize = len
+            .try_into()
+            .map_err(|_| "The map lenght cannot be deserialized due to its type.")?;
 
         for _ in 0..len {
             let (key, new_input) = K::deserialize_minecraft_packet_part(input)?;
