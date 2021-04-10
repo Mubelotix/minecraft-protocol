@@ -98,6 +98,8 @@ pub struct Map<
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum ConnectionState {
+    /// The possible packets are listed in [handshake].
+    HandShake,
     /// The possible packets are listed in [status].
     Status,
     /// The possible packets are listed in [login].
