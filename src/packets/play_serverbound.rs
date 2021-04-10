@@ -42,4 +42,9 @@ pub enum ServerboundPacket<'a> {
         /// The message may not be longer than 256 characters or else the server will kick the client.
         message: Chat<'a>,
     },
+
+    /// *Request for [ClientBoundPacket::Statistics]*
+    ClientStatus {
+        action: crate::game_state::ClientStatus,
+    },
 }
