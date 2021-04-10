@@ -93,3 +93,15 @@ pub struct Map<
     _len_prefix: std::marker::PhantomData<&'a U>,
     pub items: std::collections::BTreeMap<K, V>,
 }
+
+/// The possible packets are different for each state.
+#[minecraft_enum(VarInt)]
+#[derive(Debug)]
+pub enum ConnectionState {
+    /// The possible packets are listed in [status].
+    Status,
+    /// The possible packets are listed in [login].
+    Login,
+    /// The possible packets are listed in [play_clientbound] and [play_serverbound].
+    Play,
+}

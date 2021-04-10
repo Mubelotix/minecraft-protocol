@@ -14,13 +14,6 @@ pub enum ServerboundPacket<'a> {
         /// Default is 25565.
         /// The Notchian server does not use this information.
         server_port: u16,
-        next_state: NextState,
+        next_state: ConnectionState,
     },
-}
-
-#[minecraft_enum(VarInt)]
-#[derive(Debug)]
-pub enum NextState {
-    Status = 1,
-    Login,
 }

@@ -21,7 +21,7 @@ pub enum ClientboundPacket<'a> {
         verify_token: Array<'a, u8, VarInt>,
     },
 
-    /// This packet switches the connection state to [play](https://wiki.vg/Protocol#Play).
+    /// This packet switches the connection state to [ConnectionState::Play].
     ///
     /// **Warning**: The (notchian) server might take a bit to fully transition to the `Play` state, so it's recommended to wait before sending `Play` packets, either by setting a timeout, or waiting for Play packets from the server (usually [PlayerInfo](super::play_clientbound::ClientBoundPacket::PlayerInfo)).
     /// The notchian client doesn't send any (non-keep alive) packets until the next tick/time update packet.
