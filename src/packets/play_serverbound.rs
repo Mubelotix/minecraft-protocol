@@ -296,4 +296,7 @@ pub enum ServerboundPacket<'a> {
         is_open: bool,
         is_filter_active: bool,
     },
+
+    /// Replaces Recipe Book Data, type 0.
+    SetDisplayedRecipe { recipe_id: Identifier<'a> },
 }
