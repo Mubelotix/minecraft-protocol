@@ -90,4 +90,22 @@ pub enum ServerboundPacket<'a> {
         /// Meaning depends on window type; see [the wiki](https://wiki.vg/Protocol#Click_Window_Button)
         button_id: u8,
     },
+
+    /// This packet is sent by the player when it clicks on a slot in a window.
+    ///
+    /// *Request for [ClientBoundPacket::WindowConfirmation]*
+    ClickWindowSlot {
+        /// The ID of the window which was clicked. 0 for player inventory.
+        window_id: u8,
+        /// The clicked slot number, see [the wiki](https://wiki.vg/Protocol#Click_Window)
+        slot: i16,
+        /// The button used in the click, see [the wiki](https://wiki.vg/Protocol#Click_Window)
+        button: u8,
+        /// A unique number for the action, implemented by Notchian as a counter, starting at 1 (different counter for every window ID). Used by the server to send back a [ClientBoundPacket::WindowConfirmation].
+        action_id: i16,
+        /// Inventory operation mode, see [the wiki](https://wiki.vg/Protocol#Click_Window)
+        mode: VarInt,
+        /// The clicked slot. Has to be empty (item ID = -1) for drop mode. (TODO: check this)
+        clicked_item: crate::slots::Slot<'a>,
+    },
 }
