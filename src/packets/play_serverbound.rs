@@ -115,4 +115,19 @@ pub enum ServerboundPacket<'a> {
         /// The ID of the window that was closed. 0 for player inventory.
         window_id: u8,
     },
+
+    /// Mods and plugins can use this to send their data.
+    /// Minecraft itself uses some [plugin channels](https://wiki.vg/Plugin_channel).
+    /// These internal channels are in the `minecraft` namespace.
+    ///
+    /// [More documentation](http://dinnerbone.com/blog/2012/01/13/minecraft-plugin-channels-messaging/)
+    ///
+    /// *See also [ClientBoundPacket::PluginMessage]*
+    PluginMessage {
+        /// Name of the [plugin channel](https://wiki.vg/Plugin_channel) used to send the data.
+        identifier: Identifier<'a>,
+        /// Any data, depending on the channel.
+        /// `minecraft:` channels are documented [here](https://wiki.vg/Plugin_channel).
+        data: RawBytes<'a>,
+    },
 }

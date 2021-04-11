@@ -285,12 +285,13 @@ pub enum ClientBoundPacket<'a> {
     /// These internal channels are in the `minecraft` namespace.
     ///
     /// [More documentation](http://dinnerbone.com/blog/2012/01/13/minecraft-plugin-channels-messaging/)
+    /// 
+    /// *See also [ServerboundPacket::PluginMessage]*
     PluginMessage {
         /// Name of the [plugin channel](https://wiki.vg/Plugin_channel) used to send the data.
         identifier: Identifier<'a>,
         /// Any data, depending on the channel.
         /// `minecraft:` channels are documented [here](https://wiki.vg/Plugin_channel).
-        /// The length of this array must be inferred from the packet length.
         data: RawBytes<'a>,
     },
 
