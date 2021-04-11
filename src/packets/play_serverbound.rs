@@ -321,4 +321,14 @@ pub enum ServerboundPacket<'a> {
         /// The selected slot in the players current (trading) inventory
         selected_slot: VarInt,
     },
+
+    /// Changes the effect of the current beacon.
+    SetBeaconEffect {
+        // todo, make this be a Potion
+        /// A [potion ID](http://minecraft.gamepedia.com/Data_values#Potions)
+        primary_effect: VarInt,
+        // todo, make this be a Potion
+        /// A [potion ID](http://minecraft.gamepedia.com/Data_values#Potions)
+        secondary_effect: VarInt,
+    },
 }
