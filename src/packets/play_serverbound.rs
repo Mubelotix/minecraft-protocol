@@ -165,4 +165,22 @@ pub enum ServerboundPacket<'a> {
 
     /// Appears to only be used on singleplayer; the difficulty buttons are still disabled in multiplayer.
     LockDifficulty { locked: bool },
+
+    /// Updates the player's position on the server.
+    ///
+    /// Checking for moving too fast is achieved like this:
+    /// - Each server tick, the player's current position is stored
+    /// - When a player moves, the changes in `x`, `y`, and `z` coordinates are compared with the positions from the previous tick (`Δx`, `Δy`, `Δz`)
+    /// - *Total movement distance* squared is computed as `Δx² + Δy² + Δz²`
+    /// - The *expected movement distance* squared is computed as `velocityX² + veloctyY² + velocityZ²`
+    /// - If the *total movement distance* squared value minus the *expected movement distance* squared value is more than 100 (300 if the player is using an elytra), they are moving too fast.
+    /// If the player is moving too fast, it will be logged that "<player> moved too quickly! " followed by the change in x, y, and z, and the player will be [teleported](ClientBoundPacket::TeleportEntity) back to their current (before this packet) serverside position.
+    PlayerPosition {
+        x: f64,
+        /// The feet position (`feet_y = head_y - 1.62`)
+        y: f64,
+        z: f64,
+        /// `true` if the client is on the ground, `false` otherwise
+        on_ground: bool,
+    },
 }
