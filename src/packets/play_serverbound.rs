@@ -354,4 +354,9 @@ pub enum ServerboundPacket<'a> {
         /// If `false`, the output of the previous command will not be stored within the command block.
         track_output: bool,
     },
+
+    /// While the user is in the standard inventory (i.e., not a crafting bench) in Creative mode, the player will send this packet.
+    ///
+    /// Unsupported yet (todo)
+    CreativeInventoryAction { data: RawBytes<'a> },
 }
