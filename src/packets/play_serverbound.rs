@@ -299,4 +299,11 @@ pub enum ServerboundPacket<'a> {
 
     /// Replaces Recipe Book Data, type 0.
     SetDisplayedRecipe { recipe_id: Identifier<'a> },
+
+    /// Sent as a player is renaming an item in an anvil (each keypress in the anvil UI sends a new Name Item packet).
+    /// If the new name is empty, then the item loses its custom name (this is different from setting the custom name to the normal name of the item).
+    NameItem {
+        /// The item name may be no longer than 35 characters long, and if it is longer than that, then the rename is silently ignored.
+        new_name: &'a str,
+    },
 }
