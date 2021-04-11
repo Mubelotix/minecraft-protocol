@@ -108,4 +108,11 @@ pub enum ServerboundPacket<'a> {
         /// The clicked slot. Has to be empty (item ID = -1) for drop mode. (TODO: check this)
         clicked_item: crate::slots::Slot<'a>,
     },
+
+    /// This packet is sent by the client when closing a window.
+    /// Notchian clients send a Close Window packet with `window_id` = 0 to close their inventory even though there is never an [ClientBoundPacket::OpenWindow] packet for the inventory.
+    CloseWindow {
+        /// The ID of the window that was closed. 0 for player inventory.
+        window_id: u8,
+    },
 }
