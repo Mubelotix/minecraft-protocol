@@ -456,7 +456,7 @@ pub enum ClientboundPacket<'a> {
         hashed_seed: u64,
         /// Was once used by the client to draw the player list, but now is ignored.
         max_players: VarInt,
-        /// Render distance (2..32).
+        /// Render distance (2..=32).
         render_distance: VarInt,
         /// If `true`, a Notchian client shows reduced information on the debug screen.
         /// For servers in development, this should almost always be `false`.
@@ -753,6 +753,8 @@ pub enum ClientboundPacket<'a> {
     },
 
     /// Sent to change the player's slot selection
+    /// 
+    /// *See also [ServerboundPacket::HeldItemChange]*
     HeldItemChange {
         /// The slot which the player has selected (0–8)
         slot: u8,
@@ -769,7 +771,7 @@ pub enum ClientboundPacket<'a> {
     /// Sent by the integrated singleplayer server when changing render distance.
     /// Does not appear to be used by the dedicated server, as view-distance in server.properties cannot be changed at runtime.
     UpdateViewDistance {
-        /// Render distance (2..32)
+        /// Render distance (2..=32)
         view_distance: VarInt,
     },
 

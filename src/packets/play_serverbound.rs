@@ -331,4 +331,12 @@ pub enum ServerboundPacket<'a> {
         /// A [potion ID](http://minecraft.gamepedia.com/Data_values#Potions)
         secondary_effect: VarInt,
     },
+
+    /// Sent when the player changes the slot selection
+    ///
+    /// *See also [ClientboundPacket::HeldItemChange]*
+    HeldItemChange {
+        /// The slot which the player has selected (0..=8)
+        slot: i16,
+    },
 }
