@@ -75,11 +75,19 @@ pub enum ServerboundPacket<'a> {
     /// *Response to [ClientBoundPacket::WindowConfirmation]*
     WindowConfirmation {
         /// The ID of the window that the action occurred in
-        window_id: i8,
+        window_id: u8,
         /// Every action that is to be accepted has a unique number.
         /// This number is an incrementing integer (starting at 1) with separate counts for each window ID.
         action_number: i16,
         /// Whether the action was accepted
         accepted: bool,
+    },
+
+    /// Used when clicking on window buttons
+    ClickWindowButton {
+        /// The ID of the window sent by [ClientBoundPacket::OpenWindow].
+        window_id: u8,
+        /// Meaning depends on window type; see [the wiki](https://wiki.vg/Protocol#Click_Window_Button)
+        button_id: u8,
     },
 }

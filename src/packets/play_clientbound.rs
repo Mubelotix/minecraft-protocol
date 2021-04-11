@@ -217,7 +217,7 @@ pub enum ClientBoundPacket<'a> {
     /// *Request for [ServerboundPacket::WindowConfirmation]*
     WindowConfirmation {
         /// The ID of the window that the action occurred in.
-        window_id: i8,
+        window_id: u8,
         /// Every action that is to be accepted has a unique ID. This number is an incrementing integer (starting at 0) with separate counts for each window ID.
         action_id: i16,
         /// Whether the action was accepted.
@@ -263,7 +263,7 @@ pub enum ClientBoundPacket<'a> {
         /// Note that all known window types include the player inventory.
         /// This packet will only be sent for the currently opened window while the player is performing actions, even if it affects the player inventory.
         /// After the window is closed, a number of these packets are sent to update the player's inventory window (0).
-        window_id: i8,
+        window_id: u8,
         /// The slot that should be updated.
         slot_index: i16,
         slot_value: crate::slots::Slot<'a>,
@@ -583,7 +583,7 @@ pub enum ClientBoundPacket<'a> {
     /// Response to the serverbound packet (Craft Recipe Request), with the same recipe ID.
     /// Appears to be used to notify the UI.
     CraftRecipeResponse {
-        window_id: i8,
+        window_id: u8,
         /// A recipe ID
         recipe: Identifier<'a>,
     },
