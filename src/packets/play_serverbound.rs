@@ -223,4 +223,11 @@ pub enum ServerboundPacket<'a> {
         /// `true` if the client is on the ground, `false` otherwise
         on_ground: bool,
     },
+
+    /// Used to visually update whether boat paddles are turning.
+    /// The server will update the [Boat entity metadata](https://wiki.vg/Entities#Boat) to match the values here.
+    SteerBoat {
+        left_paddle_turnin: bool,
+        right_paddle_turnin: bool,
+    },
 }
