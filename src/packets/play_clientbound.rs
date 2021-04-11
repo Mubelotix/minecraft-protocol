@@ -213,9 +213,11 @@ pub enum ClientBoundPacket<'a> {
 
     /// A packet from the server indicating whether a request from the client was accepted, or whether there was a conflict (due to lag).
     /// If the packet was not accepted, the client must respond with a serverbound window confirmation packet.
+    /// 
+    /// *Request for [ServerboundPacket::WindowConfirmation]*
     WindowConfirmation {
         /// The ID of the window that the action occurred in.
-        window_id: u8,
+        window_id: i8,
         /// Every action that is to be accepted has a unique ID. This number is an incrementing integer (starting at 0) with separate counts for each window ID.
         action_id: i16,
         /// Whether the action was accepted.
