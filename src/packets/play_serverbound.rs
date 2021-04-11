@@ -289,4 +289,11 @@ pub enum ServerboundPacket<'a> {
         /// Bit mask. 0x1: jump, 0x2: unmount.
         flags: u8,
     },
+
+    /// Replaces Recipe Book Data, type 1.
+    SetRecipeBookState {
+        book: crate::recipes::RecipeBook,
+        is_open: bool,
+        is_filter_active: bool,
+    },
 }

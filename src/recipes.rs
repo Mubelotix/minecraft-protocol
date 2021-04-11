@@ -43,3 +43,12 @@ pub enum UnlockRecipesAction<'a> {
         recipes: Array<'a, Identifier<'a>, VarInt>,
     },
 }
+
+#[derive(Debug, MinecraftPacketPart)]
+#[discriminant(VarInt)]
+pub enum RecipeBook {
+    Crafting,
+    Furnance,
+    BlastFurnace,
+    Smoker,
+}
