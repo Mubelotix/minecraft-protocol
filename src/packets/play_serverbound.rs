@@ -75,7 +75,7 @@ pub enum ServerboundPacket<'a> {
     /// *Response to [ClientboundPacket::WindowConfirmation]*
     WindowConfirmation {
         /// The ID of the window that the action occurred in
-        window_id: u8,
+        window_id: i8,
         /// Every action that is to be accepted has a unique number.
         /// This number is an incrementing integer (starting at 1) with separate counts for each window ID.
         action_number: i16,
@@ -86,7 +86,7 @@ pub enum ServerboundPacket<'a> {
     /// Used when clicking on window buttons
     ClickWindowButton {
         /// The ID of the window sent by [ClientboundPacket::OpenWindow].
-        window_id: u8,
+        window_id: i8,
         /// Meaning depends on window type; see [the wiki](https://wiki.vg/Protocol#Click_Window_Button)
         button_id: u8,
     },
@@ -96,7 +96,7 @@ pub enum ServerboundPacket<'a> {
     /// *Request for [ClientboundPacket::WindowConfirmation]*
     ClickWindowSlot {
         /// The ID of the window which was clicked. 0 for player inventory.
-        window_id: u8,
+        window_id: i8,
         /// The clicked slot number, see [the wiki](https://wiki.vg/Protocol#Click_Window)
         slot: i16,
         /// The button used in the click, see [the wiki](https://wiki.vg/Protocol#Click_Window)
@@ -113,7 +113,7 @@ pub enum ServerboundPacket<'a> {
     /// Notchian clients send a Close Window packet with `window_id` = 0 to close their inventory even though there is never an [ClientboundPacket::OpenWindow] packet for the inventory.
     CloseWindow {
         /// The ID of the window that was closed. 0 for player inventory.
-        window_id: u8,
+        window_id: i8,
     },
 
     /// Mods and plugins can use this to send their data.
@@ -251,7 +251,7 @@ pub enum ServerboundPacket<'a> {
 
     /// This packet is sent when a player clicks a recipe in the crafting book that is craftable (white border).
     CraftRecipeRequest {
-        window_id: u8,
+        window_id: i8,
         recipe_id: Identifier<'a>,
         make_all: bool,
     },
