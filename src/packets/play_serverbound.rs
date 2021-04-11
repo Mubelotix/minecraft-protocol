@@ -359,4 +359,17 @@ pub enum ServerboundPacket<'a> {
     ///
     /// Unsupported yet (todo)
     CreativeInventoryAction { data: RawBytes<'a> },
+
+    /// Sent when Done is pressed on the [Jigsaw Block](http://minecraft.gamepedia.com/Jigsaw_Block) interface.
+    UpdateJigsawBlock {
+        /// Block entity location
+        location: Position,
+        name: Identifier<'a>,
+        target: Identifier<'a>,
+        pool: Identifier<'a>,
+        /// "Turns into" on the GUI, `final_state` in NBT
+        final_state: &'a str,
+        /// `rollable` if the attached piece can be rotated, else `aligned`
+        joint_type: &'a str,
+    },
 }
