@@ -575,9 +575,10 @@ pub enum ClientboundPacket<'a> {
         window_title: Chat<'a>,
     },
 
-    // Todo make add doc links
-    /// Sent when the client has placed a sign and is allowed to send Update Sign.
-    /// There must already be a sign at the given location (which the client does not do automatically) - send a Block Change first.
+    /// Sent when the client has placed a sign and is allowed to send [ServerboundPacket::UpdateSign].
+    /// There must already be a sign at the given location (which the client does not do automatically) - send a [ClientboundPacket::BlockChange] first.
+    /// 
+    /// *Request for [ServerboundPacket::UpdateSign]*
     OpenSignEditor {
         location: Position,
     },

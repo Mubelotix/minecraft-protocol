@@ -375,4 +375,17 @@ pub enum ServerboundPacket<'a> {
 
     /// Unsupported yet (todo)
     UpdateStrutureBlock { data: RawBytes<'a> },
+
+    /// This message is sent from the client to the server when the “Done” button is pushed after placing a sign.
+    /// The server only accepts this packet after [ClientboundPacket::OpenSignEditor], otherwise this packet is silently ignored.
+    ///
+    /// *Response to [ClientboundPacket::OpenSignEditor]*
+    UpdateSign {
+        /// Sign block Coordinates
+        location: Position,
+        line1: &'a str,
+        line2: &'a str,
+        line3: &'a str,
+        line4: &'a str,
+    },
 }
