@@ -147,4 +147,13 @@ pub enum ServerboundPacket<'a> {
         interaction_type: crate::entity::EntityInteraction,
         sneaking: bool,
     },
+
+    /// Sent when Generate is pressed on the [Jigsaw Block](http://minecraft.gamepedia.com/Jigsaw_Block) interface.
+    GenerateStructure {
+        /// Block entity location
+        location: Position,
+        /// Value of the levels slider/max depth to generate
+        levels: VarInt,
+        keep_jigsaws: bool,
+    },
 }
