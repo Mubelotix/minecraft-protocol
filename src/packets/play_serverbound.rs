@@ -183,4 +183,32 @@ pub enum ServerboundPacket<'a> {
         /// `true` if the client is on the ground, `false` otherwise
         on_ground: bool,
     },
+
+    /// A combination of [ServerboundPacket::PlayerRotation] and [ServerboundPacket::PlayerPosition]
+    PlayerPositionAndRotation {
+        x: f64,
+        /// The feet position (`feet_y = head_y - 1.62`)
+        y: f64,
+        z: f64,
+        /// Absolute rotation on the X Axis, in degrees.
+        /// [Learn more about yaw and pitch](https://wiki.vg/Protocol#Player_Rotation)
+        yaw: f32,
+        /// Absolute rotation on the Y Axis, in degrees
+        /// [Learn more about yaw and pitch](https://wiki.vg/Protocol#Player_Rotation)
+        pitch: f32,
+        /// `true` if the client is on the ground, `false` otherwise
+        on_ground: bool,
+    },
+
+    /// Updates the direction the player is looking in
+    PlayerRotation {
+        /// Absolute rotation on the X Axis, in degrees.
+        /// [Learn more about yaw and pitch](https://wiki.vg/Protocol#Player_Rotation)
+        yaw: f32,
+        /// Absolute rotation on the Y Axis, in degrees, where 0 is looking straight ahead, -90 is looking straight up, and 90 is looking straight down.
+        /// [Learn more about yaw and pitch](https://wiki.vg/Protocol#Player_Rotation)
+        pitch: f32,
+        /// `true` if the client is on the ground, `false` otherwise
+        on_ground: bool,
+    },
 }
