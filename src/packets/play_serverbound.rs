@@ -347,4 +347,11 @@ pub enum ServerboundPacket<'a> {
         /// Bit mask: 0x01: Track Output (if false, the output of the previous command will not be stored within the command block); 0x02: Is conditional; 0x04: Automatic.
         flags: u8,
     },
+
+    UpdateCommandBlockMinecart {
+        entity_id: VarInt,
+        command: &'a str,
+        /// If `false`, the output of the previous command will not be stored within the command block.
+        track_output: bool,
+    },
 }
