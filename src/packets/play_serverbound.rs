@@ -162,4 +162,7 @@ pub enum ServerboundPacket<'a> {
         /// The id sent in the [ClientBoundPacket::KeepAlive] packet
         keep_alive_id: u64,
     },
+
+    /// Appears to only be used on singleplayer; the difficulty buttons are still disabled in multiplayer.
+    LockDifficulty { locked: bool },
 }
