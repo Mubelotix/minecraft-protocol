@@ -388,4 +388,7 @@ pub enum ServerboundPacket<'a> {
         line3: &'a str,
         line4: &'a str,
     },
+
+    /// Sent when the player's arm swings
+    Animation { hand: crate::slots::Hand },
 }
