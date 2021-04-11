@@ -339,4 +339,12 @@ pub enum ServerboundPacket<'a> {
         /// The slot which the player has selected (0..=8)
         slot: i16,
     },
+
+    UpdateCommandBlock {
+        location: Position,
+        command: &'a str,
+        mode: crate::command_block::CommandBlockMode,
+        /// Bit mask: 0x01: Track Output (if false, the output of the previous command will not be stored within the command block); 0x02: Is conditional; 0x04: Automatic.
+        flags: u8,
+    },
 }
