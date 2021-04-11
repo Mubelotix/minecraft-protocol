@@ -30,7 +30,7 @@ pub enum TitleAction<'a> {
         subtitle: Chat<'a>,
     },
     SetActionBar {
-        /// Displays a message above the hotbar (the same as [Position::GameInfo] in [ClientBoundPacket::ChatMessage], except that it correctly renders formatted chat; see MC-119145 for more information).
+        /// Displays a message above the hotbar (the same as [Position::GameInfo] in [ClientboundPacket::ChatMessage], except that it correctly renders formatted chat; see MC-119145 for more information).
         action_bar_text: Chat<'a>,
     },
     SetTimes {

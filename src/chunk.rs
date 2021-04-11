@@ -24,7 +24,7 @@ pub struct ChunkData<'a> {
     pub data: Array<'a, i8, VarInt>,
     /// All block entities in the chunk.
     /// Use the x, y, and z tags in the NBT to determine their positions.
-    /// Sending entities is not required; it is still legal to send them with [ClientBoundPacket::UpdateBlockEntity] later.
+    /// Sending entities is not required; it is still legal to send them with [ClientboundPacket::UpdateBlockEntity] later.
     pub entities: Array<'a, NbtTag<'a>, VarInt>,
 }
 

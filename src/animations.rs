@@ -24,7 +24,7 @@ pub enum Effect {
     WoodenTrapdoorOpened,
     FenceGateOpened,
     FireExtinguished,
-    /// Play record: This is actually a special case within the packet [packets::play_clientbound::ClientBoundPacket::Effect].
+    /// Play record: This is actually a special case within the packet [packets::play_clientbound::ClientboundPacket::Effect].
     /// You can start/stop a record at a specific location.
     /// Use a valid Record ID to start a record (or overwrite a currently playing one), any other value will stop the record.
     /// See [Data Generators](https://wiki.vg/Data_Generators) for information on item IDs.

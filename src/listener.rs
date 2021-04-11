@@ -73,11 +73,11 @@ fn test() {
     let response_packet = crate::packets::login::ClientboundPacket::deserialize_uncompressed_minecraft_packet(&mut response).unwrap();
     println!("{:?}", response_packet);
 
-    use crate::packets::play_clientbound::ClientBoundPacket;
+    use crate::packets::play_clientbound::ClientboundPacket;
 
     loop {
         let mut packet_bytes = read_packet(&stream, None, None).unwrap();
-        let packet = ClientBoundPacket::deserialize_uncompressed_minecraft_packet(&mut packet_bytes);
+        let packet = ClientboundPacket::deserialize_uncompressed_minecraft_packet(&mut packet_bytes);
         if let Err(e) = packet {
             panic!("{} for {:?}", e, packet_bytes);
         }

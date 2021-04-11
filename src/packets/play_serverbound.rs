@@ -1,18 +1,18 @@
 #[allow(unused_imports)]
-use super::play_clientbound::ClientBoundPacket;
+use super::play_clientbound::ClientboundPacket;
 
 use super::*;
 
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum ServerboundPacket<'a> {
-    /// *Response to [ClientBoundPacket::PlayerPositionAndLook]*
+    /// *Response to [ClientboundPacket::PlayerPositionAndLook]*
     TeleportConfirm {
-        /// The ID given in [ClientBoundPacket::PlayerPositionAndLook::teleport_id]
+        /// The ID given in [ClientboundPacket::PlayerPositionAndLook::teleport_id]
         teleport_id: VarInt,
     },
 
-    /// *Request for [ClientBoundPacket::NbtQueryResponse]*
+    /// *Request for [ClientboundPacket::NbtQueryResponse]*
     QueryBlockNbt {
         /// An incremental ID so that the client can verify that the response matches
         transaction_id: VarInt,
@@ -20,7 +20,7 @@ pub enum ServerboundPacket<'a> {
         position: Position,
     },
 
-    /// *Request for [ClientBoundPacket::NbtQueryResponse]*
+    /// *Request for [ClientboundPacket::NbtQueryResponse]*
     QueryEntityNbt {
         /// An incremental ID so that the client can verify that the response matches
         transaction_id: VarInt,
@@ -37,13 +37,13 @@ pub enum ServerboundPacket<'a> {
     /// If the message starts with a /, the server will attempt to interpret it as a command.
     /// Otherwise, the server will broadcast the same chat message to all players on the server (including the player that sent the message), prepended with player's name.
     ///
-    /// *See also [ClientBoundPacket::ChatMessage]*
+    /// *See also [ClientboundPacket::ChatMessage]*
     ChatMessage {
         /// The message may not be longer than 256 characters or else the server will kick the client.
         message: Chat<'a>,
     },
 
-    /// *Request for [ClientBoundPacket::Statistics]*
+    /// *Request for [ClientboundPacket::Statistics]*
     ClientStatus {
         action: crate::game_state::ClientStatus,
     },
@@ -62,17 +62,17 @@ pub enum ServerboundPacket<'a> {
         main_hand: crate::slots::MainHand,
     },
 
-    /// *Request for [ClientBoundPacket::TabComplete]*
+    /// *Request for [ClientboundPacket::TabComplete]*
     TabComplete {
         transaction_id: VarInt,
         /// All text behind the cursor without the `/` (e.g. to the left of the cursor in left-to-right languages like English).
         text: &'a str,
     },
 
-    /// The server may reject client actions by sending [ClientBoundPacket::WindowConfirmation] with the `accepted` field set to `false`.
+    /// The server may reject client actions by sending [ClientboundPacket::WindowConfirmation] with the `accepted` field set to `false`.
     /// When this happens, the client must send this packet to apologize (as with movement), otherwise the server ignores any successive confirmations.
     ///
-    /// *Response to [ClientBoundPacket::WindowConfirmation]*
+    /// *Response to [ClientboundPacket::WindowConfirmation]*
     WindowConfirmation {
         /// The ID of the window that the action occurred in
         window_id: u8,
@@ -85,7 +85,7 @@ pub enum ServerboundPacket<'a> {
 
     /// Used when clicking on window buttons
     ClickWindowButton {
-        /// The ID of the window sent by [ClientBoundPacket::OpenWindow].
+        /// The ID of the window sent by [ClientboundPacket::OpenWindow].
         window_id: u8,
         /// Meaning depends on window type; see [the wiki](https://wiki.vg/Protocol#Click_Window_Button)
         button_id: u8,
@@ -93,7 +93,7 @@ pub enum ServerboundPacket<'a> {
 
     /// This packet is sent by the player when it clicks on a slot in a window.
     ///
-    /// *Request for [ClientBoundPacket::WindowConfirmation]*
+    /// *Request for [ClientboundPacket::WindowConfirmation]*
     ClickWindowSlot {
         /// The ID of the window which was clicked. 0 for player inventory.
         window_id: u8,
@@ -101,7 +101,7 @@ pub enum ServerboundPacket<'a> {
         slot: i16,
         /// The button used in the click, see [the wiki](https://wiki.vg/Protocol#Click_Window)
         button: u8,
-        /// A unique number for the action, implemented by Notchian as a counter, starting at 1 (different counter for every window ID). Used by the server to send back a [ClientBoundPacket::WindowConfirmation].
+        /// A unique number for the action, implemented by Notchian as a counter, starting at 1 (different counter for every window ID). Used by the server to send back a [ClientboundPacket::WindowConfirmation].
         action_id: i16,
         /// Inventory operation mode, see [the wiki](https://wiki.vg/Protocol#Click_Window)
         mode: VarInt,
@@ -110,7 +110,7 @@ pub enum ServerboundPacket<'a> {
     },
 
     /// This packet is sent by the client when closing a window.
-    /// Notchian clients send a Close Window packet with `window_id` = 0 to close their inventory even though there is never an [ClientBoundPacket::OpenWindow] packet for the inventory.
+    /// Notchian clients send a Close Window packet with `window_id` = 0 to close their inventory even though there is never an [ClientboundPacket::OpenWindow] packet for the inventory.
     CloseWindow {
         /// The ID of the window that was closed. 0 for player inventory.
         window_id: u8,
@@ -122,7 +122,7 @@ pub enum ServerboundPacket<'a> {
     ///
     /// [More documentation](http://dinnerbone.com/blog/2012/01/13/minecraft-plugin-channels-messaging/)
     ///
-    /// *See also [ClientBoundPacket::PluginMessage]*
+    /// *See also [ClientboundPacket::PluginMessage]*
     PluginMessage {
         /// Name of the [plugin channel](https://wiki.vg/Plugin_channel) used to send the data.
         identifier: Identifier<'a>,
@@ -157,9 +157,9 @@ pub enum ServerboundPacket<'a> {
         keep_jigsaws: bool,
     },
 
-    /// *Response to [ClientBoundPacket::KeepAlive]*
+    /// *Response to [ClientboundPacket::KeepAlive]*
     KeepAlive {
-        /// The id sent in the [ClientBoundPacket::KeepAlive] packet
+        /// The id sent in the [ClientboundPacket::KeepAlive] packet
         keep_alive_id: u64,
     },
 
@@ -174,7 +174,7 @@ pub enum ServerboundPacket<'a> {
     /// - *Total movement distance* squared is computed as `Δx² + Δy² + Δz²`
     /// - The *expected movement distance* squared is computed as `velocityX² + veloctyY² + velocityZ²`
     /// - If the *total movement distance* squared value minus the *expected movement distance* squared value is more than 100 (300 if the player is using an elytra), they are moving too fast.
-    /// If the player is moving too fast, it will be logged that "<player> moved too quickly! " followed by the change in x, y, and z, and the player will be [teleported](ClientBoundPacket::TeleportEntity) back to their current (before this packet) serverside position.
+    /// If the player is moving too fast, it will be logged that "<player> moved too quickly! " followed by the change in x, y, and z, and the player will be [teleported](ClientboundPacket::TeleportEntity) back to their current (before this packet) serverside position.
     PlayerPosition {
         x: f64,
         /// The feet position (`feet_y = head_y - 1.62`)
@@ -241,9 +241,9 @@ pub enum ServerboundPacket<'a> {
     /// If there still are no slots that meet that criteria, then the server will use the currently selected slot.
     ///
     /// After finding the appropriate slot, the server swaps the items and then send 3 packets:
-    /// - [ClientBoundPacket::SetSlot], with window ID set to -2 and slot set to the newly chosen slot and the item set to the item that is now in that slot (which was previously at the slot the client requested)
-    /// - [ClientBoundPacket::SetSlot], with window ID set to -2 and slot set to the slot the player requested, with the item that is now in that slot and was previously on the hotbar slot
-    /// - [ClientBoundPacket::HeldItemChange], with the slot set to the newly chosen slot.
+    /// - [ClientboundPacket::SetSlot], with window ID set to -2 and slot set to the newly chosen slot and the item set to the item that is now in that slot (which was previously at the slot the client requested)
+    /// - [ClientboundPacket::SetSlot], with window ID set to -2 and slot set to the slot the player requested, with the item that is now in that slot and was previously on the hotbar slot
+    /// - [ClientboundPacket::HeldItemChange], with the slot set to the newly chosen slot.
     PickItem {
         /// See [inventory](https://wiki.vg/Inventory)
         slot_to_use: VarInt,

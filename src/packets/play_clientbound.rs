@@ -6,7 +6,7 @@ use super::*;
 
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
-pub enum ClientBoundPacket<'a> {
+pub enum ClientboundPacket<'a> {
     /// Sent by the server when a vehicle or other **non-living entity** is created
     SpawnEntity {
         id: VarInt,
@@ -191,7 +191,7 @@ pub enum ClientBoundPacket<'a> {
     /// Command names and parameters are also supported.
     /// The client sorts these alphabetically before listing them.
     /// 
-    /// *Response to [ClientBoundPacket::TabComplete]*
+    /// *Response to [ClientboundPacket::TabComplete]*
     TabComplete {
         transaction_id: VarInt,
         /// Start of the text to replace
@@ -493,7 +493,7 @@ pub enum ClientBoundPacket<'a> {
         can_restock: bool,
     },
 
-    /// This packet is sent by the server when an entity moves less then 8 blocks; if an entity moves more than 8 blocks [ClientBoundPacket::TeleportEntity] should be sent instead.
+    /// This packet is sent by the server when an entity moves less then 8 blocks; if an entity moves more than 8 blocks [ClientboundPacket::TeleportEntity] should be sent instead.
     /// This packet allows at most 8 blocks movement in any direction, because `i16` range is from -32768 to 32767. And 32768 / (128 * 32) = 8.
     EntityPosition {
         entity_id: VarInt,
@@ -563,7 +563,7 @@ pub enum ClientBoundPacket<'a> {
 
     /// This is sent to the client when it should open an inventory, such as a chest, workbench, or furnace.
     /// This message is not sent anywhere for clients opening their own inventory.
-    /// For horses, use [ClientBoundPacket::OpenHorseWindow].
+    /// For horses, use [ClientboundPacket::OpenHorseWindow].
     OpenWindow {
         /// A unique id number for the window to be displayed.
         /// Notchian server implementation is a counter, starting at 1.
@@ -683,7 +683,7 @@ pub enum ClientBoundPacket<'a> {
     /// If you must respawn a player in the same dimension without killing them, send two respawn packets, one to a different world and then another to the world you want.
     /// You do not need to complete the first respawn; it only matters that you send two packets.
     Respawn {
-        /// Valid dimensions are defined per dimension registry sent in [ClientBoundPacket::JoinGame].
+        /// Valid dimensions are defined per dimension registry sent in [ClientboundPacket::JoinGame].
         dimension: NbtTag<'a>,
         /// Name of the world being spawned into
         world_name: Identifier<'a>,
@@ -703,7 +703,7 @@ pub enum ClientBoundPacket<'a> {
 
     /// Changes the direction an entity's head is facing.
     ///
-    /// While sending the [ClientBoundPacket::EntityLook] packet changes the vertical rotation of the head, sending this packet appears to be necessary to rotate the head horizontally.
+    /// While sending the [ClientboundPacket::EntityLook] packet changes the vertical rotation of the head, sending this packet appears to be necessary to rotate the head horizontally.
     EntityHeadLook {
         entity_id: VarInt,
         /// New angle, not a delta
@@ -902,7 +902,7 @@ pub enum ClientBoundPacket<'a> {
     /// This packet is used to play sound events with hardcoded IDs.
     ///
     /// Numeric sound effect IDs are liable to change between versions.
-    /// For custom sounds, use [ClientBoundPacket::NamedSoundEffect].
+    /// For custom sounds, use [ClientboundPacket::NamedSoundEffect].
     SoundEffect {
         /// ID of hardcoded sound event ([events](https://pokechu22.github.io/Burger/1.16.5.html#sounds) as of 1.16.5).
         /// TODO: generate an enum

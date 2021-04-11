@@ -19,7 +19,7 @@ pub enum SoundCategory {
 pub struct StopSoundPacket<'a> {
     /// If not present, then sounds from all sources are cleared
     pub sound_category: Option<SoundCategory>,
-    /// A sound effect name, see [ClientBoundPacket::NamedSoundEffect].
+    /// A sound effect name, see [ClientboundPacket::NamedSoundEffect].
     /// If not present, then all sounds are cleared.
     pub sound_effect_name: Option<Identifier<'a>>,
 }
