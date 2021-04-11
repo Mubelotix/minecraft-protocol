@@ -26,3 +26,17 @@ pub enum EntityAttributeModifierOperation {
     /// `value = base_value * modifier`
     Multiply,
 }
+#[derive(Debug, MinecraftPacketPart)]
+#[discriminant(VarInt)]
+pub enum EntityInteraction {
+    Interact {
+        hand: crate::slots::Hand,
+    },
+    Attack,
+    InteractAt {
+        target_x: f32,
+        target_y: f32,
+        target_z: f32,
+        hand: crate::slots::Hand,
+    },
+}

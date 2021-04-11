@@ -138,4 +138,13 @@ pub enum ServerboundPacket<'a> {
         is_signing: bool,
         hand: crate::slots::Hand,
     },
+
+    /// This packet is sent from the client to the server when the client attacks or right-clicks another entity (a player, minecart, etc).
+    /// A Notchian server only accepts this packet if the entity being attacked/used is visible without obstruction and within a 4-unit radius of the player's position.
+    /// Note that middle-click in creative mode is interpreted by the client and sent as a [ServerboundPacket::CreativeInventoryAction] packet instead.
+    InteractEntity {
+        entity_id: VarInt,
+        interaction_type: crate::entity::EntityInteraction,
+        sneaking: bool,
+    },
 }
