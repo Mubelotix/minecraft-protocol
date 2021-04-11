@@ -255,4 +255,10 @@ pub enum ServerboundPacket<'a> {
         recipe_id: Identifier<'a>,
         make_all: bool,
     },
+
+    /// The vanilla client sends this packet when the player starts/stops flying with the `flags` field changed accordingly.
+    PlayerAbilities {
+        /// Bit mask. 0x02: is flying.
+        flags: u8,
+    },
 }
