@@ -190,9 +190,10 @@ pub enum ClientBoundPacket<'a> {
     /// In the case of regular chat, this is a player username.
     /// Command names and parameters are also supported.
     /// The client sorts these alphabetically before listing them.
+    /// 
+    /// *Response to [ClientBoundPacket::TabComplete]*
     TabComplete {
-        /// Transaction ID
-        id: VarInt,
+        transaction_id: VarInt,
         /// Start of the text to replace
         start: VarInt,
         /// Length of the text to replace

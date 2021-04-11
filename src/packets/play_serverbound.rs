@@ -61,4 +61,11 @@ pub enum ServerboundPacket<'a> {
         displayed_skin_parts: u8,
         main_hand: crate::slots::MainHand,
     },
+
+    /// *Request for [ClientBoundPacket::TabComplete]*
+    TabComplete {
+        transaction_id: VarInt,
+        /// All text behind the cursor without the `/` (e.g. to the left of the cursor in left-to-right languages like English).
+        text: &'a str,
+    },
 }
