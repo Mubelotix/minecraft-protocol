@@ -311,4 +311,8 @@ pub enum ServerboundPacket<'a> {
     ResourcePackStatus {
         status: crate::resource_pack::ResourcePackStatus,
     },
+
+    AdvancementTab {
+        value: crate::advancements::AdvancementTabPacket<'a>,
+    },
 }

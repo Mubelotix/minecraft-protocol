@@ -103,15 +103,45 @@ pub enum StatisticCategory {
     Dropped,
     Killed,
     KilledBy,
-    Custom
+    Custom,
 }
 
 #[derive(Debug, MinecraftPacketPart)]
 pub struct Statistic {
     pub category: StatisticCategory,
     /// Used when `category` is [StatisticCategory::Custom].
-    /// See [the wiki](https://wiki.vg/Protocol#Statistics) for meaning 
+    /// See [the wiki](https://wiki.vg/Protocol#Statistics) for meaning
     pub statistic_id: VarInt,
     /// Units depends on previous fields.
     pub value: VarInt,
+}
+
+#[derive(Debug)]
+pub struct AdvancementTabPacket<'a> {
+    tab_id: Option<Identifier<'a>>,
+}
+
+impl<'a> MinecraftPacketPart<'a> for AdvancementTabPacket<'a> {
+    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        self.tab_id
+            .is_none()
+            .serialize_minecraft_packet_part(output)?;
+        if let Some(tab_id) = self.tab_id {
+            tab_id.serialize_minecraft_packet_part(output)?;
+        }
+        Ok(())
+    }
+    fn deserialize_minecraft_packet_part(
+        input: &'a mut [u8],
+    ) -> Result<(Self, &'a mut [u8]), &'static str> {
+        let (present, input) = VarInt::deserialize_minecraft_packet_part(input)?;
+        let (tab_id, input) = if present.0 == 0 {
+            let (tab_id, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
+            (Some(tab_id), input)
+        } else {
+            (None, input)
+        };
+
+        Ok((AdvancementTabPacket { tab_id }, input))
+    }
 }
