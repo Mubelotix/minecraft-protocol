@@ -75,7 +75,7 @@ pub enum ServerboundPacket<'a> {
     /// *Response to [ClientBoundPacket::WindowConfirmation]*
     WindowConfirmation {
         /// The ID of the window that the action occurred in
-        window_id: u8,
+        window_id: i8,
         /// Every action that is to be accepted has a unique number.
         /// This number is an incrementing integer (starting at 1) with separate counts for each window ID.
         action_number: i16,
@@ -86,7 +86,7 @@ pub enum ServerboundPacket<'a> {
     /// Used when clicking on window buttons
     ClickWindowButton {
         /// The ID of the window sent by [ClientBoundPacket::OpenWindow].
-        window_id: u8,
+        window_id: i8,
         /// Meaning depends on window type; see [the wiki](https://wiki.vg/Protocol#Click_Window_Button)
         button_id: u8,
     },
@@ -96,7 +96,7 @@ pub enum ServerboundPacket<'a> {
     /// *Request for [ClientBoundPacket::WindowConfirmation]*
     ClickWindowSlot {
         /// The ID of the window which was clicked. 0 for player inventory.
-        window_id: u8,
+        window_id: i8,
         /// The clicked slot number, see [the wiki](https://wiki.vg/Protocol#Click_Window)
         slot: i16,
         /// The button used in the click, see [the wiki](https://wiki.vg/Protocol#Click_Window)
@@ -113,7 +113,7 @@ pub enum ServerboundPacket<'a> {
     /// Notchian clients send a Close Window packet with `window_id` = 0 to close their inventory even though there is never an [ClientBoundPacket::OpenWindow] packet for the inventory.
     CloseWindow {
         /// The ID of the window that was closed. 0 for player inventory.
-        window_id: u8,
+        window_id: i8,
     },
 
     /// Mods and plugins can use this to send their data.
@@ -227,7 +227,25 @@ pub enum ServerboundPacket<'a> {
     /// Used to visually update whether boat paddles are turning.
     /// The server will update the [Boat entity metadata](https://wiki.vg/Entities#Boat) to match the values here.
     SteerBoat {
+        /// Left paddle turning is set to true when the right button or forward button is held.
         left_paddle_turnin: bool,
+        /// Right paddle turning is set to true when the left button or forward button is held.
         right_paddle_turnin: bool,
+    },
+
+    /// Used to swap out an empty space on the hotbar with the item in the given inventory slot.
+    /// The Notchain client uses this for pick block functionality (middle click) to retrieve items from the inventory.
+    ///
+    /// The server will first search the player's hotbar for an empty slot, starting from the current slot and looping around to the slot before it.
+    /// If there are no empty slots, it will start a second search from the current slot and find the first slot that does not contain an enchanted item.
+    /// If there still are no slots that meet that criteria, then the server will use the currently selected slot.
+    ///
+    /// After finding the appropriate slot, the server swaps the items and then send 3 packets:
+    /// - [ClientBoundPacket::SetSlot], with window ID set to -2 and slot set to the newly chosen slot and the item set to the item that is now in that slot (which was previously at the slot the client requested)
+    /// - [ClientBoundPacket::SetSlot], with window ID set to -2 and slot set to the slot the player requested, with the item that is now in that slot and was previously on the hotbar slot
+    /// - [ClientBoundPacket::HeldItemChange], with the slot set to the newly chosen slot.
+    PickItem {
+        /// See [inventory](https://wiki.vg/Inventory)
+        slot_to_use: VarInt,
     },
 }

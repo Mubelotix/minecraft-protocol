@@ -217,7 +217,7 @@ pub enum ClientBoundPacket<'a> {
     /// *Request for [ServerboundPacket::WindowConfirmation]*
     WindowConfirmation {
         /// The ID of the window that the action occurred in.
-        window_id: u8,
+        window_id: i8,
         /// Every action that is to be accepted has a unique ID. This number is an incrementing integer (starting at 0) with separate counts for each window ID.
         action_id: i16,
         /// Whether the action was accepted.
@@ -227,14 +227,14 @@ pub enum ClientBoundPacket<'a> {
     /// This packet is sent from the server to the client when a window is forcibly closed, such as when a chest is destroyed while it's open.
     CloseWindow {
         /// This is the ID of the window that was closed. 0 for inventory.
-        window_id: u8,
+        window_id: i8,
     },
 
     /// Sent by the server when items in multiple slots (in a window) are added/removed.
     /// This includes the main inventory, equipped armour and crafting slots.
     WindowItems {
         /// The ID of window which items are being sent for. 0 for player inventory.
-        window_id: u8,
+        window_id: i8,
         /// The [crate::slots::Slot]s in this window.
         /// See [inventory windows](https://wiki.vg/Inventory#Windows) for further information about how slots are indexed.
         slots: Array<'a, Option<crate::slots::Slot<'a>>, i16>,
@@ -242,7 +242,7 @@ pub enum ClientBoundPacket<'a> {
 
     /// This packet is used to inform the client that part of a GUI window should be updated.
     WindowProperty {
-        window_id: u8,
+        window_id: i8,
         /// The property to be updated.
         /// The meaning of this field depends on the type of the window.
         /// The [the wiki](https://wiki.vg/Protocol#Window_Property) shows the known combinations of window type and property, and how the value is to be interpreted.
@@ -263,7 +263,7 @@ pub enum ClientBoundPacket<'a> {
         /// Note that all known window types include the player inventory.
         /// This packet will only be sent for the currently opened window while the player is performing actions, even if it affects the player inventory.
         /// After the window is closed, a number of these packets are sent to update the player's inventory window (0).
-        window_id: u8,
+        window_id: i8,
         /// The slot that should be updated.
         slot_index: i16,
         slot_value: crate::slots::Slot<'a>,
@@ -369,7 +369,7 @@ pub enum ClientBoundPacket<'a> {
     /// This packet is used exclusively for opening the horse GUI.
     /// [Self::OpenWindow] is used for all other GUIs.
     OpenHorseWindow {
-        window_id: u8,
+        window_id: i8,
         slot_count: VarInt,
         entity_id: i32,
     },
@@ -586,7 +586,7 @@ pub enum ClientBoundPacket<'a> {
     /// Response to the serverbound packet (Craft Recipe Request), with the same recipe ID.
     /// Appears to be used to notify the UI.
     CraftRecipeResponse {
-        window_id: u8,
+        window_id: i8,
         /// A recipe ID
         recipe: Identifier<'a>,
     },
