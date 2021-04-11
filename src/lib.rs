@@ -13,16 +13,17 @@ pub mod effect;
 pub mod entity;
 pub mod game_state;
 pub mod gamemode;
+pub mod listener;
 pub mod nbt;
 pub mod packets;
 pub mod paintings;
 pub mod players;
 pub mod recipes;
+pub mod resource_pack;
 pub mod slots;
 pub mod sound;
 pub mod teams;
 pub mod trades;
-pub mod listener;
 
 pub(crate) use crate::packets::play_clientbound::ClientboundPacket;
 pub(crate) use crate::packets::serializer::MinecraftPacketPart;

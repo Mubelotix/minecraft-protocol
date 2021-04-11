@@ -667,7 +667,8 @@ pub enum ClientboundPacket<'a> {
         effect: crate::effect::Effect,
     },
 
-    RessourcePackSend {
+    /// *Request for [ServerboundPacket::ResourcePackStatus]*
+    ResourcePackSend {
         /// The URL to the resource pack
         url: &'a str,
         /// A 40 character hexadecimal and lowercase SHA-1 hash of the resource pack file. (must be lower case in order to work)

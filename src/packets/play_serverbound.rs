@@ -306,4 +306,9 @@ pub enum ServerboundPacket<'a> {
         /// The item name may be no longer than 35 characters long, and if it is longer than that, then the rename is silently ignored.
         new_name: &'a str,
     },
+
+    /// *Response to [ClientboundPacket::ResourcePackSend]*
+    ResourcePackStatus {
+        status: crate::resource_pack::ResourcePackStatus,
+    },
 }
