@@ -315,4 +315,10 @@ pub enum ServerboundPacket<'a> {
     AdvancementTab {
         value: crate::advancements::AdvancementTabPacket<'a>,
     },
+
+    /// When a player selects a specific trade offered by a villager NPC.
+    SelectTrade {
+        /// The selected slot in the players current (trading) inventory
+        selected_slot: VarInt,
+    },
 }
