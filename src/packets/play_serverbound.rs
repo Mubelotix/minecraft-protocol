@@ -130,4 +130,12 @@ pub enum ServerboundPacket<'a> {
         /// `minecraft:` channels are documented [here](https://wiki.vg/Plugin_channel).
         data: RawBytes<'a>,
     },
+
+    EditBook {
+        /// See [the wiki](https://wiki.vg/Protocol#Edit_Book) for information about the NBT data structure of this slot.
+        new_book: crate::slots::Slot<'a>,
+        /// `true` if the player is signing the book; `false` if the player is saving a draft.
+        is_signing: bool,
+        hand: crate::slots::Hand,
+    },
 }
