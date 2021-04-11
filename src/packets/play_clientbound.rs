@@ -378,6 +378,8 @@ pub enum ClientBoundPacket<'a> {
     /// The client must respond with the same payload (see [serverbound Keep Alive](https://wiki.vg/Protocol#Keep_Alive_.28serverbound.29)).
     /// If the client does not respond to them for over 30 seconds, the server kicks the client.
     /// Vice versa, if the server does not send any keep-alives for 20 seconds, the client will disconnect and yields a "Timed out" exception.
+    /// 
+    /// *Request for [ServerboundPacket::KeepAlive]*
     KeepAlive {
         /// The Notchian server uses a system-dependent time in milliseconds to generate the keep alive ID value.
         keep_alive_id: u64,

@@ -156,4 +156,10 @@ pub enum ServerboundPacket<'a> {
         levels: VarInt,
         keep_jigsaws: bool,
     },
+
+    /// *Response to [ClientBoundPacket::KeepAlive]*
+    KeepAlive {
+        /// The id sent in the [ClientBoundPacket::KeepAlive] packet
+        keep_alive_id: u64,
+    },
 }
