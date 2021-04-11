@@ -47,4 +47,18 @@ pub enum ServerboundPacket<'a> {
     ClientStatus {
         action: crate::game_state::ClientStatus,
     },
+
+    /// Sent when the player connects, or when settings are changed
+    ClientSettings {
+        /// e.g. `en_GB`
+        locale: &'a str,
+        /// Client-side render distance, in chunks
+        render_distance: u8,
+        chat_mode: crate::chat::ChatMode,
+        /// “Colors” multiplayer setting
+        chat_colors_enabled: bool,
+        /// Bit mask, see [the wiki](https://wiki.vg/Protocol#Client_Settings)
+        displayed_skin_parts: u8,
+        main_hand: crate::slots::MainHand,
+    },
 }

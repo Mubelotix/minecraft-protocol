@@ -1,5 +1,6 @@
 use crate::*;
 
+/// See [processing chat](https://wiki.vg/Chat#Processing_chat) for more information
 #[minecraft_enum(u8)]
 #[derive(Debug)]
 pub enum Position {
@@ -9,6 +10,15 @@ pub enum Position {
     System,
     /// Game info displayed above the hotbar
     GameInfo,
+}
+
+/// See [processing chat](https://wiki.vg/Chat#Processing_chat) for more information
+#[minecraft_enum(VarInt)]
+#[derive(Debug)]
+pub enum ChatMode {
+    Enabled,
+    CommandsOnly,
+    Hidden,
 }
 
 #[derive(Debug, MinecraftPacketPart)]

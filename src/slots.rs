@@ -24,6 +24,13 @@ pub enum Hand {
     OffHand,
 }
 
+#[minecraft_enum(VarInt)]
+#[derive(Debug)]
+pub enum MainHand {
+    Left,
+    Right,
+}
+
 #[minecraft_enum(u8)]
 #[derive(Debug, Clone, Copy)]
 pub enum EquipmentSlot {
