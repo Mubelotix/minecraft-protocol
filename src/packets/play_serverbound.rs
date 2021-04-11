@@ -272,4 +272,12 @@ pub enum ServerboundPacket<'a> {
         /// The face being hit
         face: crate::blocks::BlockFace,
     },
+
+    /// Sent by the client to indicate that it has performed certain actions: sneaking (crouching), sprinting, exiting a bed, jumping with a horse, and opening a horse's inventory while riding it.
+    EntityAction {
+        player_id: VarInt,
+        action_id: crate::entity::PlayerAction,
+        /// Only used by the [“start jump with horse” action](crate::entity::PlayerAction::StartJumpWithHorse), in which case it ranges from 0 to 100. In all other cases it is 0.
+        jump_boost: bool,
+    },
 }

@@ -40,3 +40,19 @@ pub enum EntityInteraction {
         hand: crate::slots::Hand,
     },
 }
+
+#[minecraft_enum(VarInt)]
+#[derive(Debug)]
+pub enum PlayerAction {
+    StartSneaking,
+    StopSneaking,
+    /// Leave bed is only sent when the “Leave Bed” button is clicked on the sleep GUI, not when waking up due today time.
+    LeaveBed,
+    StartSprinting,
+    StopSprinting,
+    StartJumpWithHorse,
+    StopJumpWithHorse,
+    /// Open horse inventory is only sent when pressing the inventory key (default: E) while on a horse — all other methods of opening a horse's inventory (involving right-clicking or shift-right-clicking it) do not use this packet.
+    OpenHorseInventory,
+    StartFlyingWithElytra,
+}
