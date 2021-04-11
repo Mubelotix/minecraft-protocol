@@ -372,4 +372,7 @@ pub enum ServerboundPacket<'a> {
         /// `rollable` if the attached piece can be rotated, else `aligned`
         joint_type: &'a str,
     },
+
+    /// Unsupported yet (todo)
+    UpdateStrutureBlock { data: RawBytes<'a> },
 }
