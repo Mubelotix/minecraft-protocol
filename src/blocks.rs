@@ -1,6 +1,6 @@
 use crate::*;
 
-#[minecraft_enum(u8)]
+#[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum PartialDiggingState {
     Started,
@@ -8,7 +8,8 @@ pub enum PartialDiggingState {
     Finished,
 }
 
-#[minecraft_enum(u8)]
+/// See [the wiki](https://wiki.vg/Protocol#Player_Digging)
+#[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum DiggingState {
     Started,
@@ -18,6 +19,17 @@ pub enum DiggingState {
     DropItem,
     ShootArrowOrFinishEating,
     SwapItemInHand,
+}
+
+#[minecraft_enum(u8)]
+#[derive(Debug)]
+pub enum BlockFace {
+    Bottom,
+    Top,
+    North,
+    South,
+    West,
+    East,
 }
 
 /// The type of update to perform used in [crate::packets::play_clientbound::BlockEntityData] packets.

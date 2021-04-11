@@ -261,4 +261,15 @@ pub enum ServerboundPacket<'a> {
         /// Bit mask. 0x02: is flying.
         flags: u8,
     },
+
+    /// Sent when the player mines a block.
+    /// A Notchian server only accepts digging packets with coordinates within a 6-unit radius between the center of the block and 1.5 units from the player's feet (not their eyes).
+    DigBlock {
+        /// The action the player is taking against the block
+        status: crate::blocks::DiggingState,
+        /// Block position
+        location: Position,
+        /// The face being hit
+        face: crate::blocks::BlockFace,
+    },
 }
