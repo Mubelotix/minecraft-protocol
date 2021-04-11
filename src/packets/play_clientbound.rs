@@ -237,7 +237,7 @@ pub enum ClientboundPacket<'a> {
         window_id: i8,
         /// The [crate::slots::Slot]s in this window.
         /// See [inventory windows](https://wiki.vg/Inventory#Windows) for further information about how slots are indexed.
-        slots: Array<'a, Option<crate::slots::Slot<'a>>, i16>,
+        slots: Array<'a, crate::slots::Slot<'a>, i16>,
     },
 
     /// This packet is used to inform the client that part of a GUI window should be updated.
