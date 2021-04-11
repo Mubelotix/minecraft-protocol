@@ -280,4 +280,13 @@ pub enum ServerboundPacket<'a> {
         /// Only used by the [“start jump with horse” action](crate::entity::PlayerAction::StartJumpWithHorse), in which case it ranges from 0 to 100. In all other cases it is 0.
         jump_boost: bool,
     },
+
+    SteerVehicle {
+        /// Movement to the left, can be negative to move to the right.
+        to_the_left: f32,
+        /// Movement forward, can be negative to move backward.
+        forward: f32,
+        /// Bit mask. 0x1: jump, 0x2: unmount.
+        flags: u8,
+    },
 }
