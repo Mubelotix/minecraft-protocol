@@ -2,3 +2,4 @@
 //! See the build.rs file.
 
 pub mod blocks;
+pub mod items;

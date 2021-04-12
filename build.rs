@@ -91,10 +91,7 @@ fn generate_block_enum(data: &serde_json::Value) {
     for (key, block) in blocks_json.into_iter() {
         let block: Block = match serde_json::from_value(block) {
             Ok(block) => block,
-            Err(e) => {
-                println!("Invalid block: {}, {}", key, e);
-                continue;
-            }
+            Err(e) => panic!("Invalid block: {}, {}", key, e),
         };
         blocks.push(block);
     }
@@ -178,23 +175,28 @@ impl Block {{
     }}
 
     /// Some hardness values are missing from the dataset so we won't be able to get them
+    #[inline]
     pub fn get_hardness(self) -> Option<f32> {{
         unsafe {{*HARDNESSES.get_unchecked((self as u32) as usize)}}
     }}
 
     /// Some resistance values are missing from the dataset so we won't be able to get them
+    #[inline]
     pub fn get_resistance(self) -> Option<f32> {{
         unsafe {{*RESISTANCES.get_unchecked((self as u32) as usize)}}
     }}
 
+    #[inline]
     pub fn get_text_id(self) -> &'static str {{
         unsafe {{*TEXT_IDS.get_unchecked((self as u32) as usize)}}
     }}
 
+    #[inline]
     pub fn get_display_name(self) -> &'static str {{
         unsafe {{*DISPLAY_NAMES.get_unchecked((self as u32) as usize)}}
     }}
 
+    #[inline]
     pub fn get_state_id_range(self) -> std::ops::Range<u32> {{
         unsafe {{STATE_ID_RANGES.get_unchecked((self as u32) as usize).clone()}}
     }}
@@ -241,8 +243,135 @@ const STATE_ID_RANGES: [std::ops::Range<u32>; {max_value}] = {state_id_ranges:?}
         .unwrap()
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct Item {
+    display_name: String,
+    text_id: String,
+    numeric_id: u32,
+    max_stack_size: u8,
+}
+
+#[allow(clippy::explicit_counter_loop)]
+fn generate_item_enum(data: &serde_json::Value) {
+    let items_json = data
+        .get(0)
+        .expect("Burger data is not an array")
+        .get("items")
+        .expect("No items in burger's json data")
+        .get("item")
+        .expect("expected item in items")
+        .as_object()
+        .expect("expected item to be an object")
+        .clone();
+
+    let mut items = Vec::new();
+    for (key, item) in items_json.into_iter() {
+        let item: Item = match serde_json::from_value(item) {
+            Ok(item) => item,
+            Err(e) => panic!("Invalid item: {}, {}", key, e),
+        };
+        items.push(item);
+    }
+    let len = items.len();
+    items.sort_by_key(|b| b.numeric_id);
+
+    let mut expected = 0;
+    for item in &items {
+        if item.numeric_id != expected {
+            panic!("The item with id {} is missing.", expected)
+        }
+        expected += 1;
+    }
+
+    let mut display_names = Vec::new();
+    let mut max_stack_sizes = Vec::new();
+    let mut numeric_ids = Vec::new();
+    let mut text_ids = Vec::new();
+    for item in items {
+        display_names.push(item.display_name);
+        numeric_ids.push(item.numeric_id);
+        max_stack_sizes.push(item.max_stack_size);
+        text_ids.push(item.text_id);
+    }
+
+    let mut variants = String::new();
+    for i in 0..len {
+        let name = text_ids[i].to_case(Case::UpperCamel);
+        variants.push_str(&format!("\t{} = {},\n", name, numeric_ids[i]));
+    }
+
+    let code = format!(
+        r#"use crate::*;
+        
+#[repr(u32)]
+#[derive(Debug, Clone, Copy)]
+pub enum Item {{
+{variants}
+}}
+
+impl Item {{
+    #[inline]
+    pub fn from_id(id: u32) -> Option<Item> {{
+        if id < {max_value} {{
+            Some(unsafe{{std::mem::transmute(id)}})
+        }} else {{
+            None
+        }}
+    }}
+
+    #[inline]
+    pub fn get_text_id(self) -> &'static str {{
+        unsafe {{*TEXT_IDS.get_unchecked((self as u32) as usize)}}
+    }}
+
+    #[inline]
+    pub fn get_display_name(self) -> &'static str {{
+        unsafe {{*DISPLAY_NAMES.get_unchecked((self as u32) as usize)}}
+    }}
+
+    #[inline]
+    pub fn get_max_stack_size(self) -> u8 {{
+        unsafe {{*MAX_STACK_SIZES.get_unchecked((self as u32) as usize)}}
+    }}
+}}
+
+impl<'a> MinecraftPacketPart<'a> for Item {{
+    #[inline]
+    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {{
+        VarInt((self as u32) as i32).serialize_minecraft_packet_part(output)
+    }}
+
+    #[inline]
+    fn deserialize_minecraft_packet_part(input: &'a mut [u8]) -> Result<(Self, &'a mut [u8]), &'static str> {{
+        let (id, input) = VarInt::deserialize_minecraft_packet_part(input)?;
+        let id = std::cmp::max(id.0, 0) as u32;
+        let item = Item::from_id(id).ok_or("No item corresponding to the specified numeric ID.")?;
+        Ok((item, input))
+    }}
+}}
+
+const MAX_STACK_SIZES: [u8; {max_value}] = {max_stack_sizes:?};
+
+const DISPLAY_NAMES: [&str; {max_value}] = {display_names:?};
+
+const TEXT_IDS: [&str; {max_value}] = {text_ids:?};
+"#,
+        variants = variants,
+        max_value = expected,
+        max_stack_sizes = max_stack_sizes,
+        display_names = display_names,
+        text_ids = text_ids,
+    );
+
+    File::create("src/ids/items.rs")
+        .unwrap()
+        .write_all(code.as_bytes())
+        .unwrap()
+}
+
 fn main() {
     //println!("cargo:rerun-if-changed=target/burger-cache-{}.json", VERSION);
     let data = get_burger_data();
     generate_block_enum(&data);
+    generate_item_enum(&data);
 }
