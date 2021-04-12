@@ -52,34 +52,74 @@ pub fn read_packet(mut reader: impl Read, compression: Option<u32>, encryption: 
     Ok(data)
 }
 
+pub fn send_packet<'a>(mut writer: impl Write, packet: impl MinecraftPacketPart<'a>, compression: Option<u32>, encryption: Option<&[u8]>) -> Result<(), ListenError> {
+    let mut packet_prefix = Vec::new();
+    let packet = packet.serialize_minecraft_packet()?;
+    match compression {
+        None => {
+            let len = VarInt(packet.len() as i32);
+            len.serialize_minecraft_packet_part(&mut packet_prefix)?;
+        }
+        Some(_threshold) => {
+            unimplemented!("compression")
+        }
+    }
+    match encryption {
+        None => (),
+        Some(_key) => {
+            unimplemented!("encryption")
+        }
+    }
+    writer.write_all(&packet_prefix)?;
+    writer.write_all(&packet)?;
+
+    Ok(())
+}
+
 #[test]
 fn test() {
     use std::net::TcpStream;
 
     let mut stream = TcpStream::connect("127.0.0.1:25565").unwrap();
 
-    stream.write_all(&crate::packets::handshake::ServerboundPacket::Hello {
+    send_packet(&mut stream, crate::packets::handshake::ServerboundPacket::Hello {
         protocol_version: 754.into(),
         server_address: "127.0.0.1",
         server_port: 25565,
         next_state: crate::packets::ConnectionState::Login,
-    }.serialize_uncompressed_minecraft_packet().unwrap()).unwrap();
+    }, None, None).unwrap();
 
-    stream.write_all(&crate::packets::login::ServerboundPacket::LoginStart {
-        username: "mubelotix",
-    }.serialize_uncompressed_minecraft_packet().unwrap()).unwrap();
+    send_packet(&mut stream, crate::packets::login::ServerboundPacket::LoginStart {
+        username: "bot2",
+    }, None, None).unwrap();
 
     let mut response = read_packet(&stream, None, None).unwrap();
     let response_packet = crate::packets::login::ClientboundPacket::deserialize_uncompressed_minecraft_packet(&mut response).unwrap();
     println!("{:?}", response_packet);
 
-    use crate::packets::play_clientbound::ClientboundPacket;
+    use crate::packets::{play_clientbound::ClientboundPacket, play_serverbound::ServerboundPacket};
 
     loop {
         let mut packet_bytes = read_packet(&stream, None, None).unwrap();
         let packet = ClientboundPacket::deserialize_uncompressed_minecraft_packet(&mut packet_bytes);
-        if let Err(e) = packet {
-            panic!("{} for {:?}", e, packet_bytes);
+        let packet = match packet {
+            Ok(packet) => packet,
+            Err(e) => panic!("{} for {:?}", e, packet_bytes),
+        };
+        match packet {
+            ClientboundPacket::KeepAlive {keep_alive_id} => {
+                send_packet(&mut stream, ServerboundPacket::KeepAlive {
+                    keep_alive_id
+                }, None, None).unwrap();
+                println!("pong!");
+            },
+            ClientboundPacket::Advancements{..} => {
+                println!("Advancements parsed successfully!")
+            },
+            ClientboundPacket::ChatMessage { message, position, sender } => {
+                println!("{}: {}", sender, message);
+            }
+            _ => (),
         }
     }
 }
