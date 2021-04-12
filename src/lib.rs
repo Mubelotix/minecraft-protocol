@@ -14,7 +14,7 @@ pub mod effect;
 pub mod entity;
 pub mod game_state;
 pub mod gamemode;
-pub mod listener;
+pub mod network;
 pub mod nbt;
 pub mod packets;
 pub mod paintings;
