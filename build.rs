@@ -151,7 +151,7 @@ fn generate_block_enum(data: &serde_json::Value) {
         r#"use crate::*;
         
 #[repr(u32)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Block {{
 {variants}
 }}
@@ -304,7 +304,7 @@ fn generate_item_enum(data: &serde_json::Value) {
         r#"use crate::*;
         
 #[repr(u32)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Item {{
 {variants}
 }}

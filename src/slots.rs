@@ -4,14 +4,14 @@ use crate::{nbt::NbtTag, *};
 #[derive(Debug, MinecraftPacketPart)]
 pub struct Slot<'a> {
     /// `Some(item)` if there is an item in this slot; `None` if it is empty.
-    pub item: Option<Item<'a>>,
+    pub item: Option<SlotItem<'a>>,
 }
 
 #[derive(Debug, MinecraftPacketPart)]
-pub struct Item<'a> {
-    /// The [item ID](http://minecraft.gamepedia.com/Java_Edition_data_values%23Blocks).
+pub struct SlotItem<'a> {
+    /// The [item](crate::ids::items::Item).
     /// Item IDs are distinct from [block IDs](crate::ids::blocks::Block); see [crate::ids] for more information.
-    pub item_id: VarInt,
+    pub item_id: crate::ids::items::Item,
     pub item_count: VarInt,
     /// Things like enchantements and durability are encoded in this field.
     pub nbt_data: NbtTag<'a>,
@@ -123,7 +123,7 @@ mod tests {
             .unwrap()
             .item
             .unwrap();
-        assert_eq!(deserialized.item_id.0, 1);
+        assert_eq!(deserialized.item_id, crate::ids::items::Item::Stone);
         assert_eq!(deserialized.item_count.0, 1);
         assert!(matches!(deserialized.nbt_data, NbtTag::Null));
     }
