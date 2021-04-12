@@ -8,3 +8,9 @@ edition = "2018"
 
 [dependencies]
 minecraft-packet-derive = {path="../minecraft-packet-derive"}
+
+[build-dependencies]
+minreq = {version="2.3", features=["https"]}
+serde_json = "1.0"
+serde = {version="1.0", features=["derive"]}
+convert_case = "0.4"
