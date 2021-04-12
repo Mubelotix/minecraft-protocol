@@ -53,7 +53,7 @@ impl<'a> MinecraftPacketPart<'a> for AdvancementDisplay<'a> {
         let (description, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         let (icon, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         let (frame_type, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
-        let (flags, input) = u8::deserialize_minecraft_packet_part(input)?;
+        let (flags, input) = i32::deserialize_minecraft_packet_part(input)?;
         let has_background_texture = flags & 0b0000_0001 != 0;
         let show_toast = flags & 0b0000_0010 != 0;
         let hidden = flags & 0b0000_0100 != 0;
@@ -143,5 +143,18 @@ impl<'a> MinecraftPacketPart<'a> for AdvancementTabPacket<'a> {
         };
 
         Ok((AdvancementTabPacket { tab_id }, input))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+
+    #[test]
+    fn test() {
+        use std::io::Read;
+        let mut data = Vec::new();
+        std::fs::File::open("test_data/advancements.mc_packet").unwrap().read_to_end(&mut data).unwrap();
+        ClientboundPacket::deserialize_minecraft_packet_part(data.as_mut_slice()).unwrap();
     }
 }
