@@ -10,7 +10,7 @@ pub struct Slot<'a> {
 #[derive(Debug, MinecraftPacketPart)]
 pub struct Item<'a> {
     /// The [item ID](http://minecraft.gamepedia.com/Java_Edition_data_values%23Blocks).
-    /// Item IDs are distinct from block IDs; see [Data Generators](https://wiki.vg/Data_Generators) for more information
+    /// Item IDs are distinct from [block IDs](crate::ids::blocks::Block); see [crate::ids] for more information.
     pub item_id: VarInt,
     pub item_count: VarInt,
     /// Things like enchantements and durability are encoded in this field.

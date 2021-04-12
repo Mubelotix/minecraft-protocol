@@ -98,6 +98,7 @@ pub struct ChunkSection {
     pub palette: Option<Vec<u32>>,
     /// Blocks stored as `block state IDs`.
     /// Blocks with increasing x coordinates, within rows of increasing z coordinates, within layers of increasing y coordinates.
+    /// Use [Block::from_state_id](crate::ids::blocks::Block::from_state_id) to get the corresponding [Block](crate::ids::blocks::Block).
     pub blocks: Vec<u32>,
 }
 

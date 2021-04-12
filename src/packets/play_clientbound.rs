@@ -104,7 +104,8 @@ pub enum ClientboundPacket<'a> {
     AcknowledgePlayerDigging {
         /// Position where the digging was happening
         location: Position,
-        /// Block state ID of the block that should be at that position now
+        /// Block state ID of the block that should be at that position now.
+        /// Use [Block::from_state_id](crate::ids::blocks::Block::from_state_id) to get the corresponding [Block](crate::ids::blocks::Block).
         block: VarInt,
         status: crate::blocks::PartialDiggingState,
         /// True if the digging succeeded; false if the client should undo any changes it made locally.
@@ -137,8 +138,6 @@ pub enum ClientboundPacket<'a> {
     /// This packet is used for a number of actions and animations performed by blocks, usually non-persistent.
     ///
     /// See [Block Actions](https://wiki.vg/Block_Actions) for a list of values.
-    ///
-    /// **Warning**: This packet uses a block ID, not a block state.
     BlockAction {
         /// Block coordinates
         location: Position,
@@ -146,8 +145,8 @@ pub enum ClientboundPacket<'a> {
         action_id: u8,
         /// Varies depending on block — see [Block Actions](https://wiki.vg/Block_Actions)
         action_param: u8,
-        /// The block type ID for the block. This must match the block at the given coordinates
-        block_type: VarInt,
+        /// The block ID. This must match the block at the given coordinates
+        block: crate::ids::blocks::Block,
     },
 
     /// Fired whenever a block is changed within the render distance.
@@ -158,6 +157,7 @@ pub enum ClientboundPacket<'a> {
         /// Block Coordinates
         location: Position,
         /// The new block state ID for the block as given in the [global palette](http://minecraft.gamepedia.com/Data_values%23Block_IDs). See that section for more information.
+        /// Use [Block::from_state_id](crate::ids::blocks::Block::from_state_id) to get the corresponding [Block](crate::ids::blocks::Block).
         block_state: VarInt,
     },
 

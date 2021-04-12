@@ -111,27 +111,28 @@ impl<'a> MultiBlockChange<'a> {
     /// let chunk_x = (x / 16.0).floor();
     /// let relative_x = x - chunk_x * 16;
     /// ```
-    pub fn encode_block(id: i32, x: u8, y: u8, z: u8) -> Result<u64, &'static str> {
-        if x > 0xF || y > 0xF || z > 0xF || id < 0 {
+    pub fn encode_block(block: crate::ids::blocks::Block, x: u8, y: u8, z: u8) -> Result<u64, &'static str> {
+        if x > 0xF || y > 0xF || z > 0xF {
             return Err(
                 "Unable to encode block: found a value out of range for the protocol types.",
             );
         }
 
-        Ok((id as u64) << 12 | ((x as u64) << 8 | (y as u64) << 4 | z as u64))
+        Ok(((block as u32) as u64) << 12 | ((x as u64) << 8 | (y as u64) << 4 | z as u64))
     }
 
     /// Returns the position of the block relatively to the position of the chunk passed in `chunk_section_position`.
+	/// If the ID of the block is not valid, `None` will be returned.
     ///
     /// ```ignore
     /// // get the absolute X coordinate
     /// let x = chunk_x * 16 + relative_x;
     /// ```
-    pub fn decode_block(block: u64) -> (i32, u8, u8, u8) {
-        let id: i32 = unsafe { std::mem::transmute((block >> 12) as u32) };
+    pub fn decode_block(block: u64) -> (Option<crate::ids::blocks::Block>, u8, u8, u8) {
+        let decoded_block = crate::ids::blocks::Block::from_id((block >> 12) as u32);
         let x = (block << 52 >> 60) as u8;
         let z = (block << 56 >> 60) as u8;
         let y = (block << 60 >> 60) as u8;
-        (id, x, z, y)
+        (decoded_block, x, z, y)
     }
 }
