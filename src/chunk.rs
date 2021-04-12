@@ -21,7 +21,9 @@ pub struct ChunkData<'a> {
     /// The data section of the packet contains most of the useful data for the chunk.
     /// The number of elements in the array is equal to the number of bits set in [ChunkData::primary_bit_mask].
     /// Sections are sent bottom-to-top, i.e. the first section, if sent, extends from Y=0 to Y=15.
-    pub data: Array<'a, i8, VarInt>,
+    /// 
+    /// **Use [ChunkData::deserialize_chunk_sections] to get ready to use [ChunkSection]s.**
+    pub data: &'a mut [u8],
     /// All block entities in the chunk.
     /// Use the x, y, and z tags in the NBT to determine their positions.
     /// Sending entities is not required; it is still legal to send them with [ClientboundPacket::UpdateBlockEntity] later.
@@ -41,7 +43,8 @@ impl<'a> MinecraftPacketPart<'a> for ChunkData<'a> {
         if let Some(biomes) = self.biomes {
             biomes.serialize_minecraft_packet_part(output)?;
         }
-        self.data.serialize_minecraft_packet_part(output)?;
+        VarInt(self.data.len() as i32).serialize_minecraft_packet_part(output)?;
+        output.extend_from_slice(self.data);
         self.entities.serialize_minecraft_packet_part(output)?;
         Ok(())
     }
@@ -63,7 +66,9 @@ impl<'a> MinecraftPacketPart<'a> for ChunkData<'a> {
                 (Some(biomes), input)
             }
         };
-        let (data, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
+        let (data_len, input) = VarInt::deserialize_minecraft_packet_part(input)?;
+        let data_len = std::cmp::max(data_len.0, 0) as usize;
+        let (data, input) = input.split_at_mut(data_len);
         let (entities, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         Ok((
             ChunkData {
@@ -77,6 +82,122 @@ impl<'a> MinecraftPacketPart<'a> for ChunkData<'a> {
             },
             input,
         ))
+    }
+}
+
+/// A [chunk section](ChunkSection) is a 16×16×16 collection of blocks (chunk sections are cubic).
+/// A [chunk column](ChunkData) is a 16×256×16 collection of blocks, and is what most players think of when they hear the term "chunk".
+/// However, these are not the smallest unit data is stored in in the game; [chunk columns](ChunkData) are actually 16 [chunk sections](ChunkSection) aligned vertically.
+#[derive(Debug)]
+pub struct ChunkSection {
+    /// Number of non-air blocks present in the chunk section, for lighting purposes.
+    /// "Non-air" is defined as any block other than air, cave air, and void air (in particular, note that fluids such as water are still counted).
+    pub block_count: i16,
+    /// Chunk sections often contains a palette (for compression).
+    /// This is a great way to find if a particular block is present in the section without iterating trought all blocks.
+    pub palette: Option<Vec<u32>>,
+    /// Blocks stored as `block state IDs`.
+    /// Blocks with increasing x coordinates, within rows of increasing z coordinates, within layers of increasing y coordinates.
+    pub blocks: Vec<u32>,
+}
+
+impl<'a> ChunkData<'a> {
+    /// Deserialize chunk sections from a chunk data packet.
+    #[allow(clippy::needless_range_loop)]
+    pub fn deserialize_chunk_sections(
+        &mut self
+    ) -> Result<[Option<ChunkSection>; 15], &'static str> {
+        let mut input = &mut *self.data;
+        let primary_bit_mask: u32 = unsafe {
+            // We don't care the type since we only want to check the bits
+            std::mem::transmute(self.primary_bit_mask.0)
+        };
+
+        let mut chunk_sections: [Option<ChunkSection>; 15] = [
+            None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+            None,
+        ];
+        let mut mask = 0b1;
+        for y in 0..15 {
+            chunk_sections[y] = if primary_bit_mask & mask != 0 {
+                let (block_count, new_input) = i16::deserialize_minecraft_packet_part(input)?;
+                let (mut bits_per_block, new_input) =
+                    u8::deserialize_minecraft_packet_part(new_input)?;
+                if bits_per_block < 4 {
+                    bits_per_block = 4;
+                }
+                let mut blocks = Vec::new();
+
+                if bits_per_block <= 8 {
+                    let (palette_lenght, mut new_input) =
+                        VarInt::deserialize_minecraft_packet_part(new_input)?;
+                    let palette_lenght = if palette_lenght.0 < 0 {
+                        0usize
+                    } else {
+                        palette_lenght.0 as usize
+                    };
+                    let mut palette = Vec::with_capacity(10);
+                    for _ in 0..palette_lenght {
+                        let (palette_item, new_new_input) =
+                            VarInt::deserialize_minecraft_packet_part(new_input)?;
+                        palette.push(std::cmp::max(palette_item.0, 0) as u32);
+                        new_input = new_new_input;
+                    }
+                    let (longs, new_input) =
+                        <Array<u64, VarInt>>::deserialize_minecraft_packet_part(new_input)?;
+                    let blocks_per_long = match bits_per_block {
+                        4 => 16,
+                        5 => 12,
+                        6 => 10,
+                        7 => 9,
+                        8 => 8,
+                        _ => unreachable!(),
+                    };
+
+                    for long in longs.items {
+                        let mut mask = bits_per_block as u64;
+                        for _ in 0..blocks_per_long {
+                            let block_index = (long & mask) as usize;
+                            let block = *palette.get(block_index).unwrap_or(&0);
+                            blocks.push(block);
+                            mask <<= bits_per_block;
+                        }
+                    }
+
+                    input = new_input;
+                    Some(ChunkSection {
+                        block_count,
+                        palette: Some(palette),
+                        blocks,
+                    })
+                } else {
+                    let (longs, new_input) =
+                        <Array<u64, VarInt>>::deserialize_minecraft_packet_part(new_input)?;
+                    let blocks_per_long = (64.0 / bits_per_block as f32).floor() as u64;
+
+                    for long in longs.items {
+                        let mut mask = bits_per_block as u64;
+                        for _ in 0..blocks_per_long {
+                            let block = (long & mask) as u32;
+                            blocks.push(block);
+                            mask <<= bits_per_block;
+                        }
+                    }
+
+                    input = new_input;
+                    Some(ChunkSection {
+                        block_count,
+                        palette: None,
+                        blocks,
+                    })
+                }
+            } else {
+                None
+            };
+            mask <<= 1;
+        }
+
+        Ok(chunk_sections)
     }
 }
 

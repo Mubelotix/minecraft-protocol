@@ -116,6 +116,10 @@ fn test() {
             ClientboundPacket::Advancements{..} => {
                 println!("Advancements parsed successfully!")
             },
+            ClientboundPacket::ChunkData{mut value} => {
+                value.deserialize_chunk_sections().unwrap();
+                println!("chunk parsed successfully!")
+            },
             ClientboundPacket::ChatMessage { message, position, sender } => {
                 println!("{}: {}", sender, message);
             }
