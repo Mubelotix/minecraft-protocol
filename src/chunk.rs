@@ -156,9 +156,16 @@ impl<'a> ChunkData<'a> {
                     };
 
                     for long in longs.items {
-                        let mut mask = bits_per_block as u64;
-                        for _ in 0..blocks_per_long {
-                            let block_index = (long & mask) as usize;
+                        let mut mask = match bits_per_block {
+                            4 => 0xF,
+                            5 => 0b11111,
+                            6 => 0b111111,
+                            7 => 0b1111111,
+                            8 => 0xFF,
+                            _ => unreachable!(),
+                        };
+                        for i in 0..blocks_per_long {
+                            let block_index = ((long & mask) >> (i*bits_per_block)) as usize;
                             let block = *palette.get(block_index).unwrap_or(&0);
                             blocks.push(block);
                             mask <<= bits_per_block;
@@ -174,12 +181,20 @@ impl<'a> ChunkData<'a> {
                 } else {
                     let (longs, new_input) =
                         <Array<u64, VarInt>>::deserialize_minecraft_packet_part(new_input)?;
-                    let blocks_per_long = (64.0 / bits_per_block as f32).floor() as u64;
+                    let blocks_per_long = (64.0 / bits_per_block as f32).floor() as u8;
 
                     for long in longs.items {
-                        let mut mask = bits_per_block as u64;
-                        for _ in 0..blocks_per_long {
-                            let block = (long & mask) as u32;
+                        let mut mask = match bits_per_block {
+                            9 => 0b1_1111_1111,
+                            10 => 0b11_1111_1111,
+                            11 => 0b111_1111_1111,
+                            12 => 0xFFF,
+                            13 => 0b1_1111_1111_1111,
+                            14 => 0b11_1111_1111_1111,
+                            _ => return Err("Unsupported bits_per_block"),
+                        };
+                        for i in 0..blocks_per_long {
+                            let block = ((long & mask) >> (i*bits_per_block)) as u32;
                             blocks.push(block);
                             mask <<= bits_per_block;
                         }
