@@ -58,12 +58,11 @@ pub fn read_packet(
 
 pub fn send_packet<'a>(
     mut writer: impl Write,
-    packet: impl MinecraftPacketPart<'a>,
+    packet: Vec<u8>,
     compression: Option<u32>,
     encryption: Option<&[u8]>,
 ) -> Result<(), NetworkError> {
     let mut packet_prefix = Vec::new();
-    let packet = packet.serialize_minecraft_packet()?;
     match compression {
         None => {
             let len = VarInt(packet.len() as i32);
@@ -102,7 +101,7 @@ mod tests {
                 server_address: "127.0.0.1",
                 server_port: 25565,
                 next_state: crate::packets::ConnectionState::Login,
-            },
+            }.serialize_minecraft_packet().unwrap(),
             None,
             None,
         )
@@ -110,7 +109,7 @@ mod tests {
 
         send_packet(
             &mut stream,
-            crate::packets::login::ServerboundPacket::LoginStart { username: "bot2" },
+            crate::packets::login::ServerboundPacket::LoginStart { username: "bot2" }.serialize_minecraft_packet().unwrap(),
             None,
             None,
         )
@@ -140,7 +139,7 @@ mod tests {
                 ClientboundPacket::KeepAlive { keep_alive_id } => {
                     send_packet(
                         &mut stream,
-                        ServerboundPacket::KeepAlive { keep_alive_id },
+                        ServerboundPacket::KeepAlive { keep_alive_id }.serialize_minecraft_packet().unwrap(),
                         None,
                         None,
                     )
