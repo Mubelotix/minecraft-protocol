@@ -27,5 +27,5 @@ pub mod teams;
 pub mod trades;
 pub mod ids;
 
-pub(crate) use crate::packets::serializer::MinecraftPacketPart;
+pub use crate::packets::serializer::MinecraftPacketPart;
 pub(crate) use crate::packets::*;
