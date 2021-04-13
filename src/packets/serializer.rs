@@ -367,7 +367,7 @@ mod integers {
             input: &mut [u8],
         ) -> Result<(Self, &mut [u8]), &'static str> {
             if input.len() < 4 {
-                return Err("Missing byte while parsing i32.");
+                return Err("Missing byte while parsing f32.");
             }
             unsafe {
                 let len = input.len();
@@ -408,7 +408,7 @@ mod integers {
             input: &mut [u8],
         ) -> Result<(Self, &mut [u8]), &'static str> {
             if input.len() < 8 {
-                return Err("Missing byte while parsing i64.");
+                return Err("Missing byte while parsing f64.");
             }
             unsafe {
                 let len = input.len();
