@@ -149,6 +149,7 @@ impl<'a> MinecraftPacketPart<'a> for AdvancementTabPacket<'a> {
 #[cfg(test)]
 mod tests {
     use crate::*;
+    use crate::packets::play_clientbound::ClientboundPacket;
 
     #[test]
     fn test() {
