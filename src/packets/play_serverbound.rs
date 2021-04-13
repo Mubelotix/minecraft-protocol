@@ -20,13 +20,6 @@ pub enum ServerboundPacket<'a> {
         position: Position,
     },
 
-    /// *Request for [ClientboundPacket::NbtQueryResponse]*
-    QueryEntityNbt {
-        /// An incremental ID so that the client can verify that the response matches
-        transaction_id: VarInt,
-        entity_id: VarInt,
-    },
-
     /// Appears to only be used on singleplayer; the difficulty buttons are still disabled in multiplayer.
     SetDifficulty {
         new_difficulty: crate::difficulty::Difficulty,
@@ -137,6 +130,13 @@ pub enum ServerboundPacket<'a> {
         /// `true` if the player is signing the book; `false` if the player is saving a draft.
         is_signing: bool,
         hand: crate::slots::Hand,
+    },
+
+    /// *Request for [ClientboundPacket::NbtQueryResponse]*
+    QueryEntityNbt {
+        /// An incremental ID so that the client can verify that the response matches
+        transaction_id: VarInt,
+        entity_id: VarInt,
     },
 
     /// This packet is sent from the client to the server when the client attacks or right-clicks another entity (a player, minecart, etc).
