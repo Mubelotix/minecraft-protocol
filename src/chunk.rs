@@ -2,7 +2,7 @@ use crate::{nbt::NbtTag, *};
 
 /// A complex data structure including block data and optionally entities of a chunk.
 ///
-/// Note that the Notchian client requires an Update View Position packet when it crosses a chunk border, otherwise it'll only display render distance + 2 chunks around the chunk it spawned in.
+/// Note that the Notchian client requires an [ClientboundPacket::UpdateViewPosition](crate::packets::play_clientbound::ClientboundPacket::UpdateViewPosition) packet when it crosses a chunk border, otherwise it'll only display `render distance + 2` chunks around the chunk it spawned in.
 #[derive(Debug)]
 pub struct ChunkData<'a> {
     /// Chunk coordinate (block coordinate divided by 16, rounded down).
@@ -21,7 +21,7 @@ pub struct ChunkData<'a> {
     /// The data section of the packet contains most of the useful data for the chunk.
     /// The number of elements in the array is equal to the number of bits set in [ChunkData::primary_bit_mask].
     /// Sections are sent bottom-to-top, i.e. the first section, if sent, extends from Y=0 to Y=15.
-    /// 
+    ///
     /// **Use [ChunkData::deserialize_chunk_sections] to get ready to use [ChunkSection]s.**
     pub data: &'a mut [u8],
     /// All block entities in the chunk.
@@ -106,20 +106,20 @@ impl<'a> ChunkData<'a> {
     /// Deserialize chunk sections from a chunk data packet.
     #[allow(clippy::needless_range_loop)]
     pub fn deserialize_chunk_sections(
-        &mut self
-    ) -> Result<[Option<ChunkSection>; 15], &'static str> {
+        &mut self,
+    ) -> Result<[Option<ChunkSection>; 16], &'static str> {
         let mut input = &mut *self.data;
         let primary_bit_mask: u32 = unsafe {
             // We don't care the type since we only want to check the bits
             std::mem::transmute(self.primary_bit_mask.0)
         };
 
-        let mut chunk_sections: [Option<ChunkSection>; 15] = [
+        let mut chunk_sections: [Option<ChunkSection>; 16] = [
             None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-            None,
+            None, None,
         ];
         let mut mask = 0b1;
-        for y in 0..15 {
+        for y in 0..16 {
             chunk_sections[y] = if primary_bit_mask & mask != 0 {
                 let (block_count, new_input) = i16::deserialize_minecraft_packet_part(input)?;
                 let (mut bits_per_block, new_input) =
