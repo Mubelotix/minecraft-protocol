@@ -444,20 +444,25 @@ fn main() {
     let file_locations = file_locations
         .get(VERSION)
         .expect("There is no generated data for this minecraft version yet");
+
     let blocks_url = format!(
-        "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}",
+        "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}/blocks.json",
         file_locations.get("blocks").unwrap()
     );
-
     let block_data = get_data(
         &blocks_url,
         &format!("target/cache-blocks-{}.json", VERSION),
     );
     generate_block_enum(block_data);
 
+    let items_url = format!(
+        "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}/items.json",
+        file_locations.get("items").unwrap()
+    );
+    dbg!(items_url.clone());
     let items_data = get_data(
-        &blocks_url,
-        &format!("target/cache-blocks-{}.json", VERSION),
+        &items_url,
+        &format!("target/cache-items-{}.json", VERSION),
     );
     generate_item_enum(items_data);
 }
