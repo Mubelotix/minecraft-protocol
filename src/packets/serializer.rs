@@ -14,7 +14,9 @@ pub trait MinecraftPacketPart<'a>: Sized {
         Ok(buffer)
     }
 
-    fn deserialize_uncompressed_minecraft_packet(input: &'a mut [u8]) -> Result<Self, &'static str> {
+    fn deserialize_uncompressed_minecraft_packet(
+        input: &'a mut [u8],
+    ) -> Result<Self, &'static str> {
         let (result, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         if !input.is_empty() {
             return Err("There are still unparsed bytes after parsing.");
@@ -460,7 +462,9 @@ mod integers {
             let mut num_read: u32 = 0;
 
             loop {
-                let (read, new_input) = input.split_first_mut().ok_or("Not enough bytes for varint!")?;
+                let (read, new_input) = input
+                    .split_first_mut()
+                    .ok_or("Not enough bytes for varint!")?;
                 let read = *read;
                 input = new_input;
                 let value: u32 = (read & 0b01111111) as u32;
@@ -702,7 +706,7 @@ impl<'a> MinecraftPacketPart<'a> for Position {
         let mut total: u64 = (unsafe { std::mem::transmute::<i32, u32>(self.x) }
             & 0b00000011111111111111111111111111) as u64;
         total <<= 26;
-        total += (unsafe { std::mem::transmute::<i16, u16>(self.y) } & 0b0000001111111111) as u64;
+        total += (self.y & 0b0000001111111111) as u64;
         total <<= 12;
         total += (unsafe { std::mem::transmute::<i32, u32>(self.z) }
             & 0b00000011111111111111111111111111) as u64;
@@ -726,7 +730,7 @@ impl<'a> MinecraftPacketPart<'a> for Position {
             return Err("Missing bytes in position");
         }
         let (bytes, input) = input.split_at_mut(8);
-        let mut total = unsafe {
+        let total = unsafe {
             u64::from_le_bytes([
                 *bytes.get_unchecked(7),
                 *bytes.get_unchecked(6),
@@ -739,15 +743,21 @@ impl<'a> MinecraftPacketPart<'a> for Position {
             ])
         };
 
-        let z: i32 =
-            unsafe { std::mem::transmute((total & 0b00000011111111111111111111111111) as u32) };
-        total >>= 26;
-        let y: i16 = unsafe { std::mem::transmute((total & 0b0000001111111111) as u16) };
-        total >>= 12;
-        let x: i32 =
-            unsafe { std::mem::transmute((total & 0b00000011111111111111111111111111) as u32) };
+        let x = (total >> 38) as u32;
+        let y = (total & 0xFFF) as u16;
+        let z = (total << 26 >> 38) as u32;
+        use std::mem::transmute;
 
-        Ok((Position { x, y, z }, input))
+        Ok((
+            unsafe {
+                Position {
+                    x: transmute(x),
+                    y: transmute(y),
+                    z: transmute(z),
+                }
+            },
+            input,
+        ))
     }
 }
 
@@ -804,7 +814,6 @@ impl<
     }
 }
 
-
 impl<
         'a,
         K: MinecraftPacketPart<'a> + std::fmt::Debug + std::cmp::Ord,
@@ -813,7 +822,8 @@ impl<
     > MinecraftPacketPart<'a> for Map<'a, K, V, U>
 {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
-        let len = U::try_from(self.items.len()).map_err(|_| "The map lenght cannot be serialized due to its type.")?;
+        let len = U::try_from(self.items.len())
+            .map_err(|_| "The map lenght cannot be serialized due to its type.")?;
         len.serialize_minecraft_packet_part(output)?;
         for (key, value) in self.items.into_iter() {
             key.serialize_minecraft_packet_part(output)?;
@@ -833,19 +843,20 @@ impl<
 
         for _ in 0..len {
             let (key, new_input) = K::deserialize_minecraft_packet_part(input)?;
-            let (value, new_input) =
-                V::deserialize_minecraft_packet_part(new_input)?;
+            let (value, new_input) = V::deserialize_minecraft_packet_part(new_input)?;
             input = new_input;
             items.insert(key, value);
         }
 
-        Ok((Map {
-            items,
-            _len_prefix: std::marker::PhantomData,
-        }, input))
+        Ok((
+            Map {
+                items,
+                _len_prefix: std::marker::PhantomData,
+            },
+            input,
+        ))
     }
 }
-
 
 impl<'a, T: MinecraftPacketPart<'a>> MinecraftPacketPart<'a> for Option<T> {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
