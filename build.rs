@@ -72,7 +72,7 @@ struct Block {
     id: u32,
     #[serde(rename = "name")]
     text_id: String,
-    display_name: Option<String>,
+    display_name: String,
     hardness: f32,
     resistance: f32,
     diggable: bool,
@@ -103,19 +103,9 @@ fn generate_block_enum(data: serde_json::Value) {
     }
 
     // Process a few fields
-    let mut display_names = Vec::new();
     let mut raw_harvest_tools: Vec<Vec<u32>> = Vec::new();
     let mut raw_materials: Vec<String> = Vec::new();
     for block in &blocks {
-        let display_name = match &block.display_name {
-            Some(display_name) => display_name.clone(),
-            None => block
-                .text_id
-                .from_case(Case::Snake)
-                .to_case(Case::UpperCamel),
-        };
-
-        display_names.push(display_name);
         raw_harvest_tools.push(block.harvest_tools.clone().into_iter().map(|(k, _v)| k).collect());
         raw_materials.push(
             block
@@ -321,7 +311,7 @@ const TRANSPARENT: [bool; {max_value}] = {transparent:?};
         max_value = expected,
         state_id_match_arms = state_id_match_arms,
         text_ids = blocks.iter().map(|b| &b.text_id).collect::<Vec<_>>(),
-        display_names = display_names,
+        display_names = blocks.iter().map(|b| &b.display_name).collect::<Vec<_>>(),
         state_id_ranges = blocks.iter().map(|b| b.min_state_id..b.max_state_id + 1).collect::<Vec<_>>(),
         default_state_ids = blocks.iter().map(|b| b.default_state).collect::<Vec<_>>(),
         item_ids = blocks.iter().map(|b| b.drops.get(0).copied().unwrap_or(0)).collect::<Vec<_>>(),
@@ -342,63 +332,37 @@ const TRANSPARENT: [bool; {max_value}] = {transparent:?};
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct Item {
+    id: u32,
     display_name: String,
+    #[serde(rename = "name")]
     text_id: String,
-    numeric_id: u32,
-    max_stack_size: u8,
+    stack_size: u8,
 }
 
-/*
 #[allow(clippy::explicit_counter_loop)]
-fn generate_item_enum(data: &serde_json::Value) {
-    let items_json = data
-        .get(0)
-        .expect("Burger data is not an array")
-        .get("items")
-        .expect("No items in burger's json data")
-        .get("item")
-        .expect("expected item in items")
-        .as_object()
-        .expect("expected item to be an object")
-        .clone();
+fn generate_item_enum(data: serde_json::Value) {
+    let mut items: Vec<Item> = serde_json::from_value(data).expect("Invalid block data");
+    items.sort_by_key(|block| block.id);
 
-    let mut items = Vec::new();
-    for (key, item) in items_json.into_iter() {
-        let item: Item = match serde_json::from_value(item) {
-            Ok(item) => item,
-            Err(e) => panic!("Invalid item: {}, {}", key, e),
-        };
-        items.push(item);
-    }
-    let len = items.len();
-    items.sort_by_key(|b| b.numeric_id);
-
+    // Look for missing items in the array
     let mut expected = 0;
     for item in &items {
-        if item.numeric_id != expected {
+        if item.id != expected {
             panic!("The item with id {} is missing.", expected)
         }
         expected += 1;
     }
 
-    let mut display_names = Vec::new();
-    let mut max_stack_sizes = Vec::new();
-    let mut numeric_ids = Vec::new();
-    let mut text_ids = Vec::new();
-    for item in items {
-        display_names.push(item.display_name);
-        numeric_ids.push(item.numeric_id);
-        max_stack_sizes.push(item.max_stack_size);
-        text_ids.push(item.text_id);
-    }
-
+    // Generate the variants of the Item enum
     let mut variants = String::new();
-    for i in 0..len {
-        let name = text_ids[i].to_case(Case::UpperCamel);
-        variants.push_str(&format!("\t{} = {},\n", name, numeric_ids[i]));
+    for item in &items {
+        let name = item.text_id.from_case(Case::Snake).to_case(Case::UpperCamel);
+        variants.push_str(&format!("\t{} = {},\n", name, item.id));
     }
 
+    // Generate the code
     let code = format!(
         r#"use crate::*;
 
@@ -430,7 +394,7 @@ impl Item {{
 
     #[inline]
     pub fn get_max_stack_size(self) -> u8 {{
-        unsafe {{*MAX_STACK_SIZES.get_unchecked((self as u32) as usize)}}
+        unsafe {{*STACK_SIZES.get_unchecked((self as u32) as usize)}}
     }}
 }}
 
@@ -449,7 +413,7 @@ impl<'a> MinecraftPacketPart<'a> for Item {{
     }}
 }}
 
-const MAX_STACK_SIZES: [u8; {max_value}] = {max_stack_sizes:?};
+const STACK_SIZES: [u8; {max_value}] = {max_stack_sizes:?};
 
 const DISPLAY_NAMES: [&str; {max_value}] = {display_names:?};
 
@@ -457,16 +421,16 @@ const TEXT_IDS: [&str; {max_value}] = {text_ids:?};
 "#,
         variants = variants,
         max_value = expected,
-        max_stack_sizes = max_stack_sizes,
-        display_names = display_names,
-        text_ids = text_ids,
+        max_stack_sizes = items.iter().map(|b| b.stack_size).collect::<Vec<_>>(),
+        display_names = items.iter().map(|b| &b.display_name).collect::<Vec<_>>(),
+        text_ids = items.iter().map(|b| &b.text_id).collect::<Vec<_>>(),
     );
 
     File::create("src/ids/items.rs")
         .unwrap()
         .write_all(code.as_bytes())
         .unwrap()
-}*/
+}
 
 fn main() {
     //println!("cargo:rerun-if-changed=target/burger-cache-{}.json", VERSION);
@@ -490,5 +454,10 @@ fn main() {
         &format!("target/cache-blocks-{}.json", VERSION),
     );
     generate_block_enum(block_data);
-    //generate_item_enum(&data);
+
+    let items_data = get_data(
+        &blocks_url,
+        &format!("target/cache-blocks-{}.json", VERSION),
+    );
+    generate_item_enum(items_data);
 }
