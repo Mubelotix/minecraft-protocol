@@ -79,13 +79,10 @@ struct Block {
     transparent: bool,
     filter_light: u8,
     emit_light: u8,
-
     default_state: u32,
     min_state_id: u32,
     max_state_id: u32,
-
     drops: Vec<u32>,
-
     material: Option<String>,
     #[serde(default)]
     harvest_tools: HashMap<u32, bool>,
@@ -94,10 +91,9 @@ struct Block {
 #[allow(clippy::explicit_counter_loop)]
 fn generate_block_enum(data: serde_json::Value) {
     let mut blocks: Vec<Block> = serde_json::from_value(data).expect("Invalid block data");
-
-    let len = blocks.len();
     blocks.sort_by_key(|block| block.id);
 
+    // Look for missing blocks in the array
     let mut expected = 0;
     for block in &blocks {
         if block.id != expected {
@@ -106,17 +102,13 @@ fn generate_block_enum(data: serde_json::Value) {
         expected += 1;
     }
 
+    // Process a few fields
     let mut display_names = Vec::new();
-    let mut state_id_ranges = Vec::new();
-    let mut default_state_ids = Vec::new();
-    let mut numeric_ids = Vec::new();
-    let mut text_ids = Vec::new();
-    let mut item_ids = Vec::new();
-    let mut explosion_resistances = Vec::new();
+    let mut raw_harvest_tools: Vec<Vec<u32>> = Vec::new();
     let mut raw_materials: Vec<String> = Vec::new();
-    for block in blocks {
-        let display_name = match block.display_name {
-            Some(display_name) => display_name,
+    for block in &blocks {
+        let display_name = match &block.display_name {
+            Some(display_name) => display_name.clone(),
             None => block
                 .text_id
                 .from_case(Case::Snake)
@@ -124,30 +116,25 @@ fn generate_block_enum(data: serde_json::Value) {
         };
 
         display_names.push(display_name);
-        state_id_ranges.push(block.min_state_id..block.max_state_id + 1);
-        default_state_ids.push(block.default_state);
-        numeric_ids.push(block.id);
-        text_ids.push(block.text_id);
-        item_ids.push(block.drops.get(0).copied().unwrap_or(0));
-        explosion_resistances.push(block.resistance);
+        raw_harvest_tools.push(block.harvest_tools.clone().into_iter().map(|(k, _v)| k).collect());
         raw_materials.push(
             block
                 .material
+                .clone()
                 .unwrap_or_else(|| "unknown_material".to_string())
                 .from_case(Case::Snake)
                 .to_case(Case::UpperCamel),
         );
     }
 
+    // Generate the MaterialBlock enum and array
     let mut different_materials = raw_materials.clone();
     different_materials.sort();
     different_materials.dedup();
-
     let mut material_variants = String::new();
     for material in different_materials {
         material_variants.push_str(&format!("\t{},\n", material));
     }
-
     let mut materials = String::new();
     materials.push('[');
     for material in raw_materials {
@@ -157,23 +144,32 @@ fn generate_block_enum(data: serde_json::Value) {
     }
     materials.push(']');
 
+    // Generate the HARVEST_TOOLS array
+    let mut harvest_tools = String::new();
+    harvest_tools.push('[');
+    for block_harvest_tools in raw_harvest_tools {
+        harvest_tools.push_str("&[");
+        for harvest_tool in block_harvest_tools {
+            harvest_tools.push_str(&harvest_tool.to_string());
+            harvest_tools.push_str(", ");
+        }
+        harvest_tools.push_str("], ");
+    }
+    harvest_tools.push(']');
+
+    // Generate the variants of the Block enum
     let mut variants = String::new();
-    for i in 0..len {
-        let name = text_ids[i]
-            .strip_prefix("minecraft:")
-            .unwrap_or(&text_ids[i]);
-        let name = name.from_case(Case::Snake).to_case(Case::UpperCamel);
-        variants.push_str(&format!("\t{} = {},\n", name, numeric_ids[i]));
+    for block in &blocks {
+        let name = block.text_id.from_case(Case::Snake).to_case(Case::UpperCamel);
+        variants.push_str(&format!("\t{} = {},\n", name, block.id));
     }
 
+    // Generate the `match` of state ids 
     let mut state_id_match_arms = String::new();
-    for i in 0..len {
-        let name = text_ids[i]
-            .strip_prefix("minecraft:")
-            .unwrap_or(&text_ids[i]);
-        let name = name.from_case(Case::Snake).to_case(Case::UpperCamel);
-        let start = state_id_ranges[i].start;
-        let stop = state_id_ranges[i].end - 1;
+    for block in &blocks {
+        let name = block.text_id.from_case(Case::Snake).to_case(Case::UpperCamel);
+        let start = block.min_state_id;
+        let stop = block.max_state_id;
         if start != stop {
             state_id_match_arms.push_str(&format!(
                 "\t\t\t{}..={} => Some(Block::{}),\n",
@@ -184,6 +180,7 @@ fn generate_block_enum(data: serde_json::Value) {
         }
     }
 
+    // Generate the code
     let code = format!(
         r#"use crate::*;
 
@@ -232,19 +229,26 @@ impl Block {{
         self as u32
     }}
 
+    /// This returns the item that will be dropped if you break the block.
+    /// If the item is Air, there is actually no drop.
     #[inline]
     pub fn get_associated_item_id(self) -> u32 {{
         unsafe {{*ITEM_IDS.get_unchecked((self as u32) as usize)}}
     }}
 
     #[inline]
-    pub fn get_material(self) -> Option<BlockMaterial> {{
-        unsafe {{*MATERIALS.get_unchecked((self as u32) as usize)}}
+    pub fn get_resistance(self) -> f32 {{
+        unsafe {{*RESISTANCES.get_unchecked((self as u32) as usize)}}
     }}
 
     #[inline]
-    pub fn get_explosion_resistance(self) -> f32 {{
-        unsafe {{*EXPLOSION_RESISTANCES.get_unchecked((self as u32) as usize)}}
+    pub fn get_hardness(self) -> f32 {{
+        unsafe {{*HARDNESSES.get_unchecked((self as u32) as usize)}}
+    }}
+
+    #[inline]
+    pub fn get_material(self) -> Option<BlockMaterial> {{
+        unsafe {{*MATERIALS.get_unchecked((self as u32) as usize)}}
     }}
 
     #[inline]
@@ -255,6 +259,31 @@ impl Block {{
     #[inline]
     pub fn get_state_id_range(self) -> std::ops::Range<u32> {{
         unsafe {{STATE_ID_RANGES.get_unchecked((self as u32) as usize).clone()}}
+    }}
+
+    #[inline]
+    pub fn is_diggable(self) -> bool {{
+        unsafe {{*DIGGABLE.get_unchecked((self as u32) as usize)}}
+    }}
+
+    #[inline]
+    pub fn is_transparent(self) -> bool {{
+        unsafe {{*TRANSPARENT.get_unchecked((self as u32) as usize)}}
+    }}
+
+    #[inline]
+    pub fn get_compatible_harvest_tools(self) -> &'static [u32] {{
+        unsafe {{*HARVEST_TOOLS.get_unchecked((self as u32) as usize)}}
+    }}
+
+    #[inline]
+    pub fn get_light_emissions(self) -> u8 {{
+        unsafe {{*LIGHT_EMISSIONS.get_unchecked((self as u32) as usize)}}
+    }}
+
+    #[inline]
+    pub fn get_light_absorption(self) -> u8 {{
+        unsafe {{*LIGHT_ABSORPTION.get_unchecked((self as u32) as usize)}}
     }}
 }}
 
@@ -274,30 +303,36 @@ impl<'a> MinecraftPacketPart<'a> for Block {{
 }}
 
 const TEXT_IDS: [&str; {max_value}] = {text_ids:?};
-
 const DISPLAY_NAMES: [&str; {max_value}] = {display_names:?};
-
 const STATE_ID_RANGES: [std::ops::Range<u32>; {max_value}] = {state_id_ranges:?};
-
 const DEFAULT_STATE_IDS: [u32; {max_value}] = {default_state_ids:?};
-
 const ITEM_IDS: [u32; {max_value}] = {item_ids:?};
-
-const EXPLOSION_RESISTANCES: [f32; {max_value}] = {explosion_resistances:?};
-
+const RESISTANCES: [f32; {max_value}] = {resistances:?};
 const MATERIALS: [Option<BlockMaterial>; {max_value}] = {materials};
+const HARVEST_TOOLS: [&[u32]; {max_value}] = {harvest_tools};
+const HARDNESSES: [f32; {max_value}] = {hardnesses:?};
+const LIGHT_EMISSIONS: [u8; {max_value}] = {light_emissions:?};
+const LIGHT_ABSORPTION: [u8; {max_value}] = {light_absorption:?};
+const DIGGABLE: [bool; {max_value}] = {diggable:?};
+const TRANSPARENT: [bool; {max_value}] = {transparent:?};
 "#,
         variants = variants,
         material_variants = material_variants,
         max_value = expected,
         state_id_match_arms = state_id_match_arms,
-        text_ids = text_ids,
+        text_ids = blocks.iter().map(|b| &b.text_id).collect::<Vec<_>>(),
         display_names = display_names,
-        state_id_ranges = state_id_ranges,
-        default_state_ids = default_state_ids,
-        item_ids = item_ids,
+        state_id_ranges = blocks.iter().map(|b| b.min_state_id..b.max_state_id + 1).collect::<Vec<_>>(),
+        default_state_ids = blocks.iter().map(|b| b.default_state).collect::<Vec<_>>(),
+        item_ids = blocks.iter().map(|b| b.drops.get(0).copied().unwrap_or(0)).collect::<Vec<_>>(),
         materials = materials,
-        explosion_resistances = explosion_resistances,
+        resistances = blocks.iter().map(|b| b.resistance).collect::<Vec<_>>(),
+        harvest_tools = harvest_tools,
+        hardnesses = blocks.iter().map(|b| b.hardness).collect::<Vec<_>>(),
+        light_emissions = blocks.iter().map(|b| b.emit_light).collect::<Vec<_>>(),
+        light_absorption = blocks.iter().map(|b| b.filter_light).collect::<Vec<_>>(),
+        diggable = blocks.iter().map(|b| b.diggable).collect::<Vec<_>>(),
+        transparent = blocks.iter().map(|b| b.transparent).collect::<Vec<_>>(),
     );
 
     File::create("src/ids/blocks.rs")
