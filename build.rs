@@ -1,8 +1,12 @@
 use convert_case::{Case, Casing};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs::File};
-use std::io::{ErrorKind, Read, Write};
+use std::{
+    hash::Hash,
+    io::{ErrorKind, Read, Write},
+};
 
+/// Changing this is not enough, please also change static urls in main() since  
 const VERSION: &str = "1.16.5";
 
 fn get_data(url: &str, cache: &str) -> serde_json::Value {
@@ -63,31 +67,39 @@ fn get_data(url: &str, cache: &str) -> serde_json::Value {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct BlockState {
-    // Empty for now
-    // It would be a great feature to add
-}
-
-#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct Block {
     id: u32,
-    explosion_resistance: f32,
-    item: u32,
+    #[serde(rename = "name")]
+    text_id: String,
+    display_name: Option<String>,
+    hardness: f32,
+    resistance: f32,
+    diggable: bool,
+    transparent: bool,
+    filter_light: u8,
+    emit_light: u8,
+
     default_state: u32,
-    class: String,
-    states: HashMap<u32, BlockState>,
+    min_state_id: u32,
+    max_state_id: u32,
+
+    drops: Vec<u32>,
+
+    material: Option<String>,
+    #[serde(default)]
+    harvest_tools: HashMap<u32, bool>,
 }
 
 #[allow(clippy::explicit_counter_loop)]
 fn generate_block_enum(data: serde_json::Value) {
-    let blocks: HashMap<String, Block> = serde_json::from_value(data).expect("Invalid block data");
-    let mut blocks: Vec<(String, Block)> = blocks.into_iter().collect();
+    let mut blocks: Vec<Block> = serde_json::from_value(data).expect("Invalid block data");
 
     let len = blocks.len();
-    blocks.sort_by_key(|(_name, block)| block.id);
+    blocks.sort_by_key(|block| block.id);
 
     let mut expected = 0;
-    for (_name, block) in &blocks {
+    for block in &blocks {
         if block.id != expected {
             panic!("The block with id {} is missing.", expected)
         }
@@ -101,65 +113,64 @@ fn generate_block_enum(data: serde_json::Value) {
     let mut text_ids = Vec::new();
     let mut item_ids = Vec::new();
     let mut explosion_resistances = Vec::new();
-    let mut raw_classes = Vec::new();
-    for (name, block) in blocks {
-        let display_name = name.strip_prefix("minecraft:").unwrap_or(&name);
-        let display_name = display_name.from_case(Case::Snake).to_case(Case::Title);
-
-        let mut start_state_ids = u32::MAX;
-        let mut end_state_ids = u32::MIN;
-        for state_id in block.states.keys() {
-            if *state_id + 1 > end_state_ids {
-                end_state_ids = *state_id + 1;
-            }
-            if *state_id < start_state_ids {
-                start_state_ids = *state_id;
-            }
-        }
-        for state_id in start_state_ids..end_state_ids {
-            if !block.states.contains_key(&state_id) {
-                panic!("Missing state id {} in block {}", state_id, name)
-            }
-        }
+    let mut raw_materials: Vec<String> = Vec::new();
+    for block in blocks {
+        let display_name = match block.display_name {
+            Some(display_name) => display_name,
+            None => block
+                .text_id
+                .from_case(Case::Snake)
+                .to_case(Case::UpperCamel),
+        };
 
         display_names.push(display_name);
-        state_id_ranges.push(start_state_ids..end_state_ids);
+        state_id_ranges.push(block.min_state_id..block.max_state_id + 1);
         default_state_ids.push(block.default_state);
         numeric_ids.push(block.id);
-        text_ids.push(name);
-        item_ids.push(block.item);
-        explosion_resistances.push(block.explosion_resistance);
-        raw_classes.push(block.class);
+        text_ids.push(block.text_id);
+        item_ids.push(block.drops.get(0).copied().unwrap_or(0));
+        explosion_resistances.push(block.resistance);
+        raw_materials.push(
+            block
+                .material
+                .unwrap_or_else(|| "unknown_material".to_string())
+                .from_case(Case::Snake)
+                .to_case(Case::UpperCamel),
+        );
     }
 
-    let mut different_classes = raw_classes.clone();
-    different_classes.sort();
-    different_classes.dedup();
+    let mut different_materials = raw_materials.clone();
+    different_materials.sort();
+    different_materials.dedup();
 
-    let mut class_variants = String::new();
-    for class in different_classes {
-        class_variants.push_str(&format!("\t{},\n", class));
+    let mut material_variants = String::new();
+    for material in different_materials {
+        material_variants.push_str(&format!("\t{},\n", material));
     }
 
-    let mut classes = String::new();
-    classes.push('[');
-    for class in raw_classes {
-        classes.push_str("BlockClass::");
-        classes.push_str(&class);
-        classes.push_str(", ");
+    let mut materials = String::new();
+    materials.push('[');
+    for material in raw_materials {
+        materials.push_str("Some(BlockMaterial::");
+        materials.push_str(&material);
+        materials.push_str("), ");
     }
-    classes.push(']');
+    materials.push(']');
 
     let mut variants = String::new();
     for i in 0..len {
-        let name = text_ids[i].strip_prefix("minecraft:").unwrap_or(&text_ids[i]);
+        let name = text_ids[i]
+            .strip_prefix("minecraft:")
+            .unwrap_or(&text_ids[i]);
         let name = name.from_case(Case::Snake).to_case(Case::UpperCamel);
         variants.push_str(&format!("\t{} = {},\n", name, numeric_ids[i]));
     }
 
     let mut state_id_match_arms = String::new();
     for i in 0..len {
-        let name = text_ids[i].strip_prefix("minecraft:").unwrap_or(&text_ids[i]);
+        let name = text_ids[i]
+            .strip_prefix("minecraft:")
+            .unwrap_or(&text_ids[i]);
         let name = name.from_case(Case::Snake).to_case(Case::UpperCamel);
         let start = state_id_ranges[i].start;
         let stop = state_id_ranges[i].end - 1;
@@ -184,8 +195,8 @@ pub enum Block {{
 }}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum BlockClass {{
-{class_variants}
+pub enum BlockMaterial {{
+{material_variants}
 }}
 
 impl Block {{
@@ -206,7 +217,6 @@ impl Block {{
     }}
 
     /// Get the textual identifier of this block.
-    /// This library supports blocks in the `minecraft` namespace, so all the identifiers will be prefixed with `minecraft:`.
     #[inline]
     pub fn get_text_id(self) -> &'static str {{
         unsafe {{*TEXT_IDS.get_unchecked((self as u32) as usize)}}
@@ -228,8 +238,8 @@ impl Block {{
     }}
 
     #[inline]
-    pub fn get_block_class(self) -> BlockClass {{
-        unsafe {{*CLASSES.get_unchecked((self as u32) as usize)}}
+    pub fn get_material(self) -> Option<BlockMaterial> {{
+        unsafe {{*MATERIALS.get_unchecked((self as u32) as usize)}}
     }}
 
     #[inline]
@@ -275,10 +285,10 @@ const ITEM_IDS: [u32; {max_value}] = {item_ids:?};
 
 const EXPLOSION_RESISTANCES: [f32; {max_value}] = {explosion_resistances:?};
 
-const CLASSES: [BlockClass; {max_value}] = {classes};
+const MATERIALS: [Option<BlockMaterial>; {max_value}] = {materials};
 "#,
         variants = variants,
-        class_variants = class_variants,
+        material_variants = material_variants,
         max_value = expected,
         state_id_match_arms = state_id_match_arms,
         text_ids = text_ids,
@@ -286,7 +296,7 @@ const CLASSES: [BlockClass; {max_value}] = {classes};
         state_id_ranges = state_id_ranges,
         default_state_ids = default_state_ids,
         item_ids = item_ids,
-        classes = classes,
+        materials = materials,
         explosion_resistances = explosion_resistances,
     );
 
@@ -356,7 +366,7 @@ fn generate_item_enum(data: &serde_json::Value) {
 
     let code = format!(
         r#"use crate::*;
-        
+
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Item {{
@@ -425,7 +435,25 @@ const TEXT_IDS: [&str; {max_value}] = {text_ids:?};
 
 fn main() {
     //println!("cargo:rerun-if-changed=target/burger-cache-{}.json", VERSION);
-    let block_data = get_data(&format!("https://gitlab.bixilon.de/bixilon/pixlyzer-data/-/raw/master/version/{}/blocks.min.json", VERSION), &format!("target/cache-blocks-{}.json", VERSION));
+    let mut file_locations = get_data(
+        "https://raw.githubusercontent.com/PrismarineJS/minecraft-data/master/data/dataPaths.json",
+        "target/cache-file-location.json",
+    );
+    let file_locations = file_locations.get_mut("pc").unwrap().take();
+    let file_locations: HashMap<String, HashMap<String, String>> =
+        serde_json::from_value(file_locations).unwrap();
+    let file_locations = file_locations
+        .get(VERSION)
+        .expect("There is no generated data for this minecraft version yet");
+    let blocks_url = format!(
+        "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}",
+        file_locations.get("blocks").unwrap()
+    );
+
+    let block_data = get_data(
+        &blocks_url,
+        &format!("target/cache-blocks-{}.json", VERSION),
+    );
     generate_block_enum(block_data);
     //generate_item_enum(&data);
 }
