@@ -8,7 +8,7 @@ pub struct ChunkData<'a> {
     /// Chunk coordinate (block coordinate divided by 16, rounded down).
     pub chunk_x: i32,
     /// Chunk coordinate (block coordinate divided by 16, rounded down).
-    pub chunk_y: i32,
+    pub chunk_z: i32,
     /// Bitmask with bits set to 1 for every 16×16×16 chunk section whose data is included in Data.
     /// The least significant bit represents the chunk section at the bottom of the chunk column (from y=0 to y=15).
     pub primary_bit_mask: VarInt,
@@ -33,7 +33,7 @@ pub struct ChunkData<'a> {
 impl<'a> MinecraftPacketPart<'a> for ChunkData<'a> {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
         self.chunk_x.serialize_minecraft_packet_part(output)?;
-        self.chunk_y.serialize_minecraft_packet_part(output)?;
+        self.chunk_z.serialize_minecraft_packet_part(output)?;
         self.biomes
             .is_some()
             .serialize_minecraft_packet_part(output)?;
@@ -53,7 +53,7 @@ impl<'a> MinecraftPacketPart<'a> for ChunkData<'a> {
         input: &'a mut [u8],
     ) -> Result<(Self, &'a mut [u8]), &'static str> {
         let (chunk_x, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
-        let (chunk_y, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
+        let (chunk_z, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         let (full_chunk, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         let (primary_bit_mask, input) =
             MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
@@ -73,7 +73,7 @@ impl<'a> MinecraftPacketPart<'a> for ChunkData<'a> {
         Ok((
             ChunkData {
                 chunk_x,
-                chunk_y,
+                chunk_z,
                 primary_bit_mask,
                 heightmaps,
                 biomes,
@@ -236,11 +236,11 @@ pub enum WorldBorderAction {
     },
     SetCenter {
         x: f64,
-        y: f64,
+        z: f64,
     },
     Initialize {
         x: f64,
-        y: f64,
+        z: f64,
         /// Current length of a single side of the world border, in meters
         old_diameter: f64,
         /// Target length of a single side of the world border, in meters
