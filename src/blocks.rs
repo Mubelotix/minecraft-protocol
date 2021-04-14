@@ -104,14 +104,15 @@ impl<'a> MultiBlockChange<'a> {
         unsafe { (transmute(x), transmute(y), transmute(z)) }
     }
 
-    /// Takes the position of the block relatively to the position of the chunk passed in `chunk_section_position`.
+    /// Takes the position of the block relatively to the position of the chunk passed in `chunk_section_position` and the state id of a block.
+    /// Use [Block::get_default_state_id](crate::ids::blocks::Block::get_default_state_id) to get the state id corresponding to a [Block](crate::ids::blocks::Block).
     ///
     /// ```ignore
     /// // get the relative X coordinate
     /// let chunk_x = (x / 16.0).floor();
     /// let relative_x = x - chunk_x * 16;
     /// ```
-    pub fn encode_block(block: crate::ids::blocks::Block, x: u8, y: u8, z: u8) -> Result<u64, &'static str> {
+    pub fn encode_block(block: u32, x: u8, y: u8, z: u8) -> Result<u64, &'static str> {
         if x > 0xF || y > 0xF || z > 0xF {
             return Err(
                 "Unable to encode block: found a value out of range for the protocol types.",
@@ -121,18 +122,18 @@ impl<'a> MultiBlockChange<'a> {
         Ok(((block as u32) as u64) << 12 | ((x as u64) << 8 | (y as u64) << 4 | z as u64))
     }
 
-    /// Returns the position of the block relatively to the position of the chunk passed in `chunk_section_position`.
-	/// If the ID of the block is not valid, `None` will be returned.
+    /// Returns the position of the block in the chunk at coordinates `chunk_section_position` and the state id of the block.
+	/// Use [Block::from_state_id](crate::ids::blocks::Block::from_state_id) to get the corresponding [Block](crate::ids::blocks::Block).
     ///
     /// ```ignore
     /// // get the absolute X coordinate
     /// let x = chunk_x * 16 + relative_x;
     /// ```
-    pub fn decode_block(block: u64) -> (Option<crate::ids::blocks::Block>, u8, u8, u8) {
-        let decoded_block = crate::ids::blocks::Block::from_id((block >> 12) as u32);
+    pub fn decode_block(block: u64) -> (u32, u8, u8, u8) {
+        let decoded_block = (block >> 12) as u32;
         let x = (block << 52 >> 60) as u8;
-        let z = (block << 56 >> 60) as u8;
         let y = (block << 60 >> 60) as u8;
-        (decoded_block, x, z, y)
+        let z = (block << 56 >> 60) as u8;
+        (decoded_block, x, y, z)
     }
 }
