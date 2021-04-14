@@ -175,7 +175,8 @@ fn generate_block_enum(data: serde_json::Value) {
 
     let code = format!(
         r#"use crate::*;
-        
+
+/// See [implementations](#implementations) for useful methods.
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Block {{
