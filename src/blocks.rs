@@ -71,7 +71,7 @@ pub struct MultiBlockChange<'a> {
     ///
     /// Use [MultiBlockChange::decode_chunk_section_position] and [MultiBlockChange::encode_chunk_section_position] to work with it.
     pub chunk_section_position: u64,
-    /// Always inverse the preceding Update Light packet's "Trust Edges" bool
+    /// Always inverse the preceding [ClientboundPacket::UpdateLight](crate::packets::play_clientbound::ClientboundPacket::UpdateLight) packet's "Trust Edges" bool
     pub inverse_trust_edges: bool,
     /// Each entry is composed of the block id, shifted right by 12, and the relative block position in the chunk section (4 bits for x, z, and y, from left to right).
     ///
