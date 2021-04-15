@@ -732,15 +732,15 @@ impl<'a> MinecraftPacketPart<'a> for &'a str {
 impl<'a> MinecraftPacketPart<'a> for Position {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
         let x = match self.x < 0 {
-            true => (self.x + 0b11_1111_1111_1111_1111_1111_1111) as u64,
+            true => (self.x + 2i32.pow(26)) as u64,
             false => self.x as u64
         };
         let y = match self.y < 0 {
-            true => (self.y + 0b1111_1111_1111) as u64,
+            true => (self.y + 2i16.pow(12)) as u64,
             false => self.y as u64
         };
         let z = match self.z < 0 {
-            true => (self.z + 0b11_1111_1111_1111_1111_1111_1111) as u64,
+            true => (self.z + 2i32.pow(26)) as u64,
             false => self.z as u64
         };
         let value = ((x & 0x3FFFFFF) << 38) | ((z & 0x3FFFFFF) << 12) | (y & 0xFFF);
@@ -769,16 +769,16 @@ impl<'a> MinecraftPacketPart<'a> for Position {
         };
 
         let mut x = (total >> 38) as i32 & 0b11_1111_1111_1111_1111_1111_1111;
-        if x >= 0b1_1111_1111_1111_1111_1111_1111 {
-            x -= 0b11_1111_1111_1111_1111_1111_1111
+        if x >= 2i32.pow(25) {
+            x -= 2i32.pow(26)
         }
         let mut y = (total & 0xFFF) as i16;
-        if y >= 0b111_1111_1111 {
-            y -= 0b1111_1111_1111;
+        if y >= 2i16.pow(11) {
+            y -= 2i16.pow(12);
         }
         let mut z = (total << 26 >> 38) as i32;
-        if z >= 0b1_1111_1111_1111_1111_1111_1111 {
-            z -= 0b11_1111_1111_1111_1111_1111_1111
+        if z >= 2i32.pow(25) {
+            z -= 2i32.pow(26)
         }
 
         Ok((

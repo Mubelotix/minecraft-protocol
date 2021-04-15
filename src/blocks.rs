@@ -83,15 +83,15 @@ impl<'a> MultiBlockChange<'a> {
     /// Takes the position of the chunk (block coordinate divided by 16 and rounded down).
     pub fn encode_chunk_section_position(x: i32, y: i32, z: i32) -> Result<u64, &'static str> {
         let x = match x < 0 {
-            true => (x + 0b11_1111_1111_1111_1111_1111) as u64,
+            true => (x + 2i32.pow(22)) as u64,
             false => x as u64
         };
         let y = match y < 0 {
-            true => (y + 0b1111_1111_1111_1111_1111) as u64,
+            true => (y + 2i32.pow(20)) as u64,
             false => y as u64
         };
         let z = match z < 0 {
-            true => (z + 0b11_1111_1111_1111_1111_1111) as u64,
+            true => (z + 2i32.pow(22)) as u64,
             false => z as u64
         };
 
@@ -110,14 +110,14 @@ impl<'a> MultiBlockChange<'a> {
         let mut y = (chunk_section_position << 44 >> 44) as i32;
         let mut z = (chunk_section_position << 22 >> 42) as i32;
 
-        if x > 0b1_1111_1111_1111_1111_1111 {
-            x -= 0b11_1111_1111_1111_1111_1111;
+        if x > 2i32.pow(21) {
+            x -= 2i32.pow(22);
         }
-        if y > 0b111_1111_1111_1111_1111 {
-            y -= 0b1111_1111_1111_1111_1111;
+        if y > 2i32.pow(19) {
+            y -= 2i32.pow(20);
         }
-        if z > 0b1_1111_1111_1111_1111_1111 {
-            z -= 0b11_1111_1111_1111_1111_1111;
+        if z > 2i32.pow(21) {
+            z -= 2i32.pow(22);
         }
 
         (x, y, z)
