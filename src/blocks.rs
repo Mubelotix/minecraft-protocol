@@ -82,8 +82,18 @@ pub struct MultiBlockChange<'a> {
 impl<'a> MultiBlockChange<'a> {
     /// Takes the position of the chunk (block coordinate divided by 16 and rounded down).
     pub fn encode_chunk_section_position(x: i32, y: i32, z: i32) -> Result<u64, &'static str> {
-        use std::mem::transmute;
-        let (x, y, z): (u32, u32, u32) = unsafe { (transmute(x), transmute(y), transmute(z)) };
+        let x = match x < 0 {
+            true => (x + 0b11_1111_1111_1111_1111_1111) as u64,
+            false => x as u64
+        };
+        let y = match y < 0 {
+            true => (y + 0b1111_1111_1111_1111_1111) as u64,
+            false => y as u64
+        };
+        let z = match z < 0 {
+            true => (z + 0b11_1111_1111_1111_1111_1111) as u64,
+            false => z as u64
+        };
 
         if x > 0x3FFFFF || y > 0xFFFFF || z > 0x3FFFFF {
             return Err(
@@ -96,12 +106,21 @@ impl<'a> MultiBlockChange<'a> {
 
     /// Returns the position of the chunk (block coordinate divided by 16 and rounded down).
     pub fn decode_chunk_section_position(chunk_section_position: u64) -> (i32, i32, i32) {
-        let x = (chunk_section_position >> 42) as u32;
-        let y = (chunk_section_position << 44 >> 44) as u32;
-        let z = (chunk_section_position << 22 >> 42) as u32;
+        let mut x = (chunk_section_position >> 42) as i32;
+        let mut y = (chunk_section_position << 44 >> 44) as i32;
+        let mut z = (chunk_section_position << 22 >> 42) as i32;
 
-        use std::mem::transmute;
-        unsafe { (transmute(x), transmute(y), transmute(z)) }
+        if x > 0b1_1111_1111_1111_1111_1111 {
+            x -= 0b11_1111_1111_1111_1111_1111;
+        }
+        if y > 0b111_1111_1111_1111_1111 {
+            y -= 0b1111_1111_1111_1111_1111;
+        }
+        if z > 0b1_1111_1111_1111_1111_1111 {
+            z -= 0b11_1111_1111_1111_1111_1111;
+        }
+
+        (x, y, z)
     }
 
     /// Takes the position of the block relatively to the position of the chunk passed in `chunk_section_position` and the state id of a block.
@@ -135,5 +154,33 @@ impl<'a> MultiBlockChange<'a> {
         let y = (block << 60 >> 60) as u8;
         let z = (block << 56 >> 60) as u8;
         (decoded_block, x, y, z)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_chunk_section_position() {
+        let position = (15, 7, 23);
+        let encoded = MultiBlockChange::encode_chunk_section_position(position.0, position.1, position.2).unwrap();
+        let decoded = MultiBlockChange::decode_chunk_section_position(encoded);
+        assert_eq!(position, decoded);
+
+        let position = (-15, 7, 23);
+        let encoded = MultiBlockChange::encode_chunk_section_position(position.0, position.1, position.2).unwrap();
+        let decoded = MultiBlockChange::decode_chunk_section_position(encoded);
+        assert_eq!(position, decoded);
+
+        let position = (0, 0, 0);
+        let encoded = MultiBlockChange::encode_chunk_section_position(position.0, position.1, position.2).unwrap();
+        let decoded = MultiBlockChange::decode_chunk_section_position(encoded);
+        assert_eq!(position, decoded);
+
+        let position = (-1651, -65, -54412);
+        let encoded = MultiBlockChange::encode_chunk_section_position(position.0, position.1, position.2).unwrap();
+        let decoded = MultiBlockChange::decode_chunk_section_position(encoded);
+        assert_eq!(position, decoded);
     }
 }
