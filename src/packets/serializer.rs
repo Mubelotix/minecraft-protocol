@@ -672,6 +672,34 @@ mod integers {
                 assert_eq!(outputs[idx], expected_outputs[idx]);
             }
         }
+    
+        #[test]
+        fn test_position() {
+            let position = Position {x: 10, y: 65, z: 23};
+            let mut serialized = position.clone().serialize_minecraft_packet().unwrap();
+            let deserialized = Position::deserialize_uncompressed_minecraft_packet(serialized.as_mut_slice()).unwrap();
+            assert_eq!(position, deserialized);
+
+            let position = Position {x: -122, y: 65, z: 23};
+            let mut serialized = position.clone().serialize_minecraft_packet().unwrap();
+            let deserialized = Position::deserialize_uncompressed_minecraft_packet(serialized.as_mut_slice()).unwrap();
+            assert_eq!(position, deserialized);
+
+            let position = Position {x: 0, y: 65, z: 23};
+            let mut serialized = position.clone().serialize_minecraft_packet().unwrap();
+            let deserialized = Position::deserialize_uncompressed_minecraft_packet(serialized.as_mut_slice()).unwrap();
+            assert_eq!(position, deserialized);
+
+            let position = Position {x: 10, y: -20, z: 23};
+            let mut serialized = position.clone().serialize_minecraft_packet().unwrap();
+            let deserialized = Position::deserialize_uncompressed_minecraft_packet(serialized.as_mut_slice()).unwrap();
+            assert_eq!(position, deserialized);
+
+            let position = Position {x: -941621, y: -846, z: -6546541};
+            let mut serialized = position.clone().serialize_minecraft_packet().unwrap();
+            let deserialized = Position::deserialize_uncompressed_minecraft_packet(serialized.as_mut_slice()).unwrap();
+            assert_eq!(position, deserialized);
+        }
     }
 }
 
@@ -703,23 +731,20 @@ impl<'a> MinecraftPacketPart<'a> for &'a str {
 
 impl<'a> MinecraftPacketPart<'a> for Position {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
-        let mut total: u64 = (unsafe { std::mem::transmute::<i32, u32>(self.x) }
-            & 0b00000011111111111111111111111111) as u64;
-        total <<= 26;
-        total += (self.y & 0b0000001111111111) as u64;
-        total <<= 12;
-        total += (unsafe { std::mem::transmute::<i32, u32>(self.z) }
-            & 0b00000011111111111111111111111111) as u64;
-
-        let bytes = total.to_le_bytes();
-        output.push(bytes[7]);
-        output.push(bytes[6]);
-        output.push(bytes[5]);
-        output.push(bytes[4]);
-        output.push(bytes[3]);
-        output.push(bytes[2]);
-        output.push(bytes[1]);
-        output.push(bytes[0]);
+        let x = match self.x < 0 {
+            true => (self.x + 0b11_1111_1111_1111_1111_1111_1111) as u64,
+            false => self.x as u64
+        };
+        let y = match self.y < 0 {
+            true => (self.y + 0b1111_1111_1111) as u64,
+            false => self.y as u64
+        };
+        let z = match self.z < 0 {
+            true => (self.z + 0b11_1111_1111_1111_1111_1111_1111) as u64,
+            false => self.z as u64
+        };
+        let value = ((x & 0x3FFFFFF) << 38) | ((z & 0x3FFFFFF) << 12) | (y & 0xFFF);
+        output.extend_from_slice(&value.to_be_bytes());
         Ok(())
     }
 
@@ -743,18 +768,24 @@ impl<'a> MinecraftPacketPart<'a> for Position {
             ])
         };
 
-        let x = (total >> 38) as u32;
-        let y = (total & 0xFFF) as u16;
-        let z = (total << 26 >> 38) as u32;
-        use std::mem::transmute;
+        let mut x = (total >> 38) as i32 & 0b11_1111_1111_1111_1111_1111_1111;
+        if x >= 0b1_1111_1111_1111_1111_1111_1111 {
+            x -= 0b11_1111_1111_1111_1111_1111_1111
+        }
+        let mut y = (total & 0xFFF) as i16;
+        if y >= 0b111_1111_1111 {
+            y -= 0b1111_1111_1111;
+        }
+        let mut z = (total << 26 >> 38) as i32;
+        if z >= 0b1_1111_1111_1111_1111_1111_1111 {
+            z -= 0b11_1111_1111_1111_1111_1111_1111
+        }
 
         Ok((
-            unsafe {
-                Position {
-                    x: transmute(x),
-                    y: transmute(y),
-                    z: transmute(z),
-                }
+            Position {
+                x,
+                y,
+                z,
             },
             input,
         ))

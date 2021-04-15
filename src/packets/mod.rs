@@ -38,10 +38,10 @@ impl TryFrom<usize> for VarLong {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Position {
     pub x: i32,
-    pub y: u16,
+    pub y: i16,
     pub z: i32,
 }
 
