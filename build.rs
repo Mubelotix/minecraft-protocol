@@ -147,6 +147,22 @@ fn generate_block_enum(data: serde_json::Value) {
     }
     harvest_tools.push(']');
 
+    // Enumerate the air blocks
+    let mut air_blocks = vec![false; expected as usize];
+    for air_block in &["air", "cave_air", "grass", "torch", "wall_torch", "wheat", "soul_torch", "soul_wall_torch", "carrots", "potatoes"] {
+        let mut success = false;
+        for block in &blocks {
+            if &block.text_id.as_str() == air_block {
+                air_blocks[block.id as usize] = true;
+                success = true;
+                break;
+            }
+        }
+        if !success {
+            panic!("Could not find block {} in the block array", air_block);
+        }
+    }
+
     // Generate the variants of the Block enum
     let mut variants = String::new();
     for block in &blocks {
@@ -275,6 +291,15 @@ impl Block {{
     pub fn get_light_absorption(self) -> u8 {{
         unsafe {{*LIGHT_ABSORPTION.get_unchecked((self as u32) as usize)}}
     }}
+
+    /// A "air block" is a block on which a player cannot stand, like air, wheat, torch...
+    /// Fire is excluded since you may not want your clients to walk trought fire by default.
+    /// The list of air blocks is maintained by hand.
+    /// It could not be exhaustive.
+    #[inline]
+    pub fn is_air_block(self) -> bool {{
+        unsafe {{*AIR_BLOCKS.get_unchecked((self as u32) as usize)}}
+    }}
 }}
 
 impl<'a> MinecraftPacketPart<'a> for Block {{
@@ -305,6 +330,7 @@ const LIGHT_EMISSIONS: [u8; {max_value}] = {light_emissions:?};
 const LIGHT_ABSORPTION: [u8; {max_value}] = {light_absorption:?};
 const DIGGABLE: [bool; {max_value}] = {diggable:?};
 const TRANSPARENT: [bool; {max_value}] = {transparent:?};
+const AIR_BLOCKS: [bool; {max_value}] = {air_blocks:?};
 "#,
         variants = variants,
         material_variants = material_variants,
@@ -323,6 +349,7 @@ const TRANSPARENT: [bool; {max_value}] = {transparent:?};
         light_absorption = blocks.iter().map(|b| b.filter_light).collect::<Vec<_>>(),
         diggable = blocks.iter().map(|b| b.diggable).collect::<Vec<_>>(),
         transparent = blocks.iter().map(|b| b.transparent).collect::<Vec<_>>(),
+        air_blocks = air_blocks,
     );
 
     File::create("src/ids/blocks.rs")
