@@ -46,7 +46,7 @@ pub struct Position {
 }
 
 #[minecraft_enum(u8)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Direction {
     South = 1,
     West,
