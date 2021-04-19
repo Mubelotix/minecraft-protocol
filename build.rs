@@ -296,9 +296,19 @@ impl Block {{
     /// Fire is excluded since you may not want your clients to walk trought fire by default.
     /// The list of air blocks is maintained by hand.
     /// It could not be exhaustive.
+    /// See also [Block::is_blocking].
     #[inline]
     pub fn is_air_block(self) -> bool {{
         unsafe {{*AIR_BLOCKS.get_unchecked((self as u32) as usize)}}
+    }}
+
+    /// The opposite of [Block::is_air_block].
+    /// Fire is included since you may not want your clients to walk trought fire by default.
+    /// The list of blocking blocks is maintained by hand.
+    /// It could not be exhaustive.
+    #[inline]
+    pub fn is_blocking(self) -> bool {{
+        unsafe {{!(*AIR_BLOCKS.get_unchecked((self as u32) as usize))}}
     }}
 }}
 
