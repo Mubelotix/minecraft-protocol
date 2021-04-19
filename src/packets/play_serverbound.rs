@@ -224,6 +224,24 @@ pub enum ServerboundPacket<'a> {
         on_ground: bool,
     },
 
+    /// Sent when a player moves in a vehicle.
+    /// Fields are the same as in [ServerboundPacket::PlayerPositionAndRotation].
+    /// Note that all fields use absolute positioning and do not allow for relative positioning.
+    VehicleMove {
+        /// Absolute position
+        x: f64,
+        /// Absolute position
+        y: f64,
+        /// Absolute position
+        z: f64,
+        /// Absolute rotation on the X Axis, in degrees.
+        /// [Learn more about yaw and pitch](https://wiki.vg/Protocol#Player_Rotation)
+        yaw: f32,
+        /// Absolute rotation on the Y Axis, in degrees
+        /// [Learn more about yaw and pitch](https://wiki.vg/Protocol#Player_Rotation)
+        pitch: f32,
+    },
+
     /// Used to visually update whether boat paddles are turning.
     /// The server will update the [Boat entity metadata](https://wiki.vg/Entities#Boat) to match the values here.
     SteerBoat {
