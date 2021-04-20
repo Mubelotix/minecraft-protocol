@@ -18,6 +18,118 @@ pub enum NbtList {
     Compound(Vec<HashMap<String, NbtTag>>),
 }
 
+impl NbtList {
+    #[inline]
+    pub fn serialize_list(&self, output: &mut Vec<u8>) {
+        match self {
+            NbtList::None => {
+                output.push(0);
+                output.extend_from_slice(&0i32.to_be_bytes());
+            }
+            NbtList::Byte(list) => {
+                output.push(1);
+                output.extend_from_slice(&(list.len() as i32).to_be_bytes());
+                for element in list {
+                    output.push(element.to_be_bytes()[0]);
+                }
+            }
+            NbtList::Short(list) => {
+                output.push(2);
+                output.extend_from_slice(&(list.len() as i32).to_be_bytes());
+                for element in list {
+                    output.extend_from_slice(&element.to_be_bytes());
+                }
+            }
+            NbtList::Int(list) => {
+                output.push(3);
+                output.extend_from_slice(&(list.len() as i32).to_be_bytes());
+                for element in list {
+                    output.extend_from_slice(&element.to_be_bytes());
+                }
+            }
+            NbtList::Long(list) => {
+                output.push(4);
+                output.extend_from_slice(&(list.len() as i32).to_be_bytes());
+                for element in list {
+                    output.extend_from_slice(&element.to_be_bytes());
+                }
+            }
+            NbtList::Float(list) => {
+                output.push(5);
+                output.extend_from_slice(&(list.len() as i32).to_be_bytes());
+                for element in list {
+                    output.extend_from_slice(&element.to_be_bytes());
+                }
+            }
+            NbtList::Double(list) => {
+                output.push(6);
+                output.extend_from_slice(&(list.len() as i32).to_be_bytes());
+                for element in list {
+                    output.extend_from_slice(&element.to_be_bytes());
+                }
+            }
+            NbtList::ByteArray(list) => {
+                output.push(7);
+                output.extend_from_slice(&(list.len() as i32).to_be_bytes());
+                for inner_list in list {
+                    output.extend_from_slice(&(inner_list.len() as i32).to_be_bytes());
+                    for element in inner_list {
+                        output.push(element.to_be_bytes()[0]);
+                    }
+                }
+            }
+            NbtList::IntArray(list) => {
+                output.push(11);
+                output.extend_from_slice(&(list.len() as i32).to_be_bytes());
+                for inner_list in list {
+                    output.extend_from_slice(&(inner_list.len() as i32).to_be_bytes());
+                    for element in inner_list {
+                        output.extend_from_slice(&element.to_be_bytes());
+                    }
+                }
+            }
+            NbtList::LongArray(list) => {
+                output.push(12);
+                output.extend_from_slice(&(list.len() as i32).to_be_bytes());
+                for inner_list in list {
+                    output.extend_from_slice(&(inner_list.len() as i32).to_be_bytes());
+                    for element in inner_list {
+                        output.extend_from_slice(&element.to_be_bytes());
+                    }
+                }
+            }
+            NbtList::String(list) => {
+                output.push(8);
+                output.extend_from_slice(&(list.len() as i32).to_be_bytes());
+                for string in list {
+                    output.extend_from_slice(&(string.len() as u16).to_be_bytes());
+                    output.extend_from_slice(string.as_bytes());
+                }
+            },
+            NbtList::List(list) => {
+                output.push(9);
+                output.extend_from_slice(&(list.len() as i32).to_be_bytes());
+                for inner_list in list {
+                    inner_list.serialize_list(output);
+                }
+            },
+            NbtList::Compound(list) => {
+                output.push(9);
+                output.extend_from_slice(&(list.len() as i32).to_be_bytes());
+                for element in list {
+                    for (name, value) in element.iter() {
+                        value.serialize_type_id(output);
+                        output.extend_from_slice(&(name.len() as u16).to_be_bytes());
+                        output.extend_from_slice(name.as_bytes());
+                        value.serialize_value(output);
+                    }
+                    output.push(0);
+                }
+            },
+        }
+    }
+}
+
 /// A length-prefixed modified UTF-8 string. The prefix is an unsigned short (thus 2 bytes) signifying the length of the string in bytes
 #[inline]
 pub fn parse_string(mut input: &[u8]) -> Result<(String, &[u8]), &'static str> {
@@ -39,8 +151,12 @@ pub fn parse_list(input: &[u8]) -> Result<(NbtList, &[u8]), &'static str> {
     if input.len() < 5 {
         return Err("A tag list should contain five bytes.");
     }
-    let (tag_type, len): (u8, i32) =
-        unsafe { (*input.get_unchecked(0), i32::from_be(*(input.as_ptr().add(1) as *mut i32))) };
+    let (tag_type, len): (u8, i32) = unsafe {
+        (
+            *input.get_unchecked(0),
+            i32::from_be(*(input.as_ptr().add(1) as *mut i32)),
+        )
+    };
     if len <= 0 {
         return Ok((NbtList::None, &input[5..]));
     }

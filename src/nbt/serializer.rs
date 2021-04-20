@@ -3,7 +3,8 @@ use crate::*;
 
 impl<'a> MinecraftPacketPart<'a> for NbtTag {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
-        todo!()
+        self.serialize(output);
+        Ok(())
     }
 
     fn deserialize_minecraft_packet_part(
