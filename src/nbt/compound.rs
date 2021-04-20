@@ -4,7 +4,7 @@ use std::collections::HashMap;
 #[inline]
 pub fn parse_compound(
     mut input: &mut [u8],
-) -> Result<(HashMap<&str, NbtTag>, &mut [u8]), &'static str> {
+) -> Result<(HashMap<String, NbtTag>, &mut [u8]), &'static str> {
     let mut content = HashMap::new();
 
     loop {
@@ -21,7 +21,7 @@ pub fn parse_compound(
         let len = len as usize;
         let new_input = &mut input[3..];
         let (bytes, new_input) = new_input.split_at_mut(len);
-        let name = std::str::from_utf8(bytes)
+        let name = String::from_utf8(bytes.to_vec())
             .map_err(|_| "A tag name should contain valid utf8 characters.")?;
         let (tag, new_input) = parse_nbt_tag(new_input, tag_id)?;
         input = new_input;
@@ -31,9 +31,10 @@ pub fn parse_compound(
     Ok((content, input))
 }
 
+#[allow(clippy::type_complexity)]
 pub fn parse_root_compound(
     mut input: &mut [u8],
-) -> Result<((&str, HashMap<&str, NbtTag>), &mut [u8]), &'static str> {
+) -> Result<((String, HashMap<String, NbtTag>), &mut [u8]), &'static str> {
     if input.first() != Some(&10) {
         return Err("The root compound tag should start with the compound ID (10).");
     }
@@ -45,7 +46,7 @@ pub fn parse_root_compound(
     let len = len as usize;
     input = &mut input[2..];
     let (bytes, new_input) = input.split_at_mut(len);
-    let name = std::str::from_utf8(bytes)
+    let name = String::from_utf8(bytes.to_vec())
         .map_err(|_| "A compound tag name should contain valid utf8 characters.")?;
     input = new_input;
 
@@ -56,7 +57,7 @@ pub fn parse_root_compound(
 
 pub fn parse_root_compound_complete(
     input: &mut [u8],
-) -> Result<(&str, HashMap<&str, NbtTag>), &'static str> {
+) -> Result<(String, HashMap<String, NbtTag>), &'static str> {
     let (value, input) = parse_root_compound(input)?;
 
     if !input.is_empty() {

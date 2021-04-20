@@ -6,14 +6,14 @@ use crate::*;
 /// Notes: Modifiers can increase or decrease the number of items for the first input slot. The second input slot and the output slot never change the nubmer of items. The number of items may never be less than 1, and never more than the stack size. If special price and demand are both zero, only the default price is displayed. If either is non-zero, then the adjusted price is displayed next to the crossed-out default price. The adjusted prices is calculated as follows:  
 /// `Adjusted price = default price + floor(default price x multiplier x demand) + special price`
 #[derive(Debug, MinecraftPacketPart)]
-pub struct Trade<'a> {
+pub struct Trade {
     /// The first item the player has to supply for this villager trade.
     /// The count of the item stack is the default "price" of this trade.
-    pub input_item1: Slot<'a>,
+    pub input_item1: Slot,
     /// The item the player will receive from this villager trade
-    pub output_item: Slot<'a>,
+    pub output_item: Slot,
     /// The second item the player has to supply for this villager trade
-    pub input_item2: Option<Slot<'a>>,
+    pub input_item2: Option<Slot>,
     /// True if the trade is disabled; false if the trade is enabled
     pub disabled: bool,
     /// Number of times the trade has been used so far.

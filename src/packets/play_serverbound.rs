@@ -99,7 +99,7 @@ pub enum ServerboundPacket<'a> {
         /// Inventory operation mode, see [the wiki](https://wiki.vg/Protocol#Click_Window)
         mode: VarInt,
         /// The clicked slot. Has to be empty (item ID = -1) for drop mode. (TODO: check this)
-        clicked_item: crate::slots::Slot<'a>,
+        clicked_item: crate::slots::Slot,
     },
 
     /// This packet is sent by the client when closing a window.
@@ -126,7 +126,7 @@ pub enum ServerboundPacket<'a> {
 
     EditBook {
         /// See [the wiki](https://wiki.vg/Protocol#Edit_Book) for information about the NBT data structure of this slot.
-        new_book: crate::slots::Slot<'a>,
+        new_book: crate::slots::Slot,
         /// `true` if the player is signing the book; `false` if the player is saving a draft.
         is_signing: bool,
         hand: crate::slots::Hand,

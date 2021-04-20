@@ -8,7 +8,7 @@ use compound::*;
 use numbers::*;
 
 #[derive(Debug)]
-pub enum NbtTag<'a> {
+pub enum NbtTag {
     Null,
     Byte(i8),
     Short(i16),
@@ -16,13 +16,13 @@ pub enum NbtTag<'a> {
     Long(i64),
     Float(f32),
     Double(f64),
-    ByteArray(&'a [i8]),
-    IntArray(&'a [i32]),
-    LongArray(&'a [i64]),
-    String(&'a str),
-    List(NbtList<'a>),
-    Compound(HashMap<&'a str, NbtTag<'a>>),
-    RootCompound(&'a str, HashMap<&'a str, NbtTag<'a>>),
+    ByteArray(Vec<i8>),
+    IntArray(Vec<i32>),
+    LongArray(Vec<i64>),
+    String(String),
+    List(NbtList),
+    Compound(HashMap<String, NbtTag>),
+    RootCompound(String, HashMap<String, NbtTag>),
 }
 
 #[inline]

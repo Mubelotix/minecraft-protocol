@@ -2,19 +2,19 @@ use crate::{nbt::NbtTag, *};
 
 /// The [Slot] data structure is how Minecraft represents an item and its associated data in the [Minecraft Protocol](https://wiki.vg/Protocol).
 #[derive(Debug, MinecraftPacketPart)]
-pub struct Slot<'a> {
+pub struct Slot {
     /// `Some(item)` if there is an item in this slot; `None` if it is empty.
-    pub item: Option<SlotItem<'a>>,
+    pub item: Option<SlotItem>,
 }
 
 #[derive(Debug, MinecraftPacketPart)]
-pub struct SlotItem<'a> {
+pub struct SlotItem {
     /// The [item](crate::ids::items::Item).
     /// Item IDs are distinct from [block IDs](crate::ids::blocks::Block); see [crate::ids] for more information.
     pub item_id: crate::ids::items::Item,
     pub item_count: VarInt,
     /// Things like enchantements and durability are encoded in this field.
-    pub nbt_data: NbtTag<'a>,
+    pub nbt_data: NbtTag,
 }
 
 #[minecraft_enum(VarInt)]
@@ -61,11 +61,11 @@ impl std::cmp::Ord for EquipmentSlot {
 
 use std::collections::BTreeMap;
 #[derive(Debug)]
-pub struct EquipmentSlotArray<'a> {
-    pub slots: BTreeMap<EquipmentSlot, Slot<'a>>,
+pub struct EquipmentSlotArray {
+    pub slots: BTreeMap<EquipmentSlot, Slot>,
 }
 
-impl<'a> MinecraftPacketPart<'a> for EquipmentSlotArray<'a> {
+impl<'a> MinecraftPacketPart<'a> for EquipmentSlotArray {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
         let len = self.slots.len();
         for (idx, (slot_index, slot)) in self.slots.into_iter().enumerate() {

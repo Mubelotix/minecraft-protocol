@@ -132,7 +132,7 @@ pub enum ClientboundPacket<'a> {
         /// The type of update to perform, see [crate::blocks::BlockEntityDataAction].
         action: crate::blocks::BlockEntityDataAction,
         /// Data to set. May be [crate::nbt::NbtTag::Null], in which case the block entity at the given location is removed (though this is not required since the client will remove the block entity automatically on chunk unload or block removal).
-        data: crate::nbt::NbtTag<'a>,
+        data: crate::nbt::NbtTag,
     },
 
     /// This packet is used for a number of actions and animations performed by blocks, usually non-persistent.
@@ -237,7 +237,7 @@ pub enum ClientboundPacket<'a> {
         window_id: i8,
         /// The [crate::slots::Slot]s in this window.
         /// See [inventory windows](https://wiki.vg/Inventory#Windows) for further information about how slots are indexed.
-        slots: Array<'a, crate::slots::Slot<'a>, i16>,
+        slots: Array<'a, crate::slots::Slot, i16>,
     },
 
     /// This packet is used to inform the client that part of a GUI window should be updated.
@@ -266,7 +266,7 @@ pub enum ClientboundPacket<'a> {
         window_id: i8,
         /// The slot that should be updated.
         slot_index: i16,
-        slot_value: crate::slots::Slot<'a>,
+        slot_value: crate::slots::Slot,
     },
 
     /// Applies a cooldown period to all items with the given type.
@@ -445,10 +445,10 @@ pub enum ClientboundPacket<'a> {
         worlds_names: Array<'a, Identifier<'a>, VarInt>,
         /// The full extent of these is still unknown, but the tag represents a dimension and biome registry.
         /// See [the wiki](https://wiki.vg/Protocol#Join_Game) for the vanilla default.
-        dimension_coded: NbtTag<'a>,
+        dimension_coded: NbtTag,
         /// Valid dimensions are defined per dimension registry sent before this.
         /// The structure of this tag is a dimension type (see [the wiki](https://wiki.vg/Protocol#Join_Game)).
-        dimension: NbtTag<'a>,
+        dimension: NbtTag,
         /// Name of the world being spawned into
         world_name: Identifier<'a>,
         /// First 8 bytes of the SHA-256 hash of the world's seed.
@@ -480,7 +480,7 @@ pub enum ClientboundPacket<'a> {
         /// The ID of the window that is open
         window_id: VarInt,
         /// The list of trades a villager NPC is offering
-        trades: Array<'a, crate::trades::Trade<'a>, u8>,
+        trades: Array<'a, crate::trades::Trade, u8>,
         /// The villager appearance
         villager_level: crate::trades::VillagerLevel,
         /// Total experience for this villager (always 0 for the wandering trader)
@@ -686,7 +686,7 @@ pub enum ClientboundPacket<'a> {
     /// You do not need to complete the first respawn; it only matters that you send two packets.
     Respawn {
         /// Valid dimensions are defined per dimension registry sent in [ClientboundPacket::JoinGame].
-        dimension: NbtTag<'a>,
+        dimension: NbtTag,
         /// Name of the world being spawned into
         world_name: Identifier<'a>,
         /// First 8 bytes of the SHA-256 hash of the world's seed.
@@ -821,7 +821,7 @@ pub enum ClientboundPacket<'a> {
 
     EntityEquipment {
         entity_id: VarInt,
-        equipment: crate::slots::EquipmentSlotArray<'a>,
+        equipment: crate::slots::EquipmentSlotArray,
     },
 
     /// Sent by the server when the client should change experience levels
@@ -947,7 +947,7 @@ pub enum ClientboundPacket<'a> {
         query_id: VarInt,
         /// The NBT of the block or entity.
         /// May be a [NbtTag::Null] in which case no NBT is present.
-        nbt_data: NbtTag<'a>,
+        nbt_data: NbtTag,
     },
 
     // todo doc links

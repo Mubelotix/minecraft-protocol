@@ -13,7 +13,7 @@ pub struct ChunkData<'a> {
     /// The least significant bit represents the chunk section at the bottom of the chunk column (from y=0 to y=15).
     pub primary_bit_mask: VarInt,
     /// Compound containing one long array named `MOTION_BLOCKING`, which is a heightmap for the highest solid block at each position in the chunk (as a compacted long array with 256 entries at 9 bits per entry totaling 36 longs). The Notchian server also adds a `WORLD_SURFACE` long array, the purpose of which is unknown, but it's not required for the chunk to be accepted.
-    pub heightmaps: NbtTag<'a>,
+    pub heightmaps: NbtTag,
     /// 1024 biome IDs, ordered by x then z then y, in 4×4×4 blocks.
     /// Biomes cannot be changed unless a chunk is re-sent.
     /// The structure is an array of 1024 integers, each representing a [Biome ID](http://minecraft.gamepedia.com/Biome/ID) (it is recommended that "Void" is used if there is no set biome - its default id is 127). The array is ordered by x then z then y, in 4×4×4 blocks. The array is indexed by `((y >> 2) & 63) << 4 | ((z >> 2) & 3) << 2 | ((x >> 2) & 3)`.
@@ -27,7 +27,7 @@ pub struct ChunkData<'a> {
     /// All block entities in the chunk.
     /// Use the x, y, and z tags in the NBT to determine their positions.
     /// Sending entities is not required; it is still legal to send them with [ClientboundPacket::UpdateBlockEntity] later.
-    pub entities: Array<'a, NbtTag<'a>, VarInt>,
+    pub entities: Array<'a, NbtTag, VarInt>,
 }
 
 impl<'a> MinecraftPacketPart<'a> for ChunkData<'a> {
