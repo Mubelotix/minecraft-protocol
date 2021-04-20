@@ -69,9 +69,9 @@ pub enum ServerboundPacket<'a> {
     WindowConfirmation {
         /// The ID of the window that the action occurred in
         window_id: i8,
-        /// Every action that is to be accepted has a unique number.
-        /// This number is an incrementing integer (starting at 1) with separate counts for each window ID.
-        action_number: i16,
+        /// Every action that is to be accepted has a unique id.
+        /// This id is an incrementing integer (starting at 1) with separate counts for each window ID.
+        action_id: i16,
         /// Whether the action was accepted
         accepted: bool,
     },
