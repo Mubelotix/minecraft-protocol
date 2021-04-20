@@ -56,7 +56,7 @@ pub fn read_packet(
     Ok(data)
 }
 
-pub fn send_packet<'a>(
+pub fn send_packet(
     mut writer: impl Write,
     packet: Vec<u8>,
     compression: Option<u32>,
@@ -115,10 +115,10 @@ mod tests {
         )
         .unwrap();
 
-        let mut response = read_packet(&stream, None, None).unwrap();
+        let response = read_packet(&stream, None, None).unwrap();
         let response_packet =
             crate::packets::login::ClientboundPacket::deserialize_uncompressed_minecraft_packet(
-                &mut response,
+                &response,
             )
             .unwrap();
         println!("{:?}", response_packet);
@@ -128,9 +128,9 @@ mod tests {
         };
 
         loop {
-            let mut packet_bytes = read_packet(&stream, None, None).unwrap();
+            let packet_bytes = read_packet(&stream, None, None).unwrap();
             let packet =
-                ClientboundPacket::deserialize_uncompressed_minecraft_packet(&mut packet_bytes);
+                ClientboundPacket::deserialize_uncompressed_minecraft_packet(&packet_bytes);
             let packet = match packet {
                 Ok(packet) => packet,
                 Err(e) => panic!("{} for {:?}", e, packet_bytes),

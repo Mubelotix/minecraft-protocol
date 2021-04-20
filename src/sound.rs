@@ -43,8 +43,8 @@ impl<'a> MinecraftPacketPart<'a> for StopSoundPacket<'a> {
         Ok(())
     }
     fn deserialize_minecraft_packet_part(
-        input: &'a mut [u8],
-    ) -> Result<(Self, &'a mut [u8]), &'static str> {
+        input: &'a[u8],
+    ) -> Result<(Self, &'a[u8]), &'static str> {
         let (flags, input) = u8::deserialize_minecraft_packet_part(input)?;
         let (sound_category, input) = match flags & 0b0000_0001 == 1 {
             true => {

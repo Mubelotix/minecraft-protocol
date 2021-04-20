@@ -7,8 +7,8 @@ impl<'a> MinecraftPacketPart<'a> for NbtTag {
     }
 
     fn deserialize_minecraft_packet_part(
-        input: &'a mut [u8],
-    ) -> Result<(Self, &'a mut [u8]), &'static str> {
+        input: &'a [u8],
+    ) -> Result<(Self, &'a [u8]), &'static str> {
         super::parse_nbt(input)
     }
 }

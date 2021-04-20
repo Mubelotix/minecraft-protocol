@@ -23,7 +23,7 @@ pub struct ChunkData<'a> {
     /// Sections are sent bottom-to-top, i.e. the first section, if sent, extends from Y=0 to Y=15.
     ///
     /// **Use [ChunkData::deserialize_chunk_sections] to get ready to use [ChunkSection]s.**
-    pub data: &'a mut [u8],
+    pub data: &'a[u8],
     /// All block entities in the chunk.
     /// Use the x, y, and z tags in the NBT to determine their positions.
     /// Sending entities is not required; it is still legal to send them with [ClientboundPacket::UpdateBlockEntity] later.
@@ -50,8 +50,8 @@ impl<'a> MinecraftPacketPart<'a> for ChunkData<'a> {
     }
 
     fn deserialize_minecraft_packet_part(
-        input: &'a mut [u8],
-    ) -> Result<(Self, &'a mut [u8]), &'static str> {
+        input: &'a[u8],
+    ) -> Result<(Self, &'a[u8]), &'static str> {
         let (chunk_x, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         let (chunk_z, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         let (full_chunk, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
@@ -68,7 +68,7 @@ impl<'a> MinecraftPacketPart<'a> for ChunkData<'a> {
         };
         let (data_len, input) = VarInt::deserialize_minecraft_packet_part(input)?;
         let data_len = std::cmp::max(data_len.0, 0) as usize;
-        let (data, input) = input.split_at_mut(data_len);
+        let (data, input) = input.split_at(data_len);
         let (entities, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         Ok((
             ChunkData {
@@ -108,7 +108,7 @@ impl<'a> ChunkData<'a> {
     pub fn deserialize_chunk_sections(
         &mut self,
     ) -> Result<[Option<ChunkSection>; 16], &'static str> {
-        let mut input = &mut *self.data;
+        let mut input = self.data;
         let primary_bit_mask: u32 = unsafe {
             // We don't care the type since we only want to check the bits
             std::mem::transmute(self.primary_bit_mask.0)

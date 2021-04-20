@@ -4,9 +4,8 @@ use super::*;
 
 pub trait MinecraftPacketPart<'a>: Sized {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str>;
-    fn deserialize_minecraft_packet_part(
-        input: &'a mut [u8],
-    ) -> Result<(Self, &'a mut [u8]), &'static str>;
+    fn deserialize_minecraft_packet_part(input: &'a [u8])
+        -> Result<(Self, &'a [u8]), &'static str>;
 
     fn serialize_minecraft_packet(self) -> Result<Vec<u8>, &'static str> {
         let mut buffer = Vec::new();
@@ -14,9 +13,7 @@ pub trait MinecraftPacketPart<'a>: Sized {
         Ok(buffer)
     }
 
-    fn deserialize_uncompressed_minecraft_packet(
-        input: &'a mut [u8],
-    ) -> Result<Self, &'static str> {
+    fn deserialize_uncompressed_minecraft_packet(input: &'a [u8]) -> Result<Self, &'static str> {
         let (result, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         if !input.is_empty() {
             return Err("There are still unparsed bytes after parsing.");
@@ -34,11 +31,9 @@ mod integers {
             Ok(())
         }
 
-        fn deserialize_minecraft_packet_part(
-            input: &mut [u8],
-        ) -> Result<(Self, &mut [u8]), &'static str> {
+        fn deserialize_minecraft_packet_part(input: &[u8]) -> Result<(Self, &[u8]), &'static str> {
             let (value, input) = input
-                .split_first_mut()
+                .split_first()
                 .ok_or("Missing byte while parsing bool.")?;
             Ok((*value != 0, input))
         }
@@ -50,11 +45,9 @@ mod integers {
             Ok(())
         }
 
-        fn deserialize_minecraft_packet_part(
-            input: &mut [u8],
-        ) -> Result<(Self, &mut [u8]), &'static str> {
+        fn deserialize_minecraft_packet_part(input: &[u8]) -> Result<(Self, &[u8]), &'static str> {
             let (value, input) = input
-                .split_first_mut()
+                .split_first()
                 .ok_or("Missing byte while parsing i8.")?;
             Ok((i8::from_le_bytes([*value]), input))
         }
@@ -66,11 +59,9 @@ mod integers {
             Ok(())
         }
 
-        fn deserialize_minecraft_packet_part(
-            input: &mut [u8],
-        ) -> Result<(Self, &mut [u8]), &'static str> {
+        fn deserialize_minecraft_packet_part(input: &[u8]) -> Result<(Self, &[u8]), &'static str> {
             let (value, input) = input
-                .split_first_mut()
+                .split_first()
                 .ok_or("Missing byte while parsing u8.")?;
             Ok((*value, input))
         }
@@ -84,17 +75,15 @@ mod integers {
             Ok(())
         }
 
-        fn deserialize_minecraft_packet_part(
-            input: &mut [u8],
-        ) -> Result<(Self, &mut [u8]), &'static str> {
+        fn deserialize_minecraft_packet_part(input: &[u8]) -> Result<(Self, &[u8]), &'static str> {
             let (first_byte, input) = input
-                .split_first_mut()
+                .split_first()
                 .ok_or("Missing byte while parsing (i8, i8, i8).")?;
             let (second_byte, input) = input
-                .split_first_mut()
+                .split_first()
                 .ok_or("Missing byte while parsing (i8, i8, i8).")?;
             let (third_byte, input) = input
-                .split_first_mut()
+                .split_first()
                 .ok_or("Missing byte while parsing (i8, i8, i8).")?;
             Ok((
                 (
@@ -115,25 +104,16 @@ mod integers {
             Ok(())
         }
 
-        fn deserialize_minecraft_packet_part(
-            input: &mut [u8],
-        ) -> Result<(Self, &mut [u8]), &'static str> {
+        fn deserialize_minecraft_packet_part(input: &[u8]) -> Result<(Self, &[u8]), &'static str> {
             if input.len() < 2 {
                 return Err("Missing byte while parsing i16.");
             }
-            unsafe {
-                let len = input.len();
-                let ptr = input.as_mut_ptr();
-                let (bytes, input) = (
-                    std::slice::from_raw_parts_mut(ptr, 2),
-                    std::slice::from_raw_parts_mut(ptr.add(2), len - 2),
-                );
-
-                Ok((
-                    i16::from_le_bytes([*bytes.get_unchecked(1), *bytes.get_unchecked(0)]),
-                    input,
-                ))
-            }
+            Ok(unsafe {
+                (
+                    i16::from_be(*(input.as_ptr() as *mut i16)),
+                    input.get_unchecked(2..),
+                )
+            })
         }
     }
 
@@ -145,25 +125,16 @@ mod integers {
             Ok(())
         }
 
-        fn deserialize_minecraft_packet_part(
-            input: &mut [u8],
-        ) -> Result<(Self, &mut [u8]), &'static str> {
+        fn deserialize_minecraft_packet_part(input: &[u8]) -> Result<(Self, &[u8]), &'static str> {
             if input.len() < 2 {
                 return Err("Missing byte while parsing u16.");
             }
-            unsafe {
-                let len = input.len();
-                let ptr = input.as_mut_ptr();
-                let (bytes, input) = (
-                    std::slice::from_raw_parts_mut(ptr, 2),
-                    std::slice::from_raw_parts_mut(ptr.add(2), len - 2),
-                );
-
-                Ok((
-                    u16::from_le_bytes([*bytes.get_unchecked(1), *bytes.get_unchecked(0)]),
-                    input,
-                ))
-            }
+            Ok(unsafe {
+                (
+                    u16::from_be(*(input.as_ptr() as *mut u16)),
+                    input.get_unchecked(2..),
+                )
+            })
         }
     }
 
@@ -177,30 +148,16 @@ mod integers {
             Ok(())
         }
 
-        fn deserialize_minecraft_packet_part(
-            input: &mut [u8],
-        ) -> Result<(Self, &mut [u8]), &'static str> {
+        fn deserialize_minecraft_packet_part(input: &[u8]) -> Result<(Self, &[u8]), &'static str> {
             if input.len() < 4 {
                 return Err("Missing byte while parsing i32.");
             }
-            unsafe {
-                let len = input.len();
-                let ptr = input.as_mut_ptr();
-                let (bytes, input) = (
-                    std::slice::from_raw_parts_mut(ptr, 4),
-                    std::slice::from_raw_parts_mut(ptr.add(4), len - 4),
-                );
-
-                Ok((
-                    i32::from_le_bytes([
-                        *bytes.get_unchecked(3),
-                        *bytes.get_unchecked(2),
-                        *bytes.get_unchecked(1),
-                        *bytes.get_unchecked(0),
-                    ]),
-                    input,
-                ))
-            }
+            Ok(unsafe {
+                (
+                    i32::from_be(*(input.as_ptr() as *mut i32)),
+                    input.get_unchecked(4..),
+                )
+            })
         }
     }
 
@@ -218,34 +175,16 @@ mod integers {
             Ok(())
         }
 
-        fn deserialize_minecraft_packet_part(
-            input: &mut [u8],
-        ) -> Result<(Self, &mut [u8]), &'static str> {
+        fn deserialize_minecraft_packet_part(input: &[u8]) -> Result<(Self, &[u8]), &'static str> {
             if input.len() < 8 {
                 return Err("Missing byte while parsing i64.");
             }
-            unsafe {
-                let len = input.len();
-                let ptr = input.as_mut_ptr();
-                let (bytes, input) = (
-                    std::slice::from_raw_parts_mut(ptr, 8),
-                    std::slice::from_raw_parts_mut(ptr.add(8), len - 8),
-                );
-
-                Ok((
-                    i64::from_le_bytes([
-                        *bytes.get_unchecked(7),
-                        *bytes.get_unchecked(6),
-                        *bytes.get_unchecked(5),
-                        *bytes.get_unchecked(4),
-                        *bytes.get_unchecked(3),
-                        *bytes.get_unchecked(2),
-                        *bytes.get_unchecked(1),
-                        *bytes.get_unchecked(0),
-                    ]),
-                    input,
-                ))
-            }
+            Ok(unsafe {
+                (
+                    i64::from_be(*(input.as_ptr() as *mut i64)),
+                    input.get_unchecked(8..),
+                )
+            })
         }
     }
 
@@ -263,34 +202,16 @@ mod integers {
             Ok(())
         }
 
-        fn deserialize_minecraft_packet_part(
-            input: &mut [u8],
-        ) -> Result<(Self, &mut [u8]), &'static str> {
+        fn deserialize_minecraft_packet_part(input: &[u8]) -> Result<(Self, &[u8]), &'static str> {
             if input.len() < 8 {
                 return Err("Missing byte while parsing i64.");
             }
-            unsafe {
-                let len = input.len();
-                let ptr = input.as_mut_ptr();
-                let (bytes, input) = (
-                    std::slice::from_raw_parts_mut(ptr, 8),
-                    std::slice::from_raw_parts_mut(ptr.add(8), len - 8),
-                );
-
-                Ok((
-                    u64::from_le_bytes([
-                        *bytes.get_unchecked(7),
-                        *bytes.get_unchecked(6),
-                        *bytes.get_unchecked(5),
-                        *bytes.get_unchecked(4),
-                        *bytes.get_unchecked(3),
-                        *bytes.get_unchecked(2),
-                        *bytes.get_unchecked(1),
-                        *bytes.get_unchecked(0),
-                    ]),
-                    input,
-                ))
-            }
+            Ok(unsafe {
+                (
+                    u64::from_be(*(input.as_ptr() as *mut u64)),
+                    input.get_unchecked(8..),
+                )
+            })
         }
     }
 
@@ -316,42 +237,16 @@ mod integers {
             Ok(())
         }
 
-        fn deserialize_minecraft_packet_part(
-            input: &mut [u8],
-        ) -> Result<(Self, &mut [u8]), &'static str> {
+        fn deserialize_minecraft_packet_part(input: &[u8]) -> Result<(Self, &[u8]), &'static str> {
             if input.len() < 16 {
                 return Err("Missing byte while parsing u128 (UUID).");
             }
-            unsafe {
-                let len = input.len();
-                let ptr = input.as_mut_ptr();
-                let (bytes, input) = (
-                    std::slice::from_raw_parts_mut(ptr, 16),
-                    std::slice::from_raw_parts_mut(ptr.add(16), len - 16),
-                );
-
-                Ok((
-                    u128::from_le_bytes([
-                        *bytes.get_unchecked(15),
-                        *bytes.get_unchecked(14),
-                        *bytes.get_unchecked(13),
-                        *bytes.get_unchecked(12),
-                        *bytes.get_unchecked(11),
-                        *bytes.get_unchecked(10),
-                        *bytes.get_unchecked(9),
-                        *bytes.get_unchecked(8),
-                        *bytes.get_unchecked(7),
-                        *bytes.get_unchecked(6),
-                        *bytes.get_unchecked(5),
-                        *bytes.get_unchecked(4),
-                        *bytes.get_unchecked(3),
-                        *bytes.get_unchecked(2),
-                        *bytes.get_unchecked(1),
-                        *bytes.get_unchecked(0),
-                    ]),
-                    input,
-                ))
-            }
+            Ok(unsafe {
+                (
+                    u128::from_be(*(input.as_ptr() as *mut u128)),
+                    input.get_unchecked(16..),
+                )
+            })
         }
     }
 
@@ -365,29 +260,21 @@ mod integers {
             Ok(())
         }
 
-        fn deserialize_minecraft_packet_part(
-            input: &mut [u8],
-        ) -> Result<(Self, &mut [u8]), &'static str> {
+        fn deserialize_minecraft_packet_part(input: &[u8]) -> Result<(Self, &[u8]), &'static str> {
             if input.len() < 4 {
                 return Err("Missing byte while parsing f32.");
             }
             unsafe {
-                let len = input.len();
-                let ptr = input.as_mut_ptr();
-                let (bytes, input) = (
-                    std::slice::from_raw_parts_mut(ptr, 4),
-                    std::slice::from_raw_parts_mut(ptr.add(4), len - 4),
-                );
+                let number = input.get_unchecked(..4);
+                #[cfg(target_endian = "little")]
+                let number = f32::from_be_bytes([
+                    *number.get_unchecked(0),
+                    *number.get_unchecked(1),
+                    *number.get_unchecked(2),
+                    *number.get_unchecked(3),
+                ]);
 
-                Ok((
-                    f32::from_le_bytes([
-                        *bytes.get_unchecked(3),
-                        *bytes.get_unchecked(2),
-                        *bytes.get_unchecked(1),
-                        *bytes.get_unchecked(0),
-                    ]),
-                    input,
-                ))
+                Ok((number, input.get_unchecked(4..)))
             }
         }
     }
@@ -406,33 +293,25 @@ mod integers {
             Ok(())
         }
 
-        fn deserialize_minecraft_packet_part(
-            input: &mut [u8],
-        ) -> Result<(Self, &mut [u8]), &'static str> {
+        fn deserialize_minecraft_packet_part(input: &[u8]) -> Result<(Self, &[u8]), &'static str> {
             if input.len() < 8 {
                 return Err("Missing byte while parsing f64.");
             }
             unsafe {
-                let len = input.len();
-                let ptr = input.as_mut_ptr();
-                let (bytes, input) = (
-                    std::slice::from_raw_parts_mut(ptr, 8),
-                    std::slice::from_raw_parts_mut(ptr.add(8), len - 8),
-                );
+                let number = input.get_unchecked(..8);
+                #[cfg(target_endian = "little")]
+                let number = f64::from_be_bytes([
+                    *number.get_unchecked(0),
+                    *number.get_unchecked(1),
+                    *number.get_unchecked(2),
+                    *number.get_unchecked(3),
+                    *number.get_unchecked(4),
+                    *number.get_unchecked(5),
+                    *number.get_unchecked(6),
+                    *number.get_unchecked(7),
+                ]);
 
-                Ok((
-                    f64::from_le_bytes([
-                        *bytes.get_unchecked(7),
-                        *bytes.get_unchecked(6),
-                        *bytes.get_unchecked(5),
-                        *bytes.get_unchecked(4),
-                        *bytes.get_unchecked(3),
-                        *bytes.get_unchecked(2),
-                        *bytes.get_unchecked(1),
-                        *bytes.get_unchecked(0),
-                    ]),
-                    input,
-                ))
+                Ok((number, input.get_unchecked(8..)))
             }
         }
     }
@@ -456,15 +335,14 @@ mod integers {
         }
 
         fn deserialize_minecraft_packet_part(
-            mut input: &mut [u8],
-        ) -> Result<(Self, &mut [u8]), &'static str> {
+            mut input: &[u8],
+        ) -> Result<(Self, &[u8]), &'static str> {
             let mut result: u32 = 0;
             let mut num_read: u32 = 0;
 
             loop {
-                let (read, new_input) = input
-                    .split_first_mut()
-                    .ok_or("Not enough bytes for varint!")?;
+                let (read, new_input) =
+                    input.split_first().ok_or("Not enough bytes for varint!")?;
                 let read = *read;
                 input = new_input;
                 let value: u32 = (read & 0b01111111) as u32;
@@ -502,13 +380,13 @@ mod integers {
         }
 
         fn deserialize_minecraft_packet_part(
-            mut input: &mut [u8],
-        ) -> Result<(Self, &mut [u8]), &'static str> {
+            mut input: &[u8],
+        ) -> Result<(Self, &[u8]), &'static str> {
             let mut result: u64 = 0;
             let mut num_read: u64 = 0;
 
             loop {
-                let (read, new_input) = input.split_first_mut().unwrap();
+                let (read, new_input) = input.split_first().unwrap();
                 let read = *read;
                 input = new_input;
                 let value = (read & 0b01111111) as u64;
@@ -564,7 +442,7 @@ mod integers {
         #[test]
         fn test_varint_deserialization() {
             let expected_outputs = [0, 1, 2, 127, 128, 255, 2097151, 2147483647, -1, -2147483648];
-            let inputs: [&mut [u8]; 10] = [
+            let inputs: [&[u8]; 10] = [
                 &mut [0],
                 &mut [1],
                 &mut [2],
@@ -647,7 +525,7 @@ mod integers {
                 -2147483648,
                 -9223372036854775808,
             ];
-            let inputs: [&mut [u8]; 11] = [
+            let inputs: [&[u8]; 11] = [
                 &mut [0],
                 &mut [1],
                 &mut [2],
@@ -672,32 +550,58 @@ mod integers {
                 assert_eq!(outputs[idx], expected_outputs[idx]);
             }
         }
-    
+
         #[test]
         fn test_position() {
-            let position = Position {x: 10, y: 65, z: 23};
+            let position = Position {
+                x: 10,
+                y: 65,
+                z: 23,
+            };
             let mut serialized = position.clone().serialize_minecraft_packet().unwrap();
-            let deserialized = Position::deserialize_uncompressed_minecraft_packet(serialized.as_mut_slice()).unwrap();
+            let deserialized =
+                Position::deserialize_uncompressed_minecraft_packet(serialized.as_mut_slice())
+                    .unwrap();
             assert_eq!(position, deserialized);
 
-            let position = Position {x: -122, y: 65, z: 23};
+            let position = Position {
+                x: -122,
+                y: 65,
+                z: 23,
+            };
             let mut serialized = position.clone().serialize_minecraft_packet().unwrap();
-            let deserialized = Position::deserialize_uncompressed_minecraft_packet(serialized.as_mut_slice()).unwrap();
+            let deserialized =
+                Position::deserialize_uncompressed_minecraft_packet(serialized.as_mut_slice())
+                    .unwrap();
             assert_eq!(position, deserialized);
 
-            let position = Position {x: 0, y: 65, z: 23};
+            let position = Position { x: 0, y: 65, z: 23 };
             let mut serialized = position.clone().serialize_minecraft_packet().unwrap();
-            let deserialized = Position::deserialize_uncompressed_minecraft_packet(serialized.as_mut_slice()).unwrap();
+            let deserialized =
+                Position::deserialize_uncompressed_minecraft_packet(serialized.as_mut_slice())
+                    .unwrap();
             assert_eq!(position, deserialized);
 
-            let position = Position {x: 10, y: -20, z: 23};
+            let position = Position {
+                x: 10,
+                y: -20,
+                z: 23,
+            };
             let mut serialized = position.clone().serialize_minecraft_packet().unwrap();
-            let deserialized = Position::deserialize_uncompressed_minecraft_packet(serialized.as_mut_slice()).unwrap();
+            let deserialized =
+                Position::deserialize_uncompressed_minecraft_packet(serialized.as_mut_slice())
+                    .unwrap();
             assert_eq!(position, deserialized);
 
-            let position = Position {x: -941621, y: -846, z: -6546541};
+            let position = Position {
+                x: -941621,
+                y: -846,
+                z: -6546541,
+            };
             let mut serialized = position.clone().serialize_minecraft_packet().unwrap();
-            let deserialized = Position::deserialize_uncompressed_minecraft_packet(serialized.as_mut_slice()).unwrap();
+            let deserialized =
+                Position::deserialize_uncompressed_minecraft_packet(serialized.as_mut_slice())
+                    .unwrap();
             assert_eq!(position, deserialized);
         }
     }
@@ -711,9 +615,7 @@ impl<'a> MinecraftPacketPart<'a> for &'a str {
         Ok(())
     }
 
-    fn deserialize_minecraft_packet_part(
-        input: &mut [u8],
-    ) -> Result<(&str, &mut [u8]), &'static str> {
+    fn deserialize_minecraft_packet_part(input: &[u8]) -> Result<(&str, &[u8]), &'static str> {
         let (len, input) = VarInt::deserialize_minecraft_packet_part(input)?;
         if len.0 <= 0 {
             return Ok(("", input));
@@ -722,7 +624,7 @@ impl<'a> MinecraftPacketPart<'a> for &'a str {
         if len > input.len() {
             return Err("String claims ownership of too much data");
         }
-        let (slice, input) = input.split_at_mut(len);
+        let (slice, input) = input.split_at(len);
         let string = std::str::from_utf8(slice).map_err(|_| "Invalid utf8")?;
 
         Ok((string, input))
@@ -733,15 +635,15 @@ impl<'a> MinecraftPacketPart<'a> for Position {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
         let x = match self.x < 0 {
             true => (self.x + 2i32.pow(26)) as u64,
-            false => self.x as u64
+            false => self.x as u64,
         };
         let y = match self.y < 0 {
             true => (self.y + 2i16.pow(12)) as u64,
-            false => self.y as u64
+            false => self.y as u64,
         };
         let z = match self.z < 0 {
             true => (self.z + 2i32.pow(26)) as u64,
-            false => self.z as u64
+            false => self.z as u64,
         };
         let value = ((x & 0x3FFFFFF) << 38) | ((z & 0x3FFFFFF) << 12) | (y & 0xFFF);
         output.extend_from_slice(&value.to_be_bytes());
@@ -749,12 +651,12 @@ impl<'a> MinecraftPacketPart<'a> for Position {
     }
 
     fn deserialize_minecraft_packet_part(
-        input: &'a mut [u8],
-    ) -> Result<(Self, &'a mut [u8]), &'static str> {
+        input: &'a [u8],
+    ) -> Result<(Self, &'a [u8]), &'static str> {
         if input.len() < 8 {
             return Err("Missing bytes in position");
         }
-        let (bytes, input) = input.split_at_mut(8);
+        let (bytes, input) = input.split_at(8);
         let total = unsafe {
             u64::from_le_bytes([
                 *bytes.get_unchecked(7),
@@ -781,14 +683,7 @@ impl<'a> MinecraftPacketPart<'a> for Position {
             z -= 2i32.pow(26)
         }
 
-        Ok((
-            Position {
-                x,
-                y,
-                z,
-            },
-            input,
-        ))
+        Ok((Position { x, y, z }, input))
     }
 }
 
@@ -799,8 +694,8 @@ impl<'a> MinecraftPacketPart<'a> for RawBytes<'a> {
     }
 
     fn deserialize_minecraft_packet_part(
-        input: &'a mut [u8],
-    ) -> Result<(Self, &'a mut [u8]), &'static str> {
+        input: &'a [u8],
+    ) -> Result<(Self, &'a [u8]), &'static str> {
         let data = input;
         Ok((RawBytes { data }, &mut []))
     }
@@ -823,8 +718,8 @@ impl<
     }
 
     fn deserialize_minecraft_packet_part(
-        input: &'a mut [u8],
-    ) -> Result<(Self, &'a mut [u8]), &'static str> {
+        input: &'a [u8],
+    ) -> Result<(Self, &'a [u8]), &'static str> {
         let (len, mut input) = U::deserialize_minecraft_packet_part(input)?;
         let len: usize = len
             .try_into()
@@ -864,8 +759,8 @@ impl<
     }
 
     fn deserialize_minecraft_packet_part(
-        input: &'a mut [u8],
-    ) -> Result<(Self, &'a mut [u8]), &'static str> {
+        input: &'a [u8],
+    ) -> Result<(Self, &'a [u8]), &'static str> {
         let mut items = std::collections::BTreeMap::new();
         let (len, mut input) = U::deserialize_minecraft_packet_part(input)?;
         let len: usize = len
@@ -901,8 +796,8 @@ impl<'a, T: MinecraftPacketPart<'a>> MinecraftPacketPart<'a> for Option<T> {
     }
 
     fn deserialize_minecraft_packet_part(
-        input: &'a mut [u8],
-    ) -> Result<(Self, &'a mut [u8]), &'static str> {
+        input: &'a [u8],
+    ) -> Result<(Self, &'a [u8]), &'static str> {
         let (is_some, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         if is_some {
             let (value, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;

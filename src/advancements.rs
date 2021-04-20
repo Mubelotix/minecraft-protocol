@@ -47,8 +47,8 @@ impl<'a> MinecraftPacketPart<'a> for AdvancementDisplay<'a> {
         Ok(())
     }
     fn deserialize_minecraft_packet_part(
-        input: &'a mut [u8],
-    ) -> Result<(Self, &'a mut [u8]), &'static str> {
+        input: &'a[u8],
+    ) -> Result<(Self, &'a[u8]), &'static str> {
         let (title, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         let (description, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         let (icon, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
@@ -132,8 +132,8 @@ impl<'a> MinecraftPacketPart<'a> for AdvancementTabPacket<'a> {
         Ok(())
     }
     fn deserialize_minecraft_packet_part(
-        input: &'a mut [u8],
-    ) -> Result<(Self, &'a mut [u8]), &'static str> {
+        input: &'a[u8],
+    ) -> Result<(Self, &'a[u8]), &'static str> {
         let (present, input) = VarInt::deserialize_minecraft_packet_part(input)?;
         let (tab_id, input) = if present.0 == 0 {
             let (tab_id, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;

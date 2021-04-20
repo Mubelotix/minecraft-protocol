@@ -319,7 +319,7 @@ impl<'a> MinecraftPacketPart<'a> for Block {{
     }}
 
     #[inline]
-    fn deserialize_minecraft_packet_part(input: &'a mut [u8]) -> Result<(Self, &'a mut [u8]), &'static str> {{
+    fn deserialize_minecraft_packet_part(input: &'a[u8]) -> Result<(Self, &'a[u8]), &'static str> {{
         let (id, input) = VarInt::deserialize_minecraft_packet_part(input)?;
         let id = std::cmp::max(id.0, 0) as u32;
         let block = Block::from_id(id).ok_or("No block corresponding to the specified numeric ID.")?;
@@ -442,7 +442,7 @@ impl<'a> MinecraftPacketPart<'a> for Item {{
     }}
 
     #[inline]
-    fn deserialize_minecraft_packet_part(input: &'a mut [u8]) -> Result<(Self, &'a mut [u8]), &'static str> {{
+    fn deserialize_minecraft_packet_part(input: &'a[u8]) -> Result<(Self, &'a[u8]), &'static str> {{
         let (id, input) = VarInt::deserialize_minecraft_packet_part(input)?;
         let id = std::cmp::max(id.0, 0) as u32;
         let item = Item::from_id(id).ok_or("No item corresponding to the specified numeric ID.")?;
