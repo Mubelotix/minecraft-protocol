@@ -8,7 +8,7 @@ pub mod handshake;
 pub mod login;
 pub mod status;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct VarInt(pub i32);
 impl TryFrom<VarInt> for usize {
     type Error = std::num::TryFromIntError;
