@@ -24,7 +24,7 @@ pub fn parse_string(mut input: &[u8]) -> Result<(String, &[u8]), &'static str> {
     if input.len() < 2 {
         return Err("A string tag should contain two bytes.");
     }
-    let len: u16 = unsafe { read_u16(input) };
+    let len: u16 = unsafe { u16::from_be(*(input.as_ptr() as *mut u16)) };
     let len = len as usize;
     input = &input[2..];
     let (bytes, new_input) = input.split_at(len);
@@ -40,7 +40,7 @@ pub fn parse_list(input: &[u8]) -> Result<(NbtList, &[u8]), &'static str> {
         return Err("A tag list should contain five bytes.");
     }
     let (tag_type, len): (u8, i32) =
-        unsafe { (*input.get_unchecked(0), read_i32(&input[1..])) };
+        unsafe { (*input.get_unchecked(0), i32::from_be(*(input.as_ptr().add(1) as *mut i32))) };
     if len <= 0 {
         return Ok((NbtList::None, &input[5..]));
     }
@@ -218,7 +218,7 @@ pub fn parse_byte_array(input: &[u8]) -> Result<(Vec<i8>, &[u8]), &'static str> 
     if input.len() < 4 {
         return Err("A byte array tag should contain four bytes.");
     }
-    let len: i32 = unsafe { read_i32(input) };
+    let len: i32 = unsafe { i32::from_be(*(input.as_ptr().add(1) as *mut i32)) };
     if len <= 0 {
         return Ok((Vec::new(), &input[4..]));
     }
@@ -244,7 +244,7 @@ pub fn parse_int_array(input: &[u8]) -> Result<(Vec<i32>, &[u8]), &'static str> 
     if input.len() < 4 {
         return Err("A int array tag should contain four bytes.");
     }
-    let len: i32 = unsafe { read_i32(input) };
+    let len: i32 = unsafe { i32::from_be(*(input.as_ptr().add(1) as *mut i32)) };
     if len <= 0 {
         return Ok((Vec::new(), &input[4..]));
     }
@@ -268,7 +268,7 @@ pub fn parse_long_array(input: &[u8]) -> Result<(Vec<i64>, &[u8]), &'static str>
     if input.len() < 4 {
         return Err("A long array tag should contain four bytes.");
     }
-    let len: i32 = unsafe { read_i32(input) };
+    let len: i32 = unsafe { i32::from_be(*(input.as_ptr().add(1) as *mut i32)) };
     if len <= 0 {
         return Ok((Vec::new(), &input[4..]));
     }

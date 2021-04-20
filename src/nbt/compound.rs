@@ -16,7 +16,7 @@ pub fn parse_compound(
             return Err("A tag in a compound should be introduced by three bytes.");
         }
         let (tag_id, len): (u8, u16) =
-            unsafe { (*input.get_unchecked(0), read_u16(&input[1..])) };
+            unsafe { (*input.get_unchecked(0), u16::from_be(*(input.as_ptr().add(1) as *mut u16))) };
 
         let len = len as usize;
         let new_input = &input[3..];
@@ -42,7 +42,7 @@ pub fn parse_root_compound(
     if input.len() < 2 {
         return Err("A root compound tag should contain two bytes.");
     }
-    let len: u16 = unsafe { read_u16(input) };
+    let len: u16 = unsafe { u16::from_be(*(input.as_ptr() as *mut u16)) };
     let len = len as usize;
     input = &input[2..];
     let (bytes, new_input) = input.split_at(len);
