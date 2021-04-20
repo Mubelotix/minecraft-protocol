@@ -1,7 +1,7 @@
 use super::*;
 use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum NbtList {
     None,
     Byte(Vec<i8>),
@@ -114,7 +114,7 @@ impl NbtList {
                 }
             },
             NbtList::Compound(list) => {
-                output.push(9);
+                output.push(10);
                 output.extend_from_slice(&(list.len() as i32).to_be_bytes());
                 for element in list {
                     for (name, value) in element.iter() {
@@ -139,6 +139,9 @@ pub fn parse_string(mut input: &[u8]) -> Result<(String, &[u8]), &'static str> {
     let len: u16 = unsafe { u16::from_be(*(input.as_ptr() as *mut u16)) };
     let len = len as usize;
     input = &input[2..];
+    if input.len() < len {
+        return Err("A string cannot claim to contain more bytes than the remaining bytes");
+    }
     let (bytes, new_input) = input.split_at(len);
     let string = String::from_utf8(bytes.to_vec())
         .map_err(|_| "A string should contain valid utf8 characters.")?;
@@ -266,7 +269,7 @@ pub fn parse_list(input: &[u8]) -> Result<(NbtList, &[u8]), &'static str> {
             let mut list = Vec::with_capacity(len);
             for _ in 0..len {
                 let (result, new_input) =
-                    parse_byte_array(input).map_err(|_| "Invalid list item")?;
+                    parse_byte_array(input).map_err(|_| "Invalid list item (bytes)")?;
                 input = new_input;
                 list.push(result);
             }
@@ -276,7 +279,7 @@ pub fn parse_list(input: &[u8]) -> Result<(NbtList, &[u8]), &'static str> {
             let mut input = &input[5..];
             let mut list = Vec::with_capacity(len);
             for _ in 0..len {
-                let (result, new_input) = parse_string(input).map_err(|_| "Invalid list item")?;
+                let (result, new_input) = parse_string(input).map_err(|_| "Invalid list item (string)")?;
                 input = new_input;
                 list.push(result);
             }
@@ -286,7 +289,7 @@ pub fn parse_list(input: &[u8]) -> Result<(NbtList, &[u8]), &'static str> {
             let mut input = &input[5..];
             let mut list = Vec::with_capacity(len);
             for _ in 0..len {
-                let (result, new_input) = parse_list(input).map_err(|_| "Invalid list item")?;
+                let (result, new_input) = parse_list(input).map_err(|_| "Invalid list item (list)")?;
                 input = new_input;
                 list.push(result);
             }
@@ -296,7 +299,7 @@ pub fn parse_list(input: &[u8]) -> Result<(NbtList, &[u8]), &'static str> {
             let mut input = &input[5..];
             let mut list = Vec::with_capacity(len);
             for _ in 0..len {
-                let (result, new_input) = parse_compound(input).map_err(|_| "Invalid list item")?;
+                let (result, new_input) = parse_compound(input).map_err(|_| "Invalid list item (compound)")?;
                 input = new_input;
                 list.push(result);
             }
@@ -307,7 +310,7 @@ pub fn parse_list(input: &[u8]) -> Result<(NbtList, &[u8]), &'static str> {
             let mut list = Vec::with_capacity(len);
             for _ in 0..len {
                 let (result, new_input) =
-                    parse_int_array(input).map_err(|_| "Invalid list item")?;
+                    parse_int_array(input).map_err(|_| "Invalid list item (int)")?;
                 input = new_input;
                 list.push(result);
             }
@@ -318,7 +321,7 @@ pub fn parse_list(input: &[u8]) -> Result<(NbtList, &[u8]), &'static str> {
             let mut list = Vec::with_capacity(len);
             for _ in 0..len {
                 let (result, new_input) =
-                    parse_long_array(input).map_err(|_| "Invalid list item")?;
+                    parse_long_array(input).map_err(|_| "Invalid list item (long)")?;
                 input = new_input;
                 list.push(result);
             }
@@ -334,7 +337,7 @@ pub fn parse_byte_array(input: &[u8]) -> Result<(Vec<i8>, &[u8]), &'static str> 
     if input.len() < 4 {
         return Err("A byte array tag should contain four bytes.");
     }
-    let len: i32 = unsafe { i32::from_be(*(input.as_ptr().add(1) as *mut i32)) };
+    let len: i32 = unsafe { i32::from_be(*(input.as_ptr() as *mut i32)) };
     if len <= 0 {
         return Ok((Vec::new(), &input[4..]));
     }
@@ -360,7 +363,7 @@ pub fn parse_int_array(input: &[u8]) -> Result<(Vec<i32>, &[u8]), &'static str> 
     if input.len() < 4 {
         return Err("A int array tag should contain four bytes.");
     }
-    let len: i32 = unsafe { i32::from_be(*(input.as_ptr().add(1) as *mut i32)) };
+    let len: i32 = unsafe { i32::from_be(*(input.as_ptr() as *mut i32)) };
     if len <= 0 {
         return Ok((Vec::new(), &input[4..]));
     }

@@ -7,7 +7,7 @@ use arrays::*;
 use compound::*;
 use numbers::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum NbtTag {
     Null,
     Byte(i8),
@@ -191,21 +191,32 @@ mod tests {
 
     #[test]
     fn test_nbt() {
-        println!(
-            "{:#?}",
-            parse_nbt(&include_bytes!("test_data/bigtest.nbt").to_vec()).unwrap()
-        );
-        println!(
-            "{:#?}",
-            parse_nbt(&include_bytes!("test_data/hello_world.nbt").to_vec()).unwrap()
-        );
-        println!(
-            "{:#?}",
-            parse_nbt(&include_bytes!("test_data/servers.dat").to_vec()).unwrap()
-        );
-        println!(
-            "{:#?}",
-            parse_nbt(&include_bytes!("test_data/level.dat").to_vec()).unwrap()
-        );
+        let original = include_bytes!("test_data/bigtest.nbt").to_vec();
+        let parsed = parse_nbt(&original).unwrap().0;
+        let mut serialized = Vec::new();
+        parsed.serialize(&mut serialized);
+        let parsed2 = parse_nbt(&serialized).unwrap().0;
+        assert_eq!(parsed, parsed2);
+
+        let original = include_bytes!("test_data/hello_world.nbt").to_vec();
+        let parsed = parse_nbt(&original).unwrap().0;
+        let mut serialized = Vec::new();
+        parsed.serialize(&mut serialized);
+        let parsed2 = parse_nbt(&serialized).unwrap().0;
+        assert_eq!(parsed, parsed2);
+
+        let original = include_bytes!("test_data/servers.dat").to_vec();
+        let parsed = parse_nbt(&original).unwrap().0;
+        let mut serialized = Vec::new();
+        parsed.serialize(&mut serialized);
+        let parsed2 = parse_nbt(&serialized).unwrap().0;
+        assert_eq!(parsed, parsed2);
+
+        let original = include_bytes!("test_data/level.dat").to_vec();
+        let parsed = parse_nbt(&original).unwrap().0;
+        let mut serialized = Vec::new();
+        parsed.serialize(&mut serialized);
+        let parsed2 = parse_nbt(&serialized).unwrap().0;
+        assert_eq!(parsed, parsed2)
     }
 }
