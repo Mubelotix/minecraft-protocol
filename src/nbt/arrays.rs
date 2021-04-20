@@ -387,7 +387,7 @@ pub fn parse_long_array(input: &[u8]) -> Result<(Vec<i64>, &[u8]), &'static str>
     if input.len() < 4 {
         return Err("A long array tag should contain four bytes.");
     }
-    let len: i32 = unsafe { i32::from_be(*(input.as_ptr().add(1) as *mut i32)) };
+    let len: i32 = unsafe { i32::from_be(*(input.as_ptr() as *mut i32)) };
     if len <= 0 {
         return Ok((Vec::new(), &input[4..]));
     }
