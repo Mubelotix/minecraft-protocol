@@ -417,7 +417,7 @@ mod items {
     #[allow(clippy::explicit_counter_loop)]
     pub fn generate_item_enum(data: serde_json::Value) {
         let mut items: Vec<Item> = serde_json::from_value(data).expect("Invalid block data");
-        items.sort_by_key(|block| block.id);
+        items.sort_by_key(|item| item.id);
 
         // Look for missing items in the array
         let mut expected = 0;
@@ -442,6 +442,7 @@ mod items {
         let code = format!(
             r#"use crate::*;
 
+/// See [implementations](#implementations) for useful methods.
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Item {{
@@ -504,13 +505,172 @@ const TEXT_IDS: [&str; {max_value}] = {text_ids:?};
 "#,
             variants = variants,
             max_value = expected,
-            max_stack_sizes = items.iter().map(|b| b.stack_size).collect::<Vec<_>>(),
-            durabilities = items.iter().map(|b| b.durability).collect::<Vec<_>>(),
-            display_names = items.iter().map(|b| &b.display_name).collect::<Vec<_>>(),
-            text_ids = items.iter().map(|b| &b.text_id).collect::<Vec<_>>(),
+            max_stack_sizes = items.iter().map(|i| i.stack_size).collect::<Vec<_>>(),
+            durabilities = items.iter().map(|i| i.durability).collect::<Vec<_>>(),
+            display_names = items.iter().map(|i| &i.display_name).collect::<Vec<_>>(),
+            text_ids = items.iter().map(|i| &i.text_id).collect::<Vec<_>>(),
         );
 
         File::create("src/ids/items.rs")
+            .unwrap()
+            .write_all(code.as_bytes())
+            .unwrap()
+    }
+}
+
+mod entities {
+    use super::*;
+
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct Entity {
+        id: u32,
+        #[serde(rename = "name")]
+        text_id: String,
+        display_name: String,
+        width: f32,
+        height: f32,
+        category: String,
+    }
+
+    pub fn generate_entity_enum(data: serde_json::Value) {
+        let mut entities: Vec<Entity> = serde_json::from_value(data).expect("Invalid block data");
+        entities.sort_by_key(|entity| entity.id);
+
+        // Look for missing items in the array
+        let mut expected = 0;
+        for entity in &entities {
+            if entity.id != expected {
+                panic!("The entity with id {} is missing.", expected)
+            }
+            expected += 1;
+        }
+
+        // Generate the categories array
+        let mut categories = String::new();
+        categories.push('[');
+        for entity in &entities {
+            let variant_name = match entity.category.as_str() {
+                "Passive mobs" => "Passive",
+                "Hostile mobs" => "Hostile",
+                "Vehicles" => "Vehicle",
+                "Immobile" => "Immobile",
+                "Projectiles" => "Projectile",
+                "Drops" => "Drop",
+                "Blocks" => "Block",
+                "UNKNOWN" => "Unknown",
+                unknown_category => panic!("Unknown entity category {}", unknown_category),
+            };
+            categories.push_str("EntityCategory::");
+            categories.push_str(&variant_name);
+            categories.push_str(", ");
+        }
+        categories.push(']');
+
+        // Generate the variants of the Item enum
+        let mut variants = String::new();
+        for entity in &entities {
+            let name = entity
+                .text_id
+                .from_case(Case::Snake)
+                .to_case(Case::UpperCamel);
+            variants.push_str(&format!("\t{} = {},\n", name, entity.id));
+        }
+
+        // Generate the code
+        let code = format!(
+            r#"use crate::*;
+
+/// See [implementations](#implementations) for useful methods.
+#[repr(u32)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Entity {{
+{variants}
+}}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum EntityCategory {{
+    Passive,
+    Hostile,
+    Projectile,
+    Immobile,
+    Vehicle,
+    Drop,
+    Block,
+    Unknown
+}}
+
+impl Entity {{
+    #[inline]
+    pub fn from_id(id: u32) -> Option<Entity> {{
+        if id < {max_value} {{
+            Some(unsafe{{std::mem::transmute(id)}})
+        }} else {{
+            None
+        }}
+    }}
+
+    #[inline]
+    pub fn get_text_id(self) -> &'static str {{
+        unsafe {{*TEXT_IDS.get_unchecked((self as u32) as usize)}}
+    }}
+
+    #[inline]
+    pub fn get_display_name(self) -> &'static str {{
+        unsafe {{*DISPLAY_NAMES.get_unchecked((self as u32) as usize)}}
+    }}
+
+    #[inline]
+    pub fn get_category(self) -> EntityCategory {{
+        unsafe {{*CATEGORIES.get_unchecked((self as u32) as usize)}}
+    }}
+
+    #[inline]
+    pub fn get_height(self) -> f32 {{
+        unsafe {{*HEIGHTS.get_unchecked((self as u32) as usize)}}
+    }}
+
+    #[inline]
+    pub fn get_width(self) -> f32 {{
+        unsafe {{*WIDTHS.get_unchecked((self as u32) as usize)}}
+    }}
+}}
+
+impl<'a> MinecraftPacketPart<'a> for Entity {{
+    #[inline]
+    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {{
+        VarInt((self as u32) as i32).serialize_minecraft_packet_part(output)
+    }}
+
+    #[inline]
+    fn deserialize_minecraft_packet_part(input: &'a[u8]) -> Result<(Self, &'a[u8]), &'static str> {{
+        let (id, input) = VarInt::deserialize_minecraft_packet_part(input)?;
+        let id = std::cmp::max(id.0, 0) as u32;
+        let entity = Entity::from_id(id).ok_or("No entity corresponding to the specified numeric ID.")?;
+        Ok((entity, input))
+    }}
+}}
+
+const HEIGHTS: [f32; {max_value}] = {heights:?};
+
+const WIDTHS: [f32; {max_value}] = {widths:?};
+
+const DISPLAY_NAMES: [&str; {max_value}] = {display_names:?};
+
+const TEXT_IDS: [&str; {max_value}] = {text_ids:?};
+
+const CATEGORIES: [EntityCategory; {max_value}] = {categories};
+"#,
+            variants = variants,
+            max_value = expected,
+            heights = entities.iter().map(|e| e.height).collect::<Vec<_>>(),
+            widths = entities.iter().map(|e| e.width).collect::<Vec<_>>(),
+            display_names = entities.iter().map(|e| &e.display_name).collect::<Vec<_>>(),
+            text_ids = entities.iter().map(|e| &e.text_id).collect::<Vec<_>>(),
+            categories = categories,
+        );
+
+        File::create("src/ids/entities.rs")
             .unwrap()
             .write_all(code.as_bytes())
             .unwrap()
@@ -544,7 +704,13 @@ fn main() {
         "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}/items.json",
         file_locations.get("items").unwrap()
     );
-    dbg!(items_url.clone());
     let items_data = get_data(&items_url, &format!("target/cache-items-{}.json", VERSION));
     items::generate_item_enum(items_data);
+
+    let entities_url = format!(
+        "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}/entities.json",
+        file_locations.get("entities").unwrap()
+    );
+    let entities_data = get_data(&entities_url, &format!("target/cache-entities-{}.json", VERSION));
+    entities::generate_entity_enum(entities_data);
 }
