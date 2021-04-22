@@ -376,6 +376,7 @@ struct Item {
     #[serde(rename = "name")]
     text_id: String,
     stack_size: u8,
+    durability: Option<u16>,
 }
 
 #[allow(clippy::explicit_counter_loop)]
@@ -433,6 +434,11 @@ impl Item {{
     pub fn get_max_stack_size(self) -> u8 {{
         unsafe {{*STACK_SIZES.get_unchecked((self as u32) as usize)}}
     }}
+
+    #[inline]
+    pub fn get_durability(self) -> Option<u16> {{
+        unsafe {{*DURABILITIES.get_unchecked((self as u32) as usize)}}
+    }}
 }}
 
 impl<'a> MinecraftPacketPart<'a> for Item {{
@@ -452,6 +458,8 @@ impl<'a> MinecraftPacketPart<'a> for Item {{
 
 const STACK_SIZES: [u8; {max_value}] = {max_stack_sizes:?};
 
+const DURABILITIES: [Option<u16>; {max_value}] = {durabilities:?};
+
 const DISPLAY_NAMES: [&str; {max_value}] = {display_names:?};
 
 const TEXT_IDS: [&str; {max_value}] = {text_ids:?};
@@ -459,6 +467,7 @@ const TEXT_IDS: [&str; {max_value}] = {text_ids:?};
         variants = variants,
         max_value = expected,
         max_stack_sizes = items.iter().map(|b| b.stack_size).collect::<Vec<_>>(),
+        durabilities = items.iter().map(|b| b.durability).collect::<Vec<_>>(),
         display_names = items.iter().map(|b| &b.display_name).collect::<Vec<_>>(),
         text_ids = items.iter().map(|b| &b.text_id).collect::<Vec<_>>(),
     );
