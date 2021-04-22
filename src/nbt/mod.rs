@@ -25,6 +25,200 @@ pub enum NbtTag {
     RootCompound(String, HashMap<String, NbtTag>),
 }
 
+impl NbtTag {
+    pub fn as_null(&mut self) -> Option<()> {
+        if let NbtTag::Null = self {
+            Some(())
+        } else {
+            None
+        }
+    }
+
+    pub fn as_byte(&self) -> Option<&i8> {
+        if let NbtTag::Byte(byte) = self {
+            Some(byte)
+        } else {
+            None
+        }
+    }
+    pub fn as_mut_byte(&mut self) -> Option<&mut i8> {
+        if let NbtTag::Byte(byte) = self {
+            Some(byte)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_short(&self) -> Option<&i16> {
+        if let NbtTag::Short(short) = self {
+            Some(short)
+        } else {
+            None
+        }
+    }
+    pub fn as_mut_short(&mut self) -> Option<&mut i16> {
+        if let NbtTag::Short(short) = self {
+            Some(short)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_int(&self) -> Option<&i32> {
+        if let NbtTag::Int(int) = self {
+            Some(int)
+        } else {
+            None
+        }
+    }
+    pub fn as_mut_int(&mut self) -> Option<&mut i32> {
+        if let NbtTag::Int(int) = self {
+            Some(int)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_long(&self) -> Option<&i64> {
+        if let NbtTag::Long(long) = self {
+            Some(long)
+        } else {
+            None
+        }
+    }
+    pub fn as_mut_long(&mut self) -> Option<&mut i64> {
+        if let NbtTag::Long(long) = self {
+            Some(long)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_float(&self) -> Option<&f32> {
+        if let NbtTag::Float(float) = self {
+            Some(float)
+        } else {
+            None
+        }
+    }
+    pub fn as_mut_float(&mut self) -> Option<&mut f32> {
+        if let NbtTag::Float(float) = self {
+            Some(float)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_double(&self) -> Option<&f64> {
+        if let NbtTag::Double(double) = self {
+            Some(double)
+        } else {
+            None
+        }
+    }
+    pub fn as_mut_double(&mut self) -> Option<&mut f64> {
+        if let NbtTag::Double(double) = self {
+            Some(double)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_byte_array(&self) -> Option<&Vec<i8>> {
+        if let NbtTag::ByteArray(byte_array) = self {
+            Some(byte_array)
+        } else {
+            None
+        }
+    }
+    pub fn as_mut_byte_array(&mut self) -> Option<&mut Vec<i8>> {
+        if let NbtTag::ByteArray(byte_array) = self {
+            Some(byte_array)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_int_array(&self) -> Option<&Vec<i32>> {
+        if let NbtTag::IntArray(int_array) = self {
+            Some(int_array)
+        } else {
+            None
+        }
+    }
+    pub fn as_mut_int_array(&mut self) -> Option<&mut Vec<i32>> {
+        if let NbtTag::IntArray(int_array) = self {
+            Some(int_array)
+        } else {
+            None
+        }
+    }
+    
+    pub fn as_long_array(&self) -> Option<&Vec<i64>> {
+        if let NbtTag::LongArray(long_array) = self {
+            Some(long_array)
+        } else {
+            None
+        }
+    }
+    pub fn as_mut_long_array(&mut self) -> Option<&mut Vec<i64>> {
+        if let NbtTag::LongArray(long_array) = self {
+            Some(long_array)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_string(&self) -> Option<&String> {
+        if let NbtTag::String(string) = self {
+            Some(string)
+        } else {
+            None
+        }
+    }
+    pub fn as_mut_string(&mut self) -> Option<&mut String> {
+        if let NbtTag::String(string) = self {
+            Some(string)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_list(&self) -> Option<&NbtList> {
+        if let NbtTag::List(list) = self {
+            Some(list)
+        } else {
+            None
+        }
+    }
+    pub fn as_mut_list(&mut self) -> Option<&mut NbtList> {
+        if let NbtTag::List(list) = self {
+            Some(list)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_compound(&self) -> Option<&HashMap<String, NbtTag>> {
+        if let NbtTag::Compound(compound) = self {
+            Some(compound)
+        } else if let NbtTag::RootCompound(_name, compound) = self {
+            Some(compound)
+        } else {
+            None
+        }
+    }
+    pub fn as_mut_compound(&mut self) -> Option<&mut HashMap<String, NbtTag>> {
+        if let NbtTag::Compound(compound) = self {
+            Some(compound)
+        } else if let NbtTag::RootCompound(_name, compound) = self {
+            Some(compound)
+        } else {
+            None
+        }
+    }
+}
+
 #[inline]
 pub fn parse_nbt_tag(input: &[u8], tag_id: u8) -> Result<(NbtTag, &[u8]), &'static str> {
     match tag_id {
