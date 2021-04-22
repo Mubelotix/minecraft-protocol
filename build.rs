@@ -1,10 +1,7 @@
 use convert_case::{Case, Casing};
 use serde::{Deserialize, Serialize};
+use std::io::{ErrorKind, Read, Write};
 use std::{collections::HashMap, fs::File};
-use std::{
-    hash::Hash,
-    io::{ErrorKind, Read, Write},
-};
 
 /// Changing this is not enough, please also change static urls in main() since  
 const VERSION: &str = "1.16.5";
@@ -66,129 +63,157 @@ fn get_data(url: &str, cache: &str) -> serde_json::Value {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct Block {
-    id: u32,
-    #[serde(rename = "name")]
-    text_id: String,
-    display_name: String,
-    hardness: f32,
-    resistance: f32,
-    diggable: bool,
-    transparent: bool,
-    filter_light: u8,
-    emit_light: u8,
-    default_state: u32,
-    min_state_id: u32,
-    max_state_id: u32,
-    drops: Vec<u32>,
-    material: Option<String>,
-    #[serde(default)]
-    harvest_tools: HashMap<u32, bool>,
-}
+mod blocks {
+    use super::*;
 
-#[allow(clippy::explicit_counter_loop)]
-fn generate_block_enum(data: serde_json::Value) {
-    let mut blocks: Vec<Block> = serde_json::from_value(data).expect("Invalid block data");
-    blocks.sort_by_key(|block| block.id);
-
-    // Look for missing blocks in the array
-    let mut expected = 0;
-    for block in &blocks {
-        if block.id != expected {
-            panic!("The block with id {} is missing.", expected)
-        }
-        expected += 1;
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct Block {
+        id: u32,
+        #[serde(rename = "name")]
+        text_id: String,
+        display_name: String,
+        hardness: f32,
+        resistance: f32,
+        diggable: bool,
+        transparent: bool,
+        filter_light: u8,
+        emit_light: u8,
+        default_state: u32,
+        min_state_id: u32,
+        max_state_id: u32,
+        drops: Vec<u32>,
+        material: Option<String>,
+        #[serde(default)]
+        harvest_tools: HashMap<u32, bool>,
     }
 
-    // Process a few fields
-    let mut raw_harvest_tools: Vec<Vec<u32>> = Vec::new();
-    let mut raw_materials: Vec<String> = Vec::new();
-    for block in &blocks {
-        raw_harvest_tools.push(block.harvest_tools.clone().into_iter().map(|(k, _v)| k).collect());
-        raw_materials.push(
-            block
-                .material
-                .clone()
-                .unwrap_or_else(|| "unknown_material".to_string())
-                .from_case(Case::Snake)
-                .to_case(Case::UpperCamel),
-        );
-    }
+    #[allow(clippy::explicit_counter_loop)]
+    pub fn generate_block_enum(data: serde_json::Value) {
+        let mut blocks: Vec<Block> = serde_json::from_value(data).expect("Invalid block data");
+        blocks.sort_by_key(|block| block.id);
 
-    // Generate the MaterialBlock enum and array
-    let mut different_materials = raw_materials.clone();
-    different_materials.sort();
-    different_materials.dedup();
-    let mut material_variants = String::new();
-    for material in different_materials {
-        material_variants.push_str(&format!("\t{},\n", material));
-    }
-    let mut materials = String::new();
-    materials.push('[');
-    for material in raw_materials {
-        materials.push_str("Some(BlockMaterial::");
-        materials.push_str(&material);
-        materials.push_str("), ");
-    }
-    materials.push(']');
-
-    // Generate the HARVEST_TOOLS array
-    let mut harvest_tools = String::new();
-    harvest_tools.push('[');
-    for block_harvest_tools in raw_harvest_tools {
-        harvest_tools.push_str("&[");
-        for harvest_tool in block_harvest_tools {
-            harvest_tools.push_str(&harvest_tool.to_string());
-            harvest_tools.push_str(", ");
-        }
-        harvest_tools.push_str("], ");
-    }
-    harvest_tools.push(']');
-
-    // Enumerate the air blocks
-    let mut air_blocks = vec![false; expected as usize];
-    for air_block in &["air", "cave_air", "grass", "torch", "wall_torch", "wheat", "soul_torch", "soul_wall_torch", "carrots", "potatoes"] {
-        let mut success = false;
+        // Look for missing blocks in the array
+        let mut expected = 0;
         for block in &blocks {
-            if &block.text_id.as_str() == air_block {
-                air_blocks[block.id as usize] = true;
-                success = true;
-                break;
+            if block.id != expected {
+                panic!("The block with id {} is missing.", expected)
+            }
+            expected += 1;
+        }
+
+        // Process a few fields
+        let mut raw_harvest_tools: Vec<Vec<u32>> = Vec::new();
+        let mut raw_materials: Vec<String> = Vec::new();
+        for block in &blocks {
+            raw_harvest_tools.push(
+                block
+                    .harvest_tools
+                    .clone()
+                    .into_iter()
+                    .map(|(k, _v)| k)
+                    .collect(),
+            );
+            raw_materials.push(
+                block
+                    .material
+                    .clone()
+                    .unwrap_or_else(|| "unknown_material".to_string())
+                    .from_case(Case::Snake)
+                    .to_case(Case::UpperCamel),
+            );
+        }
+
+        // Generate the MaterialBlock enum and array
+        let mut different_materials = raw_materials.clone();
+        different_materials.sort();
+        different_materials.dedup();
+        let mut material_variants = String::new();
+        for material in different_materials {
+            material_variants.push_str(&format!("\t{},\n", material));
+        }
+        let mut materials = String::new();
+        materials.push('[');
+        for material in raw_materials {
+            materials.push_str("Some(BlockMaterial::");
+            materials.push_str(&material);
+            materials.push_str("), ");
+        }
+        materials.push(']');
+
+        // Generate the HARVEST_TOOLS array
+        let mut harvest_tools = String::new();
+        harvest_tools.push('[');
+        for block_harvest_tools in raw_harvest_tools {
+            harvest_tools.push_str("&[");
+            for harvest_tool in block_harvest_tools {
+                harvest_tools.push_str(&harvest_tool.to_string());
+                harvest_tools.push_str(", ");
+            }
+            harvest_tools.push_str("], ");
+        }
+        harvest_tools.push(']');
+
+        // Enumerate the air blocks
+        let mut air_blocks = vec![false; expected as usize];
+        for air_block in &[
+            "air",
+            "cave_air",
+            "grass",
+            "torch",
+            "wall_torch",
+            "wheat",
+            "soul_torch",
+            "soul_wall_torch",
+            "carrots",
+            "potatoes",
+        ] {
+            let mut success = false;
+            for block in &blocks {
+                if &block.text_id.as_str() == air_block {
+                    air_blocks[block.id as usize] = true;
+                    success = true;
+                    break;
+                }
+            }
+            if !success {
+                panic!("Could not find block {} in the block array", air_block);
             }
         }
-        if !success {
-            panic!("Could not find block {} in the block array", air_block);
+
+        // Generate the variants of the Block enum
+        let mut variants = String::new();
+        for block in &blocks {
+            let name = block
+                .text_id
+                .from_case(Case::Snake)
+                .to_case(Case::UpperCamel);
+            variants.push_str(&format!("\t{} = {},\n", name, block.id));
         }
-    }
 
-    // Generate the variants of the Block enum
-    let mut variants = String::new();
-    for block in &blocks {
-        let name = block.text_id.from_case(Case::Snake).to_case(Case::UpperCamel);
-        variants.push_str(&format!("\t{} = {},\n", name, block.id));
-    }
-
-    // Generate the `match` of state ids 
-    let mut state_id_match_arms = String::new();
-    for block in &blocks {
-        let name = block.text_id.from_case(Case::Snake).to_case(Case::UpperCamel);
-        let start = block.min_state_id;
-        let stop = block.max_state_id;
-        if start != stop {
-            state_id_match_arms.push_str(&format!(
-                "\t\t\t{}..={} => Some(Block::{}),\n",
-                start, stop, name
-            ));
-        } else {
-            state_id_match_arms.push_str(&format!("\t\t\t{} => Some(Block::{}),\n", start, name));
+        // Generate the `match` of state ids
+        let mut state_id_match_arms = String::new();
+        for block in &blocks {
+            let name = block
+                .text_id
+                .from_case(Case::Snake)
+                .to_case(Case::UpperCamel);
+            let start = block.min_state_id;
+            let stop = block.max_state_id;
+            if start != stop {
+                state_id_match_arms.push_str(&format!(
+                    "\t\t\t{}..={} => Some(Block::{}),\n",
+                    start, stop, name
+                ));
+            } else {
+                state_id_match_arms
+                    .push_str(&format!("\t\t\t{} => Some(Block::{}),\n", start, name));
+            }
         }
-    }
 
-    // Generate the code
-    let code = format!(
-        r#"use crate::*;
+        // Generate the code
+        let code = format!(
+            r#"use crate::*;
 
 /// See [implementations](#implementations) for useful methods.
 #[repr(u32)]
@@ -342,67 +367,80 @@ const DIGGABLE: [bool; {max_value}] = {diggable:?};
 const TRANSPARENT: [bool; {max_value}] = {transparent:?};
 const AIR_BLOCKS: [bool; {max_value}] = {air_blocks:?};
 "#,
-        variants = variants,
-        material_variants = material_variants,
-        max_value = expected,
-        state_id_match_arms = state_id_match_arms,
-        text_ids = blocks.iter().map(|b| &b.text_id).collect::<Vec<_>>(),
-        display_names = blocks.iter().map(|b| &b.display_name).collect::<Vec<_>>(),
-        state_id_ranges = blocks.iter().map(|b| b.min_state_id..b.max_state_id + 1).collect::<Vec<_>>(),
-        default_state_ids = blocks.iter().map(|b| b.default_state).collect::<Vec<_>>(),
-        item_ids = blocks.iter().map(|b| b.drops.get(0).copied().unwrap_or(0)).collect::<Vec<_>>(),
-        materials = materials,
-        resistances = blocks.iter().map(|b| b.resistance).collect::<Vec<_>>(),
-        harvest_tools = harvest_tools,
-        hardnesses = blocks.iter().map(|b| b.hardness).collect::<Vec<_>>(),
-        light_emissions = blocks.iter().map(|b| b.emit_light).collect::<Vec<_>>(),
-        light_absorption = blocks.iter().map(|b| b.filter_light).collect::<Vec<_>>(),
-        diggable = blocks.iter().map(|b| b.diggable).collect::<Vec<_>>(),
-        transparent = blocks.iter().map(|b| b.transparent).collect::<Vec<_>>(),
-        air_blocks = air_blocks,
-    );
+            variants = variants,
+            material_variants = material_variants,
+            max_value = expected,
+            state_id_match_arms = state_id_match_arms,
+            text_ids = blocks.iter().map(|b| &b.text_id).collect::<Vec<_>>(),
+            display_names = blocks.iter().map(|b| &b.display_name).collect::<Vec<_>>(),
+            state_id_ranges = blocks
+                .iter()
+                .map(|b| b.min_state_id..b.max_state_id + 1)
+                .collect::<Vec<_>>(),
+            default_state_ids = blocks.iter().map(|b| b.default_state).collect::<Vec<_>>(),
+            item_ids = blocks
+                .iter()
+                .map(|b| b.drops.get(0).copied().unwrap_or(0))
+                .collect::<Vec<_>>(),
+            materials = materials,
+            resistances = blocks.iter().map(|b| b.resistance).collect::<Vec<_>>(),
+            harvest_tools = harvest_tools,
+            hardnesses = blocks.iter().map(|b| b.hardness).collect::<Vec<_>>(),
+            light_emissions = blocks.iter().map(|b| b.emit_light).collect::<Vec<_>>(),
+            light_absorption = blocks.iter().map(|b| b.filter_light).collect::<Vec<_>>(),
+            diggable = blocks.iter().map(|b| b.diggable).collect::<Vec<_>>(),
+            transparent = blocks.iter().map(|b| b.transparent).collect::<Vec<_>>(),
+            air_blocks = air_blocks,
+        );
 
-    File::create("src/ids/blocks.rs")
-        .unwrap()
-        .write_all(code.as_bytes())
-        .unwrap()
+        File::create("src/ids/blocks.rs")
+            .unwrap()
+            .write_all(code.as_bytes())
+            .unwrap()
+    }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct Item {
-    id: u32,
-    display_name: String,
-    #[serde(rename = "name")]
-    text_id: String,
-    stack_size: u8,
-    durability: Option<u16>,
-}
+mod items {
+    use super::*;
 
-#[allow(clippy::explicit_counter_loop)]
-fn generate_item_enum(data: serde_json::Value) {
-    let mut items: Vec<Item> = serde_json::from_value(data).expect("Invalid block data");
-    items.sort_by_key(|block| block.id);
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct Item {
+        id: u32,
+        display_name: String,
+        #[serde(rename = "name")]
+        text_id: String,
+        stack_size: u8,
+        durability: Option<u16>,
+    }
 
-    // Look for missing items in the array
-    let mut expected = 0;
-    for item in &items {
-        if item.id != expected {
-            panic!("The item with id {} is missing.", expected)
+    #[allow(clippy::explicit_counter_loop)]
+    pub fn generate_item_enum(data: serde_json::Value) {
+        let mut items: Vec<Item> = serde_json::from_value(data).expect("Invalid block data");
+        items.sort_by_key(|block| block.id);
+
+        // Look for missing items in the array
+        let mut expected = 0;
+        for item in &items {
+            if item.id != expected {
+                panic!("The item with id {} is missing.", expected)
+            }
+            expected += 1;
         }
-        expected += 1;
-    }
 
-    // Generate the variants of the Item enum
-    let mut variants = String::new();
-    for item in &items {
-        let name = item.text_id.from_case(Case::Snake).to_case(Case::UpperCamel);
-        variants.push_str(&format!("\t{} = {},\n", name, item.id));
-    }
+        // Generate the variants of the Item enum
+        let mut variants = String::new();
+        for item in &items {
+            let name = item
+                .text_id
+                .from_case(Case::Snake)
+                .to_case(Case::UpperCamel);
+            variants.push_str(&format!("\t{} = {},\n", name, item.id));
+        }
 
-    // Generate the code
-    let code = format!(
-        r#"use crate::*;
+        // Generate the code
+        let code = format!(
+            r#"use crate::*;
 
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -464,18 +502,19 @@ const DISPLAY_NAMES: [&str; {max_value}] = {display_names:?};
 
 const TEXT_IDS: [&str; {max_value}] = {text_ids:?};
 "#,
-        variants = variants,
-        max_value = expected,
-        max_stack_sizes = items.iter().map(|b| b.stack_size).collect::<Vec<_>>(),
-        durabilities = items.iter().map(|b| b.durability).collect::<Vec<_>>(),
-        display_names = items.iter().map(|b| &b.display_name).collect::<Vec<_>>(),
-        text_ids = items.iter().map(|b| &b.text_id).collect::<Vec<_>>(),
-    );
+            variants = variants,
+            max_value = expected,
+            max_stack_sizes = items.iter().map(|b| b.stack_size).collect::<Vec<_>>(),
+            durabilities = items.iter().map(|b| b.durability).collect::<Vec<_>>(),
+            display_names = items.iter().map(|b| &b.display_name).collect::<Vec<_>>(),
+            text_ids = items.iter().map(|b| &b.text_id).collect::<Vec<_>>(),
+        );
 
-    File::create("src/ids/items.rs")
-        .unwrap()
-        .write_all(code.as_bytes())
-        .unwrap()
+        File::create("src/ids/items.rs")
+            .unwrap()
+            .write_all(code.as_bytes())
+            .unwrap()
+    }
 }
 
 fn main() {
@@ -499,16 +538,13 @@ fn main() {
         &blocks_url,
         &format!("target/cache-blocks-{}.json", VERSION),
     );
-    generate_block_enum(block_data);
+    blocks::generate_block_enum(block_data);
 
     let items_url = format!(
         "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}/items.json",
         file_locations.get("items").unwrap()
     );
     dbg!(items_url.clone());
-    let items_data = get_data(
-        &items_url,
-        &format!("target/cache-items-{}.json", VERSION),
-    );
-    generate_item_enum(items_data);
+    let items_data = get_data(&items_url, &format!("target/cache-items-{}.json", VERSION));
+    items::generate_item_enum(items_data);
 }
