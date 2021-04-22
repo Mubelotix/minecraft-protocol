@@ -27,12 +27,8 @@ pub enum NbtTag {
 
 impl NbtTag {
     #[inline]
-    pub fn as_null(&mut self) -> Option<()> {
-        if let NbtTag::Null = self {
-            Some(())
-        } else {
-            None
-        }
+    pub fn is_null(&self) -> bool {
+        matches!(self, NbtTag::Null)
     }
 
     #[inline]
