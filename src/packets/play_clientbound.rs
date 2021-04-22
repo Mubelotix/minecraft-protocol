@@ -11,9 +11,7 @@ pub enum ClientboundPacket<'a> {
     SpawnEntity {
         id: VarInt,
         uuid: UUID,
-        /// The type of the entity.
-        /// See [the list](https://wiki.vg/Entity_metadata#Mobs)
-        entity_type: VarInt,
+        entity_type: crate::ids::entities::Entity,
         x: f64,
         y: f64,
         z: f64,
@@ -43,7 +41,7 @@ pub enum ClientboundPacket<'a> {
     SpawnLivingEntity {
         id: VarInt,
         uuid: UUID,
-        entity_type: VarInt,
+        entity_type: crate::ids::entities::Entity,
         x: f64,
         y: f64,
         z: f64,
