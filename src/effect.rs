@@ -2,7 +2,7 @@ use crate::*;
 
 /// [Read about effects](https://minecraft.fandom.com/wiki/Effect)
 #[minecraft_enum(u8)]
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Effect {
     Speed = 1,
     Slowness,
