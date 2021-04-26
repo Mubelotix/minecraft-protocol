@@ -34,9 +34,41 @@ pub struct Trade {
     pub demand: i32,
 }
 
+#[minecraft_enum(VarInt)]
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum VillagerType {
+    Desert,
+    Jungle,
+    Plains,
+    Savanna,
+    Snow,
+    Swamp,
+    Taiga
+}
+
+#[minecraft_enum(VarInt)]
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum VillagerProfession {
+    None,
+    Armorer,
+    Butcher,
+    Cartographer,
+    Cleric,
+    Farmer,
+    Fisherman,
+    Fletcher,
+    Leatherworker,
+    Librarian,
+    Mason,
+    Nitwit,
+    Shepherd,
+    Toolsmith,
+    Weaponsmith
+}
+
 /// Appears on the trade GUI; meaning comes from the translation key `merchant.level.` + level.
 #[minecraft_enum(VarInt)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum VillagerLevel {
     Novice = 1,
     Apprentice,

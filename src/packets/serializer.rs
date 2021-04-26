@@ -631,6 +631,30 @@ impl<'a> MinecraftPacketPart<'a> for &'a str {
     }
 }
 
+impl<'a> MinecraftPacketPart<'a> for String {
+    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        let len = VarInt(self.len().try_into().map_err(|_| "String too long")?);
+        len.serialize_minecraft_packet_part(output)?;
+        output.extend_from_slice(self.as_bytes());
+        Ok(())
+    }
+
+    fn deserialize_minecraft_packet_part(input: &[u8]) -> Result<(String, &[u8]), &'static str> {
+        let (len, input) = VarInt::deserialize_minecraft_packet_part(input)?;
+        if len.0 <= 0 {
+            return Ok((String::new(), input));
+        }
+        let len: usize = len.0 as usize;
+        if len > input.len() {
+            return Err("String claims ownership of too much data");
+        }
+        let (slice, input) = input.split_at(len);
+        let string = String::from_utf8(slice.to_vec()).map_err(|_| "Invalid utf8")?;
+
+        Ok((string, input))
+    }
+}
+
 impl<'a> MinecraftPacketPart<'a> for Position {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
         let x = match self.x < 0 {

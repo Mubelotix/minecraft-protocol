@@ -792,8 +792,7 @@ pub enum ClientboundPacket<'a> {
     /// Any properties not included in the Metadata field are left unchanged.
     EntityMetadata {
         entity_id: VarInt,
-        /// TODO: parse this field
-        metadata: RawBytes<'a>,
+        metadata: crate::entity::EntityMetadata,
     },
 
     /// This packet is sent when an entity has been leashed to another entity.

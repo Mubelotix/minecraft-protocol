@@ -1,4 +1,6 @@
-use crate::*;
+use std::collections::BTreeMap;
+
+use crate::{*, nbt::NbtTag};
 
 #[derive(Debug, MinecraftPacketPart)]
 pub struct EntityAttribute<'a> {
@@ -42,7 +44,7 @@ pub enum EntityInteraction {
 }
 
 #[minecraft_enum(VarInt)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PlayerAction {
     StartSneaking,
     StopSneaking,
@@ -55,4 +57,93 @@ pub enum PlayerAction {
     /// Open horse inventory is only sent when pressing the inventory key (default: E) while on a horse — all other methods of opening a horse's inventory (involving right-clicking or shift-right-clicking it) do not use this packet.
     OpenHorseInventory,
     StartFlyingWithElytra,
+}
+
+#[minecraft_enum(VarInt)]
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum Pose {
+    Standing,
+    FallFlying,
+    Sleeping,
+    Swimming,
+    SpinAttack,
+    Sneaking,
+    Dying,
+}
+
+#[derive(Debug, Clone)]
+pub struct EntityMetadata {
+    pub items: BTreeMap<u8, EntityMetadataValue>,
+}
+
+impl<'a> MinecraftPacketPart<'a> for EntityMetadata {
+    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        for (key, value) in self.items.into_iter() {
+            key.serialize_minecraft_packet_part(output)?;
+            value.serialize_minecraft_packet_part(output)?;
+        }
+        0xff.serialize_minecraft_packet_part(output)?;
+        Ok(())
+    }
+
+    fn deserialize_minecraft_packet_part(
+        mut input: &'a [u8],
+    ) -> Result<(Self, &'a [u8]), &'static str> {
+        let mut items = BTreeMap::new();
+        loop {
+            let (key, new_input) = u8::deserialize_minecraft_packet_part(input)?;
+            if key == 0xff {
+                input = new_input;
+                break;
+            }
+            let (value, new_input) = EntityMetadataValue::deserialize_minecraft_packet_part(new_input)?;
+            input = new_input;
+            items.insert(key, value);
+        }
+
+        Ok((
+            EntityMetadata {
+                items,
+            },
+            input,
+        ))
+    }
+}
+
+#[derive(Debug, Clone, MinecraftPacketPart)]
+#[discriminant(u8)]
+pub enum EntityMetadataValue {
+    Byte {value: u8},
+    VarInt {value: VarInt},
+    Float {value: f32},
+    String {value: String},
+    Chat {chat: String},
+    OptionChat {chat: Option<String>},
+    Slot {slot: crate::slots::Slot},
+    Bool {value: bool},
+    Rotation {
+        rotation_x: f32,
+        rotation_y: f32,
+        rotation_z: f32,
+    },
+    Position {position: Position},
+    OptionPosition {position: Option<Position>},
+    Direction {direction: Direction},
+    OptionUUID {uuid: Option<UUID>},
+    /// Use [Block::from_state_id](crate::ids::blocks::Block::from_state_id) to get the block.
+    OptionBlockStateID {block_state_id: Option<VarInt>},
+    Nbt {value: NbtTag},
+    Particle {particle: crate::particle::Particle},
+    Villager {
+        villager_type: crate::trades::VillagerType,
+        profession: crate::trades::VillagerProfession,
+        level: crate::trades::VillagerLevel,
+    },
+    OptionVarInt {
+        /// 0 for absent; 1 + actual value otherwise. Used for entity IDs.
+        option_varint: VarInt,
+    },
+    Pose {
+        pose: Pose,
+    },
 }
