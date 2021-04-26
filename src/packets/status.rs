@@ -15,7 +15,7 @@ pub enum ClientboundPacket<'a> {
     Pong {
         /// Should be the same as sent by the client
         payload: i64,
-    }
+    },
 }
 
 #[derive(Debug, MinecraftPacketPart)]
@@ -24,9 +24,9 @@ pub enum ServerboundPacket {
     /// *Request for [ClientboundPacket::Response]*
     Request,
 
-    /// *Request for [ClientboundPacket::Pong]* 
+    /// *Request for [ClientboundPacket::Pong]*
     Ping {
         /// May be any number. Notchian clients use a system-dependent time value which is counted in milliseconds.
         payload: i64,
-    }
+    },
 }

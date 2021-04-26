@@ -27,14 +27,14 @@ pub enum ScoreboardScoreAction<'a> {
     Remove {
         /// The name of the objective the score belongs to
         objective_name: Chat<'a>,
-    }
+    },
 }
 
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum ScoreboardType {
     Integer,
-    Hearts
+    Hearts,
 }
 
 #[minecraft_enum(u8)]
@@ -104,7 +104,7 @@ pub enum TeamAction<'a> {
     RemoveEntities {
         /// Identifiers for the removed entities. For players, this is their username; for other entities, it is their UUID.
         entities: Array<'a, &'a str, VarInt>,
-    }
+    },
 }
 
 /// The color of a team defines how the names of the team members are visualized; any formatting code can be used.

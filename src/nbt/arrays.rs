@@ -105,14 +105,14 @@ impl NbtList {
                     output.extend_from_slice(&(string.len() as u16).to_be_bytes());
                     output.extend_from_slice(string.as_bytes());
                 }
-            },
+            }
             NbtList::List(list) => {
                 output.push(9);
                 output.extend_from_slice(&(list.len() as i32).to_be_bytes());
                 for inner_list in list {
                     inner_list.serialize_list(output);
                 }
-            },
+            }
             NbtList::Compound(list) => {
                 output.push(10);
                 output.extend_from_slice(&(list.len() as i32).to_be_bytes());
@@ -125,7 +125,7 @@ impl NbtList {
                     }
                     output.push(0);
                 }
-            },
+            }
         }
     }
 }
@@ -279,7 +279,8 @@ pub fn parse_list(input: &[u8]) -> Result<(NbtList, &[u8]), &'static str> {
             let mut input = &input[5..];
             let mut list = Vec::with_capacity(len);
             for _ in 0..len {
-                let (result, new_input) = parse_string(input).map_err(|_| "Invalid list item (string)")?;
+                let (result, new_input) =
+                    parse_string(input).map_err(|_| "Invalid list item (string)")?;
                 input = new_input;
                 list.push(result);
             }
@@ -289,7 +290,8 @@ pub fn parse_list(input: &[u8]) -> Result<(NbtList, &[u8]), &'static str> {
             let mut input = &input[5..];
             let mut list = Vec::with_capacity(len);
             for _ in 0..len {
-                let (result, new_input) = parse_list(input).map_err(|_| "Invalid list item (list)")?;
+                let (result, new_input) =
+                    parse_list(input).map_err(|_| "Invalid list item (list)")?;
                 input = new_input;
                 list.push(result);
             }
@@ -299,7 +301,8 @@ pub fn parse_list(input: &[u8]) -> Result<(NbtList, &[u8]), &'static str> {
             let mut input = &input[5..];
             let mut list = Vec::with_capacity(len);
             for _ in 0..len {
-                let (result, new_input) = parse_compound(input).map_err(|_| "Invalid list item (compound)")?;
+                let (result, new_input) =
+                    parse_compound(input).map_err(|_| "Invalid list item (compound)")?;
                 input = new_input;
                 list.push(result);
             }

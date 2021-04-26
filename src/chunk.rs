@@ -23,7 +23,7 @@ pub struct ChunkData<'a> {
     /// Sections are sent bottom-to-top, i.e. the first section, if sent, extends from Y=0 to Y=15.
     ///
     /// **Use [ChunkData::deserialize_chunk_sections] to get ready to use [ChunkSection]s.**
-    pub data: &'a[u8],
+    pub data: &'a [u8],
     /// All block entities in the chunk.
     /// Use the x, y, and z tags in the NBT to determine their positions.
     /// Sending entities is not required; it is still legal to send them with [ClientboundPacket::UpdateBlockEntity] later.
@@ -50,8 +50,8 @@ impl<'a> MinecraftPacketPart<'a> for ChunkData<'a> {
     }
 
     fn deserialize_minecraft_packet_part(
-        input: &'a[u8],
-    ) -> Result<(Self, &'a[u8]), &'static str> {
+        input: &'a [u8],
+    ) -> Result<(Self, &'a [u8]), &'static str> {
         let (chunk_x, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         let (chunk_z, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         let (full_chunk, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
@@ -165,7 +165,7 @@ impl<'a> ChunkData<'a> {
                             _ => unreachable!(),
                         };
                         for i in 0..blocks_per_long {
-                            let block_index = ((long & mask) >> (i*bits_per_block)) as usize;
+                            let block_index = ((long & mask) >> (i * bits_per_block)) as usize;
                             let block = *palette.get(block_index).unwrap_or(&0);
                             blocks.push(block);
                             mask <<= bits_per_block;
@@ -194,7 +194,7 @@ impl<'a> ChunkData<'a> {
                             _ => return Err("Unsupported bits_per_block"),
                         };
                         for i in 0..blocks_per_long {
-                            let block = ((long & mask) >> (i*bits_per_block)) as u32;
+                            let block = ((long & mask) >> (i * bits_per_block)) as u32;
                             blocks.push(block);
                             mask <<= bits_per_block;
                         }

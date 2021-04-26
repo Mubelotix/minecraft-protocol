@@ -80,8 +80,8 @@ impl<'a> MinecraftPacketPart<'a> for EquipmentSlotArray {
     }
 
     fn deserialize_minecraft_packet_part(
-        mut input: &'a[u8],
-    ) -> Result<(Self, &'a[u8]), &'static str> {
+        mut input: &'a [u8],
+    ) -> Result<(Self, &'a [u8]), &'static str> {
         let mut slots = BTreeMap::new();
         loop {
             let (number, new_input) = u8::deserialize_minecraft_packet_part(input)?;
@@ -110,10 +110,24 @@ mod tests {
 
     #[test]
     fn test_equipment_slot_array() {
-        let data = [0, 1, 190, 4, 1, 10, 0, 0, 3, 0, 6, 68, 97, 109, 97, 103, 101, 0, 0, 0, 0, 0];
-        let slot_array = EquipmentSlotArray::deserialize_uncompressed_minecraft_packet(&data).unwrap();
+        let data = [
+            0, 1, 190, 4, 1, 10, 0, 0, 3, 0, 6, 68, 97, 109, 97, 103, 101, 0, 0, 0, 0, 0,
+        ];
+        let slot_array =
+            EquipmentSlotArray::deserialize_uncompressed_minecraft_packet(&data).unwrap();
         assert_eq!(slot_array.slots.len(), 1);
-        assert_eq!(slot_array.slots.get(&EquipmentSlot::MainHand).unwrap().item.as_ref().unwrap().item_count.0, 1)
+        assert_eq!(
+            slot_array
+                .slots
+                .get(&EquipmentSlot::MainHand)
+                .unwrap()
+                .item
+                .as_ref()
+                .unwrap()
+                .item_count
+                .0,
+            1
+        )
     }
 
     #[test]

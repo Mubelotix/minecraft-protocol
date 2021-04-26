@@ -166,7 +166,7 @@ impl NbtTag {
             None
         }
     }
-    
+
     #[inline]
     pub fn as_long_array(&self) -> Option<&Vec<i64>> {
         if let NbtTag::LongArray(long_array) = self {
@@ -315,13 +315,13 @@ impl NbtTag {
             NbtTag::RootCompound(_, _) => 10,
         });
     }
-    
+
     pub fn serialize_value(&self, output: &mut Vec<u8>) {
         match self {
             NbtTag::Null => (),
             NbtTag::Byte(byte) => {
                 output.push(byte.to_be_bytes()[0]);
-            },
+            }
             NbtTag::Short(short) => {
                 output.extend_from_slice(&short.to_be_bytes());
             }
@@ -367,7 +367,7 @@ impl NbtTag {
                     value.serialize_type_id(output);
                     output.extend_from_slice(&(name.len() as u16).to_be_bytes());
                     output.extend_from_slice(name.as_bytes());
-                    value.serialize_value( output);
+                    value.serialize_value(output);
                 }
                 output.push(0);
             }
@@ -378,7 +378,7 @@ impl NbtTag {
                     value.serialize_type_id(output);
                     output.extend_from_slice(&(name.len() as u16).to_be_bytes());
                     output.extend_from_slice(name.as_bytes());
-                    value.serialize_value( output);
+                    value.serialize_value(output);
                 }
                 output.push(0);
             }

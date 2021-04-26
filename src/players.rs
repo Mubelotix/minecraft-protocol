@@ -74,4 +74,3 @@ pub struct FaceTarget {
     pub target_entity_id: VarInt,
     pub target_aim: FaceAim,
 }
-

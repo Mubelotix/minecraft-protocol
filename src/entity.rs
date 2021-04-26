@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::{*, nbt::NbtTag};
+use crate::{nbt::NbtTag, *};
 
 #[derive(Debug, MinecraftPacketPart)]
 pub struct EntityAttribute<'a> {
@@ -96,44 +96,70 @@ impl<'a> MinecraftPacketPart<'a> for EntityMetadata {
                 input = new_input;
                 break;
             }
-            let (value, new_input) = EntityMetadataValue::deserialize_minecraft_packet_part(new_input)?;
+            let (value, new_input) =
+                EntityMetadataValue::deserialize_minecraft_packet_part(new_input)?;
             input = new_input;
             items.insert(key, value);
         }
 
-        Ok((
-            EntityMetadata {
-                items,
-            },
-            input,
-        ))
+        Ok((EntityMetadata { items }, input))
     }
 }
 
 #[derive(Debug, Clone, MinecraftPacketPart)]
 #[discriminant(u8)]
 pub enum EntityMetadataValue {
-    Byte {value: u8},
-    VarInt {value: VarInt},
-    Float {value: f32},
-    String {value: String},
-    Chat {chat: String},
-    OptionChat {chat: Option<String>},
-    Slot {slot: crate::slots::Slot},
-    Bool {value: bool},
+    Byte {
+        value: u8,
+    },
+    VarInt {
+        value: VarInt,
+    },
+    Float {
+        value: f32,
+    },
+    String {
+        value: String,
+    },
+    Chat {
+        chat: String,
+    },
+    OptionChat {
+        chat: Option<String>,
+    },
+    Slot {
+        slot: crate::slots::Slot,
+    },
+    Bool {
+        value: bool,
+    },
     Rotation {
         rotation_x: f32,
         rotation_y: f32,
         rotation_z: f32,
     },
-    Position {position: Position},
-    OptionPosition {position: Option<Position>},
-    Direction {direction: Direction},
-    OptionUUID {uuid: Option<UUID>},
+    Position {
+        position: Position,
+    },
+    OptionPosition {
+        position: Option<Position>,
+    },
+    Direction {
+        direction: Direction,
+    },
+    OptionUUID {
+        uuid: Option<UUID>,
+    },
     /// Use [Block::from_state_id](crate::ids::blocks::Block::from_state_id) to get the block.
-    OptionBlockStateID {block_state_id: Option<VarInt>},
-    Nbt {value: NbtTag},
-    Particle {particle: crate::particle::Particle},
+    OptionBlockStateID {
+        block_state_id: Option<VarInt>,
+    },
+    Nbt {
+        value: NbtTag,
+    },
+    Particle {
+        particle: crate::particle::Particle,
+    },
     Villager {
         villager_type: crate::trades::VillagerType,
         profession: crate::trades::VillagerProfession,

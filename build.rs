@@ -711,6 +711,9 @@ fn main() {
         "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}/entities.json",
         file_locations.get("entities").unwrap()
     );
-    let entities_data = get_data(&entities_url, &format!("target/cache-entities-{}.json", VERSION));
+    let entities_data = get_data(
+        &entities_url,
+        &format!("target/cache-entities-{}.json", VERSION),
+    );
     entities::generate_entity_enum(entities_data);
 }

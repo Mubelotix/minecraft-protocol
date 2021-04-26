@@ -69,11 +69,11 @@ pub enum ClientboundPacket<'a> {
 
     // todo add doc links
     /// This packet is sent by the server when a player comes into visible range, not when a player joins.
-    /// 
+    ///
     /// This packet must be sent after the Player Info packet that adds the player data for the client to use when spawning a player.
     /// If the Player Info for the player spawned by this packet is not present when this packet arrives, Notchian clients will not spawn the player entity.
     /// The Player Info packet includes skin/cape data.
-    /// 
+    ///
     /// Servers can, however, safely spawn player entities for players not in visible range.
     /// The client appears to handle it correctly.
     SpawnPlayer {
@@ -93,7 +93,7 @@ pub enum ClientboundPacket<'a> {
     },
 
     /// Will only send the changed values if previously requested.
-    /// 
+    ///
     /// *Response to [ServerboundPacket::ClientStatus]*
     Statistics {
         statistics: Array<'a, crate::advancements::Statistic, VarInt>,
@@ -175,7 +175,7 @@ pub enum ClientboundPacket<'a> {
     /// Identifying the difference between Chat/System Message is important as it helps respect the user's chat visibility options. See [processing chat](https://wiki.vg/Chat#Processing_chat) for more info about these positions.
     ///
     /// **Warning**: Game info accepts json formatting but does not display it, although the deprecated §-based formatting works. This is not an issue when using the [Title] packet, so prefer that packet for displaying information in that slot. See MC-119145 for more information.
-    /// 
+    ///
     /// *See also [ServerboundPacket::ChatMessage]*
     ChatMessage {
         message: Chat<'a>,
@@ -188,7 +188,7 @@ pub enum ClientboundPacket<'a> {
     /// In the case of regular chat, this is a player username.
     /// Command names and parameters are also supported.
     /// The client sorts these alphabetically before listing them.
-    /// 
+    ///
     /// *Response to [ClientboundPacket::TabComplete]*
     TabComplete {
         transaction_id: VarInt,
@@ -211,7 +211,7 @@ pub enum ClientboundPacket<'a> {
 
     /// A packet from the server indicating whether a request from the client was accepted, or whether there was a conflict (due to lag).
     /// If the packet was not accepted, the client must respond with a serverbound window confirmation packet.
-    /// 
+    ///
     /// *Request for [ServerboundPacket::WindowConfirmation]*
     WindowConfirmation {
         /// The ID of the window that the action occurred in.
@@ -283,7 +283,7 @@ pub enum ClientboundPacket<'a> {
     /// These internal channels are in the `minecraft` namespace.
     ///
     /// [More documentation](http://dinnerbone.com/blog/2012/01/13/minecraft-plugin-channels-messaging/)
-    /// 
+    ///
     /// *See also [ServerboundPacket::PluginMessage]*
     PluginMessage {
         /// Name of the [plugin channel](https://wiki.vg/Plugin_channel) used to send the data.
@@ -376,7 +376,7 @@ pub enum ClientboundPacket<'a> {
     /// The client must respond with the same payload (see [serverbound Keep Alive](https://wiki.vg/Protocol#Keep_Alive_.28serverbound.29)).
     /// If the client does not respond to them for over 30 seconds, the server kicks the client.
     /// Vice versa, if the server does not send any keep-alives for 20 seconds, the client will disconnect and yields a "Timed out" exception.
-    /// 
+    ///
     /// *Request for [ServerboundPacket::KeepAlive]*
     KeepAlive {
         /// The Notchian server uses a system-dependent time in milliseconds to generate the keep alive ID value.
@@ -575,7 +575,7 @@ pub enum ClientboundPacket<'a> {
 
     /// Sent when the client has placed a sign and is allowed to send [ServerboundPacket::UpdateSign].
     /// There must already be a sign at the given location (which the client does not do automatically) - send a [ClientboundPacket::BlockChange] first.
-    /// 
+    ///
     /// *Request for [ServerboundPacket::UpdateSign]*
     OpenSignEditor {
         location: Position,
@@ -630,7 +630,7 @@ pub enum ClientboundPacket<'a> {
     /// This packet will also close the “Downloading Terrain” screen when joining/respawning.
     ///
     /// If the distance between the last known position of the player on the server and the new position set by this packet is greater than 100 meters, the client will be kicked for `You moved too quickly`.
-    /// 
+    ///
     /// *Request for [ServerboundPacket::TeleportConfirm]*
     PlayerPositionAndLook {
         /// Absolute or relative position, depending on the `flags` field. If the last bit (`0b00000001`) is set, this value is relative.
@@ -752,7 +752,7 @@ pub enum ClientboundPacket<'a> {
     },
 
     /// Sent to change the player's slot selection
-    /// 
+    ///
     /// *See also [ServerboundPacket::HeldItemChange]*
     HeldItemChange {
         /// The slot which the player has selected (0–8)
@@ -936,7 +936,7 @@ pub enum ClientboundPacket<'a> {
 
     // Todo add doc links
     /// Sent in response to Query Block NBT or Query Entity NBT.
-    /// 
+    ///
     /// *Response to [ServerboundPacket::QueryBlockNbt] and [ServerboundPacket::QueryEntityNbt]*
     NbtQueryResponse {
         // Todo add doc link

@@ -453,5 +453,5 @@ pub enum ServerboundPacket<'a> {
     UseItem {
         /// Hand used for the animation
         hand: crate::slots::Hand,
-    }
+    },
 }

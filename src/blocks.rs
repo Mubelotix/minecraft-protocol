@@ -84,15 +84,15 @@ impl<'a> MultiBlockChange<'a> {
     pub fn encode_chunk_section_position(x: i32, y: i32, z: i32) -> Result<u64, &'static str> {
         let x = match x < 0 {
             true => (x + 2i32.pow(22)) as u64,
-            false => x as u64
+            false => x as u64,
         };
         let y = match y < 0 {
             true => (y + 2i32.pow(20)) as u64,
-            false => y as u64
+            false => y as u64,
         };
         let z = match z < 0 {
             true => (z + 2i32.pow(22)) as u64,
-            false => z as u64
+            false => z as u64,
         };
 
         if x > 0x3FFFFF || y > 0xFFFFF || z > 0x3FFFFF {
@@ -142,7 +142,7 @@ impl<'a> MultiBlockChange<'a> {
     }
 
     /// Returns the position of the block in the chunk at coordinates `chunk_section_position` and the state id of the block.
-	/// Use [Block::from_state_id](crate::ids::blocks::Block::from_state_id) to get the corresponding [Block](crate::ids::blocks::Block).
+    /// Use [Block::from_state_id](crate::ids::blocks::Block::from_state_id) to get the corresponding [Block](crate::ids::blocks::Block).
     ///
     /// ```ignore
     /// // get the absolute X coordinate
@@ -164,22 +164,30 @@ mod tests {
     #[test]
     fn test_chunk_section_position() {
         let position = (15, 7, 23);
-        let encoded = MultiBlockChange::encode_chunk_section_position(position.0, position.1, position.2).unwrap();
+        let encoded =
+            MultiBlockChange::encode_chunk_section_position(position.0, position.1, position.2)
+                .unwrap();
         let decoded = MultiBlockChange::decode_chunk_section_position(encoded);
         assert_eq!(position, decoded);
 
         let position = (-15, 7, 23);
-        let encoded = MultiBlockChange::encode_chunk_section_position(position.0, position.1, position.2).unwrap();
+        let encoded =
+            MultiBlockChange::encode_chunk_section_position(position.0, position.1, position.2)
+                .unwrap();
         let decoded = MultiBlockChange::decode_chunk_section_position(encoded);
         assert_eq!(position, decoded);
 
         let position = (0, 0, 0);
-        let encoded = MultiBlockChange::encode_chunk_section_position(position.0, position.1, position.2).unwrap();
+        let encoded =
+            MultiBlockChange::encode_chunk_section_position(position.0, position.1, position.2)
+                .unwrap();
         let decoded = MultiBlockChange::decode_chunk_section_position(encoded);
         assert_eq!(position, decoded);
 
         let position = (-1651, -65, -54412);
-        let encoded = MultiBlockChange::encode_chunk_section_position(position.0, position.1, position.2).unwrap();
+        let encoded =
+            MultiBlockChange::encode_chunk_section_position(position.0, position.1, position.2)
+                .unwrap();
         let decoded = MultiBlockChange::decode_chunk_section_position(encoded);
         assert_eq!(position, decoded);
     }

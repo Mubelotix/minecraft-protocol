@@ -43,7 +43,7 @@ pub enum VillagerType {
     Savanna,
     Snow,
     Swamp,
-    Taiga
+    Taiga,
 }
 
 #[minecraft_enum(VarInt)]
@@ -63,7 +63,7 @@ pub enum VillagerProfession {
     Nitwit,
     Shepherd,
     Toolsmith,
-    Weaponsmith
+    Weaponsmith,
 }
 
 /// Appears on the trade GUI; meaning comes from the translation key `merchant.level.` + level.

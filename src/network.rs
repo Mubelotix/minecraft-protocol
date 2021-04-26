@@ -101,7 +101,9 @@ mod tests {
                 server_address: "127.0.0.1",
                 server_port: 25565,
                 next_state: crate::packets::ConnectionState::Login,
-            }.serialize_minecraft_packet().unwrap(),
+            }
+            .serialize_minecraft_packet()
+            .unwrap(),
             None,
             None,
         )
@@ -109,7 +111,9 @@ mod tests {
 
         send_packet(
             &mut stream,
-            crate::packets::login::ServerboundPacket::LoginStart { username: "bot2" }.serialize_minecraft_packet().unwrap(),
+            crate::packets::login::ServerboundPacket::LoginStart { username: "bot2" }
+                .serialize_minecraft_packet()
+                .unwrap(),
             None,
             None,
         )
@@ -139,7 +143,9 @@ mod tests {
                 ClientboundPacket::KeepAlive { keep_alive_id } => {
                     send_packet(
                         &mut stream,
-                        ServerboundPacket::KeepAlive { keep_alive_id }.serialize_minecraft_packet().unwrap(),
+                        ServerboundPacket::KeepAlive { keep_alive_id }
+                            .serialize_minecraft_packet()
+                            .unwrap(),
                         None,
                         None,
                     )
