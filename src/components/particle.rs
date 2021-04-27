@@ -52,7 +52,7 @@ pub enum Particle {
     InstantEffect,
     Item {
         /// The item that will be used
-        item: crate::slots::Slot,
+        item: super::slots::Slot,
     },
     ItemSlime,
     IemSnowball,

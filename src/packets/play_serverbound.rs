@@ -1,6 +1,6 @@
 #[allow(unused_imports)]
 use super::play_clientbound::ClientboundPacket;
-
+use crate::components::*;
 use super::*;
 
 #[derive(Debug, MinecraftPacketPart)]
@@ -22,7 +22,7 @@ pub enum ServerboundPacket<'a> {
 
     /// Appears to only be used on singleplayer; the difficulty buttons are still disabled in multiplayer.
     SetDifficulty {
-        new_difficulty: crate::difficulty::Difficulty,
+        new_difficulty: difficulty::Difficulty,
     },
 
     /// Used to send a chat message to the server.
@@ -38,7 +38,7 @@ pub enum ServerboundPacket<'a> {
 
     /// *Request for [ClientboundPacket::Statistics]*
     ClientStatus {
-        action: crate::game_state::ClientStatus,
+        action: game_state::ClientStatus,
     },
 
     /// Sent when the player connects, or when settings are changed
@@ -47,12 +47,12 @@ pub enum ServerboundPacket<'a> {
         locale: &'a str,
         /// Client-side render distance, in chunks
         render_distance: u8,
-        chat_mode: crate::chat::ChatMode,
+        chat_mode: chat::ChatMode,
         /// “Colors” multiplayer setting
         chat_colors_enabled: bool,
         /// Bit mask, see [the wiki](https://wiki.vg/Protocol#Client_Settings)
         displayed_skin_parts: u8,
-        main_hand: crate::slots::MainHand,
+        main_hand: slots::MainHand,
     },
 
     /// *Request for [ClientboundPacket::TabComplete]*
@@ -99,7 +99,7 @@ pub enum ServerboundPacket<'a> {
         /// Inventory operation mode, see [the wiki](https://wiki.vg/Protocol#Click_Window)
         mode: VarInt,
         /// The clicked slot. Has to be empty (item ID = -1) for drop mode. (TODO: check this)
-        clicked_item: crate::slots::Slot,
+        clicked_item: slots::Slot,
     },
 
     /// This packet is sent by the client when closing a window.
@@ -126,10 +126,10 @@ pub enum ServerboundPacket<'a> {
 
     EditBook {
         /// See [the wiki](https://wiki.vg/Protocol#Edit_Book) for information about the NBT data structure of this slot.
-        new_book: crate::slots::Slot,
+        new_book: slots::Slot,
         /// `true` if the player is signing the book; `false` if the player is saving a draft.
         is_signing: bool,
-        hand: crate::slots::Hand,
+        hand: slots::Hand,
     },
 
     /// *Request for [ClientboundPacket::NbtQueryResponse]*
@@ -144,7 +144,7 @@ pub enum ServerboundPacket<'a> {
     /// Note that middle-click in creative mode is interpreted by the client and sent as a [ServerboundPacket::CreativeInventoryAction] packet instead.
     InteractEntity {
         entity_id: VarInt,
-        interaction_type: crate::entity::EntityInteraction,
+        interaction_type: entity::EntityInteraction,
         sneaking: bool,
     },
 
@@ -284,18 +284,18 @@ pub enum ServerboundPacket<'a> {
     /// A Notchian server only accepts digging packets with coordinates within a 6-unit radius between the center of the block and 1.5 units from the player's feet (not their eyes).
     DigBlock {
         /// The action the player is taking against the block
-        status: crate::blocks::DiggingState,
+        status: crate::components::blocks::DiggingState,
         /// Block position
         location: Position,
         /// The face being hit
-        face: crate::blocks::BlockFace,
+        face: crate::components::blocks::BlockFace,
     },
 
     /// Sent by the client to indicate that it has performed certain actions: sneaking (crouching), sprinting, exiting a bed, jumping with a horse, and opening a horse's inventory while riding it.
     EntityAction {
         player_id: VarInt,
-        action_id: crate::entity::PlayerAction,
-        /// Only used by the [“start jump with horse” action](crate::entity::PlayerAction::StartJumpWithHorse), in which case it ranges from 0 to 100. In all other cases it is 0.
+        action_id: entity::PlayerAction,
+        /// Only used by the [“start jump with horse” action](entity::PlayerAction::StartJumpWithHorse), in which case it ranges from 0 to 100. In all other cases it is 0.
         jump_boost: bool,
     },
 
@@ -310,7 +310,7 @@ pub enum ServerboundPacket<'a> {
 
     /// Replaces Recipe Book Data, type 1.
     SetRecipeBookState {
-        book: crate::recipes::RecipeBook,
+        book: recipes::RecipeBook,
         is_open: bool,
         is_filter_active: bool,
     },
@@ -327,11 +327,11 @@ pub enum ServerboundPacket<'a> {
 
     /// *Response to [ClientboundPacket::ResourcePackSend]*
     ResourcePackStatus {
-        status: crate::resource_pack::ResourcePackStatus,
+        status: resource_pack::ResourcePackStatus,
     },
 
     AdvancementTab {
-        value: crate::advancements::AdvancementTabPacket<'a>,
+        value: advancements::AdvancementTabPacket<'a>,
     },
 
     /// When a player selects a specific trade offered by a villager NPC.
@@ -361,7 +361,7 @@ pub enum ServerboundPacket<'a> {
     UpdateCommandBlock {
         location: Position,
         command: &'a str,
-        mode: crate::command_block::CommandBlockMode,
+        mode: command_block::CommandBlockMode,
         /// Bit mask: 0x01: Track Output (if false, the output of the previous command will not be stored within the command block); 0x02: Is conditional; 0x04: Automatic.
         flags: u8,
     },
@@ -408,7 +408,7 @@ pub enum ServerboundPacket<'a> {
     },
 
     /// Sent when the player's arm swings
-    Animation { hand: crate::slots::Hand },
+    Animation { hand: slots::Hand },
 
     /// Teleports the player to the given entity.
     /// The player must be in spectator mode.
@@ -430,9 +430,9 @@ pub enum ServerboundPacket<'a> {
     /// The Cursor Position Y will be used to determine whether it will appear as a bottom slab (values 0.0–0.5) or as a top slab (values 0.5-1.0).
     /// The Cursor Position Z should be 1.0 since the player was looking at the southernmost part of the block.
     PlaceBlock {
-        hand: crate::slots::Hand,
+        hand: slots::Hand,
         location: Position,
-        face: crate::blocks::BlockFace,
+        face: crate::components::blocks::BlockFace,
         /// The position of the crosshair on the block, from 0 to 1 increasing from west to east.
         cursor_position_x: f32,
         /// The position of the crosshair on the block, from 0 to 1 increasing from bottom to top.
@@ -452,6 +452,6 @@ pub enum ServerboundPacket<'a> {
     /// Sent when pressing the Use Item key (default: right click) with an item in hand.
     UseItem {
         /// Hand used for the animation
-        hand: crate::slots::Hand,
+        hand: slots::Hand,
     },
 }

@@ -32,14 +32,14 @@ pub enum EntityAttributeModifierOperation {
 #[discriminant(VarInt)]
 pub enum EntityInteraction {
     Interact {
-        hand: crate::slots::Hand,
+        hand: super::slots::Hand,
     },
     Attack,
     InteractAt {
         target_x: f32,
         target_y: f32,
         target_z: f32,
-        hand: crate::slots::Hand,
+        hand: super::slots::Hand,
     },
 }
 
@@ -128,7 +128,7 @@ pub enum EntityMetadataValue {
         chat: Option<String>,
     },
     Slot {
-        slot: crate::slots::Slot,
+        slot: super::slots::Slot,
     },
     Bool {
         value: bool,
@@ -158,12 +158,12 @@ pub enum EntityMetadataValue {
         value: NbtTag,
     },
     Particle {
-        particle: crate::particle::Particle,
+        particle: super::particle::Particle,
     },
     Villager {
-        villager_type: crate::trades::VillagerType,
-        profession: crate::trades::VillagerProfession,
-        level: crate::trades::VillagerLevel,
+        villager_type: super::trades::VillagerType,
+        profession: super::trades::VillagerProfession,
+        level: super::trades::VillagerLevel,
     },
     OptionVarInt {
         /// 0 for absent; 1 + actual value otherwise. Used for entity IDs.

@@ -1,7 +1,9 @@
 #[allow(unused_imports)]
 use super::play_serverbound::ServerboundPacket;
 use crate::nbt::NbtTag;
-
+use crate::components::*;
+use crate::ids::*;
+use crate::ids::blocks;
 use super::*;
 
 #[derive(Debug, MinecraftPacketPart)]
@@ -11,7 +13,7 @@ pub enum ClientboundPacket<'a> {
     SpawnEntity {
         id: VarInt,
         uuid: UUID,
-        entity_type: crate::ids::entities::Entity,
+        entity_type: entities::Entity,
         x: f64,
         y: f64,
         z: f64,
@@ -41,7 +43,7 @@ pub enum ClientboundPacket<'a> {
     SpawnLivingEntity {
         id: VarInt,
         uuid: UUID,
-        entity_type: crate::ids::entities::Entity,
+        entity_type: entities::Entity,
         x: f64,
         y: f64,
         z: f64,
@@ -60,7 +62,7 @@ pub enum ClientboundPacket<'a> {
     SpawnPainting {
         id: VarInt,
         uuid: UUID,
-        motive: crate::paintings::Painting,
+        motive: paintings::Painting,
         /// Center coordinates
         location: Position,
         /// Direction the painting faces
@@ -89,23 +91,23 @@ pub enum ClientboundPacket<'a> {
     /// Sent whenever an entity should change animation
     EntityAnimation {
         id: VarInt,
-        animation: crate::animations::Animation,
+        animation: animations::Animation,
     },
 
     /// Will only send the changed values if previously requested.
     ///
     /// *Response to [ServerboundPacket::ClientStatus]*
     Statistics {
-        statistics: Array<'a, crate::advancements::Statistic, VarInt>,
+        statistics: Array<'a, advancements::Statistic, VarInt>,
     },
 
     AcknowledgePlayerDigging {
         /// Position where the digging was happening
         location: Position,
         /// Block state ID of the block that should be at that position now.
-        /// Use [Block::from_state_id](crate::ids::blocks::Block::from_state_id) to get the corresponding [Block](crate::ids::blocks::Block).
+        /// Use [Block::from_state_id](blocks::Block::from_state_id) to get the corresponding [Block](blocks::Block).
         block: VarInt,
-        status: crate::blocks::PartialDiggingState,
+        status: crate::components::blocks::PartialDiggingState,
         /// True if the digging succeeded; false if the client should undo any changes it made locally.
         successful: bool,
     },
@@ -127,10 +129,10 @@ pub enum ClientboundPacket<'a> {
     /// Sets the block entity associated with the block at the given location.
     BlockEntityData {
         location: Position,
-        /// The type of update to perform, see [crate::blocks::BlockEntityDataAction].
-        action: crate::blocks::BlockEntityDataAction,
-        /// Data to set. May be [crate::nbt::NbtTag::Null], in which case the block entity at the given location is removed (though this is not required since the client will remove the block entity automatically on chunk unload or block removal).
-        data: crate::nbt::NbtTag,
+        /// The type of update to perform, see [crate::components::blocks::BlockEntityDataAction].
+        action: crate::components::blocks::BlockEntityDataAction,
+        /// Data to set. May be [nbt::NbtTag::Null], in which case the block entity at the given location is removed (though this is not required since the client will remove the block entity automatically on chunk unload or block removal).
+        data: NbtTag,
     },
 
     /// This packet is used for a number of actions and animations performed by blocks, usually non-persistent.
@@ -144,7 +146,7 @@ pub enum ClientboundPacket<'a> {
         /// Varies depending on block — see [Block Actions](https://wiki.vg/Block_Actions)
         action_param: u8,
         /// The block ID. This must match the block at the given coordinates
-        block: crate::ids::blocks::Block,
+        block: blocks::Block,
     },
 
     /// Fired whenever a block is changed within the render distance.
@@ -155,7 +157,7 @@ pub enum ClientboundPacket<'a> {
         /// Block Coordinates
         location: Position,
         /// The new block state ID for the block as given in the [global palette](http://minecraft.gamepedia.com/Data_values%23Block_IDs). See that section for more information.
-        /// Use [Block::from_state_id](crate::ids::blocks::Block::from_state_id) to get the corresponding [Block](crate::ids::blocks::Block).
+        /// Use [Block::from_state_id](blocks::Block::from_state_id) to get the corresponding [Block](blocks::Block).
         block_state: VarInt,
     },
 
@@ -163,12 +165,12 @@ pub enum ClientboundPacket<'a> {
         /// Unique ID for this bar.
         uuid: UUID,
         /// The action to apply on the boss bar.
-        action: crate::boss_bar::BossBarAction<'a>,
+        action: boss_bar::BossBarAction<'a>,
     },
 
     /// Changes the difficulty setting in the client's option menu
     ServerDifficulty {
-        difficulty: crate::difficulty::Difficulty,
+        difficulty: difficulty::Difficulty,
         difficulty_locked: bool,
     },
 
@@ -179,7 +181,7 @@ pub enum ClientboundPacket<'a> {
     /// *See also [ServerboundPacket::ChatMessage]*
     ChatMessage {
         message: Chat<'a>,
-        position: crate::chat::Position,
+        position: chat::Position,
         /// Used by the Notchian client for the disableChat launch option. Setting 0 will always display the message regardless of the setting.
         sender: UUID,
     },
@@ -197,7 +199,7 @@ pub enum ClientboundPacket<'a> {
         /// Length of the text to replace
         lenght: VarInt,
         /// Eligible values to insert, note that each command is sent separately instead of in a single string, hence the need for an [Array].
-        matches: Array<'a, crate::auto_completion::Match<'a>, VarInt>,
+        matches: Array<'a, auto_completion::Match<'a>, VarInt>,
     },
 
     /// Lists all of the commands on the server, and how they are parsed.
@@ -233,9 +235,9 @@ pub enum ClientboundPacket<'a> {
     WindowItems {
         /// The ID of window which items are being sent for. 0 for player inventory.
         window_id: i8,
-        /// The [crate::slots::Slot]s in this window.
+        /// The [slots::Slot]s in this window.
         /// See [inventory windows](https://wiki.vg/Inventory#Windows) for further information about how slots are indexed.
-        slots: Array<'a, crate::slots::Slot, i16>,
+        slots: Array<'a, slots::Slot, i16>,
     },
 
     /// This packet is used to inform the client that part of a GUI window should be updated.
@@ -264,7 +266,7 @@ pub enum ClientboundPacket<'a> {
         window_id: i8,
         /// The slot that should be updated.
         slot_index: i16,
-        slot_value: crate::slots::Slot,
+        slot_value: slots::Slot,
     },
 
     /// Applies a cooldown period to all items with the given type.
@@ -273,7 +275,7 @@ pub enum ClientboundPacket<'a> {
     /// Can be applied to any item, note that interactions still get sent to the server with the item but the client does not play the animation nor attempt to predict results (i.e block placing).
     SetCooldown {
         /// The item to apply a cooldown to.
-        item: crate::ids::items::Item,
+        item: items::Item,
         /// Number of ticks to apply a cooldown for, or 0 to clear the cooldown.
         cooldown_ticks: VarInt,
     },
@@ -298,7 +300,7 @@ pub enum ClientboundPacket<'a> {
     NamedSoundEffect {
         /// All sound effect names as of 1.16.5 can be seen [here](https://pokechu22.github.io/Burger/1.16.5.html#sounds).
         sound_name: Identifier<'a>,
-        sound_category: crate::sound::SoundCategory,
+        sound_category: sound::SoundCategory,
         /// Effect X multiplied by 8 ([fixed-point number](https://wiki.vg/Data_types#Fixed-point_numbers) with only 3 bits dedicated to the fractional part).
         effect_position_x: i32,
         /// Effect Y multiplied by 8 ([fixed-point number](https://wiki.vg/Data_types#Fixed-point_numbers) with only 3 bits dedicated to the fractional part).
@@ -359,7 +361,7 @@ pub enum ClientboundPacket<'a> {
     /// Used for a wide variety of game state things, from weather to bed use to gamemode to demo messages.
     ChangeGameState {
         /// The type of change
-        reason: crate::game_state::GameState,
+        reason: game_state::GameState,
         /// The meaning of this value depends on the `reason` field.
         value: f32,
     },
@@ -384,19 +386,19 @@ pub enum ClientboundPacket<'a> {
     },
 
     ChunkData {
-        value: crate::chunk::ChunkData<'a>,
+        value: chunk::ChunkData<'a>,
     },
 
     /// Sent when a client is to play a sound or particle effect.
     Effect {
-        effect_id: crate::animations::Effect,
+        effect_id: animations::Effect,
         /// The location of the effect
         location: Position,
         /// Extra data for certain effects, see [the wiki](https://wiki.vg/Protocol#Effect)
         data: i32,
         /// By default, the Minecraft client adjusts the volume of sound effects based on distance.
         /// The final boolean field is used to disable this, and instead the effect is played from 2 blocks away in the correct direction.
-        /// Currently this is only used for [crate::animations::Effect::WitherSpawn], [crate::animations::Effect::EnderdragonDeath], and [crate::animations::Effect::EndPortalOpening]; it is ignored on other effects.
+        /// Currently this is only used for [animations::Effect::WitherSpawn], [animations::Effect::EnderdragonDeath], and [animations::Effect::EndPortalOpening]; it is ignored on other effects.
         disable_relative_volume: bool,
     },
 
@@ -437,8 +439,8 @@ pub enum ClientboundPacket<'a> {
         /// The player's Entity ID (EID)
         player_id: i32,
         is_harcore: bool,
-        gamemode: crate::gamemode::Gamemode,
-        previous_gamemode: crate::gamemode::PreviousGamemode,
+        gamemode: gamemode::Gamemode,
+        previous_gamemode: gamemode::PreviousGamemode,
         /// Identifiers for all worlds on the server
         worlds_names: Array<'a, Identifier<'a>, VarInt>,
         /// The full extent of these is still unknown, but the tag represents a dimension and biome registry.
@@ -478,9 +480,9 @@ pub enum ClientboundPacket<'a> {
         /// The ID of the window that is open
         window_id: VarInt,
         /// The list of trades a villager NPC is offering
-        trades: Array<'a, crate::trades::Trade, u8>,
+        trades: Array<'a, trades::Trade, u8>,
         /// The villager appearance
-        villager_level: crate::trades::VillagerLevel,
+        villager_level: trades::VillagerLevel,
         /// Total experience for this villager (always 0 for the wandering trader)
         experience: VarInt,
         /// True if this is a regular villager; false for the wandering trader.
@@ -556,7 +558,7 @@ pub enum ClientboundPacket<'a> {
     /// Sent when a player right clicks with a signed book.
     /// This tells the client to open the book GUI.
     OpenBook {
-        hand: crate::slots::Hand,
+        hand: slots::Hand,
     },
 
     /// This is sent to the client when it should open an inventory, such as a chest, workbench, or furnace.
@@ -603,18 +605,18 @@ pub enum ClientboundPacket<'a> {
     /// Originally used for metadata for twitch streaming circa 1.8.
     /// Now only used to display the game over screen (with enter combat and end combat completely ignored by the Notchain client)
     CombatEvent {
-        event: crate::combat::CombatEvent<'a>,
+        event: combat::CombatEvent<'a>,
     },
 
     /// Sent by the server to update the user list (<tab> in the client).
     PlayerInfo {
-        value: crate::players::PlayerInfoAction<'a>,
+        value: players::PlayerInfoAction<'a>,
     },
 
     /// Used to rotate the client player to face the given location or entity (for `/teleport [<targets>] <x> <y> <z> facing`)
     FacePlayer {
         /// If set to eyes, aims using the head position; otherwise aims using the feet position
-        aim: crate::players::FaceAim,
+        aim: players::FaceAim,
         /// X coordinate of the point to face towards
         target_x: f64,
         /// Y coordinate of the point to face towards
@@ -623,7 +625,7 @@ pub enum ClientboundPacket<'a> {
         target_z: f64,
         /// Used to reference a targeted entity.
         /// If the entity target appears invalid, it should be ignored.
-        target: Option<crate::players::FaceTarget>,
+        target: Option<players::FaceTarget>,
     },
 
     /// Updates the player's position on the server.
@@ -653,7 +655,7 @@ pub enum ClientboundPacket<'a> {
     },
 
     UnlockRecipes {
-        action: crate::recipes::UnlockRecipesAction<'a>,
+        action: recipes::UnlockRecipesAction<'a>,
     },
 
     /// Sent by the server when a list of entities is to be destroyed on the client
@@ -663,7 +665,7 @@ pub enum ClientboundPacket<'a> {
 
     RemoveEntityEffect {
         entity_id: VarInt,
-        effect: crate::effect::Effect,
+        effect: effect::Effect,
     },
 
     /// *Request for [ServerboundPacket::ResourcePackStatus]*
@@ -690,8 +692,8 @@ pub enum ClientboundPacket<'a> {
         /// First 8 bytes of the SHA-256 hash of the world's seed.
         /// Used client side for biome noise.
         hashed_seed: u64,
-        gamemode: crate::gamemode::Gamemode,
-        previous_gamemode: crate::gamemode::PreviousGamemode,
+        gamemode: gamemode::Gamemode,
+        previous_gamemode: gamemode::PreviousGamemode,
         /// `true` if the world is a [debug mode world](http://minecraft.gamepedia.com/Debug_mode); debug mode worlds cannot be modified and have predefined blocks.
         is_debug: bool,
         /// `true` if the world is a [superflat world](http://minecraft.gamepedia.com/Superflat); flat worlds have different void fog and a horizon at y=0 instead of y=63.
@@ -714,7 +716,7 @@ pub enum ClientboundPacket<'a> {
     ///
     /// **Warnin**: Changing blocks in chunks not loaded by the client is unsafe.
     MultiBlockChange {
-        value: crate::blocks::MultiBlockChange<'a>,
+        value: crate::components::blocks::MultiBlockChange<'a>,
     },
 
     /// Sent by the server to indicate that the client should switch advancement tab.
@@ -732,7 +734,7 @@ pub enum ClientboundPacket<'a> {
     },
 
     WorldBorder {
-        action: crate::chunk::WorldBorderAction,
+        action: chunk::WorldBorderAction,
     },
 
     /// Sets the entity that the player renders from.
@@ -783,7 +785,7 @@ pub enum ClientboundPacket<'a> {
     /// This is sent to the client when it should display a scoreboard
     DisplayScoreboard {
         /// The position of the scoreboard
-        position: crate::teams::ScoreboardPosition,
+        position: teams::ScoreboardPosition,
         /// The unique name for the scoreboard to be displayed
         name: &'a str,
     },
@@ -792,7 +794,7 @@ pub enum ClientboundPacket<'a> {
     /// Any properties not included in the Metadata field are left unchanged.
     EntityMetadata {
         entity_id: VarInt,
-        metadata: crate::entity::EntityMetadata,
+        metadata: entity::EntityMetadata,
     },
 
     /// This packet is sent when an entity has been leashed to another entity.
@@ -818,7 +820,7 @@ pub enum ClientboundPacket<'a> {
 
     EntityEquipment {
         entity_id: VarInt,
-        equipment: crate::slots::EquipmentSlotArray,
+        equipment: slots::EquipmentSlotArray,
     },
 
     /// Sent by the server when the client should change experience levels
@@ -848,7 +850,7 @@ pub enum ClientboundPacket<'a> {
     ScoreboardObjective {
         /// A unique name for the objective
         objective_name: &'a str,
-        action: crate::teams::ScoreboardAction<'a>,
+        action: teams::ScoreboardAction<'a>,
     },
 
     SetPassagers {
@@ -861,14 +863,14 @@ pub enum ClientboundPacket<'a> {
     Teams {
         /// A unique name for the team (Shared with scoreboard)
         team_name: &'a str,
-        action: crate::teams::TeamAction<'a>,
+        action: teams::TeamAction<'a>,
     },
 
     /// This is sent to the client when it should update a scoreboard item
     UpdateScore {
         /// The entity whose score this is. For players, this is their username; for other entities, it is their UUID.
         entity_name: &'a str,
-        score_action: crate::teams::ScoreboardScoreAction<'a>,
+        score_action: teams::ScoreboardScoreAction<'a>,
     },
 
     /// Time is based on ticks, where 20 ticks happen every second.
@@ -884,7 +886,7 @@ pub enum ClientboundPacket<'a> {
     },
 
     Title {
-        action: crate::chat::TitleAction<'a>,
+        action: chat::TitleAction<'a>,
     },
 
     /// Plays a sound effect from an entity
@@ -892,7 +894,7 @@ pub enum ClientboundPacket<'a> {
         /// ID of hardcoded sound event ([events](https://pokechu22.github.io/Burger/1.16.5.html#sounds) as of 1.16.5).
         /// TODO: generate an enum
         sound_id: VarInt,
-        sound_category: crate::sound::SoundCategory,
+        sound_category: sound::SoundCategory,
         entity_id: VarInt,
         /// 1.0 is 100%, capped between 0.0 and 1.0 by Notchian clients
         volume: f32,
@@ -908,7 +910,7 @@ pub enum ClientboundPacket<'a> {
         /// ID of hardcoded sound event ([events](https://pokechu22.github.io/Burger/1.16.5.html#sounds) as of 1.16.5).
         /// TODO: generate an enum
         sound_id: VarInt,
-        sound_category: crate::sound::SoundCategory,
+        sound_category: sound::SoundCategory,
         /// Effect X multiplied by 8 (fixed-point number with only 3 bits dedicated to the fractional part)
         effect_x: i32,
         /// Effect Y multiplied by 8 (fixed-point number with only 3 bits dedicated to the fractional part)
@@ -922,7 +924,7 @@ pub enum ClientboundPacket<'a> {
     },
 
     StopSound {
-        value: crate::sound::StopSoundPacket<'a>,
+        value: sound::StopSoundPacket<'a>,
     },
 
     /// This packet may be used by custom servers to display additional information above/below the player list.
@@ -977,26 +979,26 @@ pub enum ClientboundPacket<'a> {
     Advancements {
         /// Whether to reset/clear the current advancements
         reset: bool,
-        advancement_mapping: Map<'a, Identifier<'a>, crate::advancements::Advancement<'a>, VarInt>,
+        advancement_mapping: Map<'a, Identifier<'a>, advancements::Advancement<'a>, VarInt>,
         /// The identifiers of the advancements that should be removed
         advancements_to_remove: Array<'a, Identifier<'a>, VarInt>,
         progress_mapping:
-            Map<'a, Identifier<'a>, crate::advancements::AdvancementProgress<'a>, VarInt>,
+            Map<'a, Identifier<'a>, advancements::AdvancementProgress<'a>, VarInt>,
     },
 
     /// Sets [attributes](https://minecraft.fandom.com/wiki/Attribute) on the given entity
     EntityAttributes {
         entity_id: VarInt,
-        /// [Attributes](crate::entity::EntityAttribute) are a system of buffs/debuffs that are properties on mobs and players.
-        /// [Attributes](crate::entity::EntityAttribute) also have [Attributes](crate::entity::EntityAttributeModifier) that adjust the strength of their effect.
+        /// [Attributes](entity::EntityAttribute) are a system of buffs/debuffs that are properties on mobs and players.
+        /// [Attributes](entity::EntityAttribute) also have [Attributes](entity::EntityAttributeModifier) that adjust the strength of their effect.
         ///
         /// [More information](https://minecraft.fandom.com/wiki/Attribute)
-        attributes: Map<'a, Identifier<'a>, crate::entity::EntityAttribute<'a>, i32>,
+        attributes: Map<'a, Identifier<'a>, entity::EntityAttribute<'a>, i32>,
     },
 
     EntityEffect {
         entity_id: VarInt,
-        effect_id: crate::effect::Effect,
+        effect_id: effect::Effect,
         /// Notchian client displays effect level as `amplifier + 1`.
         /// For example, `Strength II` has an amplifier of 1.
         amplifier: i8,

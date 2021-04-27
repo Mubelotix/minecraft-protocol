@@ -38,7 +38,7 @@ pub struct PlayerAdditionInfo<'a> {
     /// That is, each player will usually have one property with Name “textures” and Value being a base64-encoded JSON string as documented at [Mojang API#UUID -> Profile + Skin/Cape](https://wiki.vg/Mojang_API#UUID_-.3E_Profile_.2B_Skin.2FCape).
     /// An empty properties array is also acceptable, and will cause clients to display the player with one of the two default skins depending on UUID.
     pub properties: Array<'a, Property<'a>, VarInt>,
-    pub gamemode: crate::gamemode::Gamemode,
+    pub gamemode: super::gamemode::Gamemode,
     /// Measured in milliseconds
     pub ping: VarInt,
     pub display_name: Option<Chat<'a>>,
@@ -47,7 +47,7 @@ pub struct PlayerAdditionInfo<'a> {
 #[derive(Debug, MinecraftPacketPart)]
 pub struct PlayerGamemodeChangeInfo {
     pub uuid: UUID,
-    pub gamemode: crate::gamemode::Gamemode,
+    pub gamemode: super::gamemode::Gamemode,
 }
 
 #[derive(Debug, MinecraftPacketPart)]

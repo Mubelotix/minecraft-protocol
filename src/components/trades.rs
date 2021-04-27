@@ -1,4 +1,4 @@
-use crate::slots::Slot;
+use super::slots::Slot;
 use crate::*;
 
 /// Represents a single trade offer

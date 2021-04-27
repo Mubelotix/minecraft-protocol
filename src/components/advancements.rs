@@ -14,7 +14,7 @@ pub struct Advancement<'a> {
 pub struct AdvancementDisplay<'a> {
     pub title: Chat<'a>,
     pub description: Chat<'a>,
-    pub icon: crate::slots::Slot,
+    pub icon: super::slots::Slot,
     pub frame_type: AdvancementFrameType,
     pub show_toast: bool,
     pub hidden: bool,
