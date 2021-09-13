@@ -781,14 +781,19 @@ pub enum ClientboundPacket<'a> {
     },
 
     WorldBorderLerpSize {
-        /// Current length of a single side of the world border, in meters.
+        /// Current length of a single side of the world border, in meters
         old_diameter: f64,
-        /// Target length of a single side of the world border, in meters.
+        /// Target length of a single side of the world border, in meters
         new_diameter: f64,
         /// Number of real-time milliseconds until New Diameter is reached.
         /// It appears that Notchian server does not sync world border speed to game ticks, so it gets out of sync with server lag.
         /// If the world border is not moving, this is set to 0.
         speed: VarLong,
+    },
+
+    WorldBorderSize {
+        /// Length of a single side of the world border, in meters
+        diameter: f64,
     },
 
     /// Sets the entity that the player renders from.
