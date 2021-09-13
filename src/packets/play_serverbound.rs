@@ -62,20 +62,6 @@ pub enum ServerboundPacket<'a> {
         text: &'a str,
     },
 
-    /// The server may reject client actions by sending [ClientboundPacket::WindowConfirmation] with the `accepted` field set to `false`.
-    /// When this happens, the client must send this packet to apologize (as with movement), otherwise the server ignores any successive confirmations.
-    ///
-    /// *Response to [ClientboundPacket::WindowConfirmation]*
-    WindowConfirmation {
-        /// The ID of the window that the action occurred in
-        window_id: i8,
-        /// Every action that is to be accepted has a unique id.
-        /// This id is an incrementing integer (starting at 1) with separate counts for each window ID.
-        action_id: i16,
-        /// Whether the action was accepted
-        accepted: bool,
-    },
-
     /// Used when clicking on window buttons
     ClickWindowButton {
         /// The ID of the window sent by [ClientboundPacket::OpenWindow].
