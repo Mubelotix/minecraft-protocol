@@ -438,7 +438,7 @@ pub enum ClientboundPacket<'a> {
     JoinGame {
         /// The player's Entity ID (EID)
         player_id: i32,
-        is_harcore: bool,
+        is_hardcore: bool,
         gamemode: gamemode::Gamemode,
         previous_gamemode: gamemode::PreviousGamemode,
         /// Identifiers for all worlds on the server
