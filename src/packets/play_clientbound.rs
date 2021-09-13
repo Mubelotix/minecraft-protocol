@@ -770,6 +770,11 @@ pub enum ClientboundPacket<'a> {
         identifier: Option<Identifier<'a>>,
     },
 
+    /// Displays a message above the hotbar (the same as position 2 in Chat Message (clientbound).
+    ActionBar {
+        action_bar_text: Chat<'a>,
+    },
+
     WorldBorder {
         action: chunk::WorldBorderAction,
     },
