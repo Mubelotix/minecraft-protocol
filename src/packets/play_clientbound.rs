@@ -1,10 +1,10 @@
 #[allow(unused_imports)]
 use super::play_serverbound::ServerboundPacket;
-use crate::nbt::NbtTag;
-use crate::components::*;
-use crate::ids::*;
-use crate::ids::blocks;
 use super::*;
+use crate::components::*;
+use crate::ids::blocks;
+use crate::ids::*;
+use crate::nbt::NbtTag;
 
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
@@ -1064,8 +1064,7 @@ pub enum ClientboundPacket<'a> {
         advancement_mapping: Map<'a, Identifier<'a>, advancements::Advancement<'a>, VarInt>,
         /// The identifiers of the advancements that should be removed
         advancements_to_remove: Array<'a, Identifier<'a>, VarInt>,
-        progress_mapping:
-            Map<'a, Identifier<'a>, advancements::AdvancementProgress<'a>, VarInt>,
+        progress_mapping: Map<'a, Identifier<'a>, advancements::AdvancementProgress<'a>, VarInt>,
     },
 
     /// Sets [attributes](https://minecraft.fandom.com/wiki/Attribute) on the given entity

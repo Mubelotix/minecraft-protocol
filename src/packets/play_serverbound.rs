@@ -1,7 +1,7 @@
 #[allow(unused_imports)]
 use super::play_clientbound::ClientboundPacket;
-use crate::components::*;
 use super::*;
+use crate::components::*;
 
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
@@ -37,9 +37,7 @@ pub enum ServerboundPacket<'a> {
     },
 
     /// *Request for [ClientboundPacket::Statistics]*
-    ClientStatus {
-        action: game_state::ClientStatus,
-    },
+    ClientStatus { action: game_state::ClientStatus },
 
     /// Sent when the player connects, or when settings are changed
     ClientSettings {
@@ -297,9 +295,7 @@ pub enum ServerboundPacket<'a> {
     /// A response to the ping packet sync to the main thread.
     /// Unknown what this is used for, this is ignored by the Notchian client and server.
     /// Most likely added as a replacement to the removed window confirmation packet.
-    UselessPacket {
-        id: i32,
-    },
+    UselessPacket { id: i32 },
 
     /// Replaces Recipe Book Data, type 1.
     SetRecipeBookState {
