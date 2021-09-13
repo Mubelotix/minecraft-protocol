@@ -294,6 +294,13 @@ pub enum ServerboundPacket<'a> {
         flags: u8,
     },
 
+    /// A response to the ping packet sync to the main thread.
+    /// Unknown what this is used for, this is ignored by the Notchian client and server.
+    /// Most likely added as a replacement to the removed window confirmation packet.
+    UselessPacket {
+        id: i32,
+    },
+
     /// Replaces Recipe Book Data, type 1.
     SetRecipeBookState {
         book: recipes::RecipeBook,
