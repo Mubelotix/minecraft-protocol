@@ -635,6 +635,16 @@ pub enum ClientboundPacket<'a> {
     /// This data was once used for twitch.tv metadata circa 1.8.
     EnterCombatEvent,
 
+    /// Used to send a respawn screen.
+    DeathCombatEvent {
+        /// Entity ID of the player that died (should match the client's entity ID)
+        player_id: VarInt,
+        /// The killing entity's ID, or -1 if there is no obvious killer
+        entity_id: i32,
+        /// The death message
+        message: Chat<'a>,
+    },
+
     /// Sent by the server to update the user list (<tab> in the client).
     PlayerInfo {
         value: players::PlayerInfoAction<'a>,
