@@ -622,6 +622,15 @@ pub enum ClientboundPacket<'a> {
         field_of_view_modifier: f32,
     },
 
+    /// Unused by the Notchain client.
+    /// This data was once used for twitch.tv metadata circa 1.8.f
+    EndCombatEvent {
+        /// Length of the combat in ticks.
+        duration: VarInt,
+        /// ID of the primary opponent of the ended combat, or -1 if there is no obvious primary opponent.
+        entity_id: i32,
+    },
+
     /// Sent by the server to update the user list (<tab> in the client).
     PlayerInfo {
         value: players::PlayerInfoAction<'a>,
