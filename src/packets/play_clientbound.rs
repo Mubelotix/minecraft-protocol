@@ -597,6 +597,12 @@ pub enum ClientboundPacket<'a> {
         location: Position,
     },
 
+    /// Unknown what this packet does just yet, not used by the Notchian server or client.
+    /// Most likely added as a replacement to the removed window confirmation packet.
+    UselessPacket {
+        id: i32,
+    },
+
     // Todo make add doc links
     /// Response to the serverbound packet (Craft Recipe Request), with the same recipe ID.
     /// Appears to be used to notify the UI.
