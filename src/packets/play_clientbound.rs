@@ -775,6 +775,11 @@ pub enum ClientboundPacket<'a> {
         action_bar_text: Chat<'a>,
     },
 
+    WorldBorderCenter {
+        x: f64,
+        y: f64,
+    },
+
     /// Sets the entity that the player renders from.
     /// This is normally used when the player left-clicks an entity while in spectator mode.
     ///
