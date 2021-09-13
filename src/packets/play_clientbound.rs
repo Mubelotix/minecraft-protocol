@@ -622,12 +622,6 @@ pub enum ClientboundPacket<'a> {
         field_of_view_modifier: f32,
     },
 
-    /// Originally used for metadata for twitch streaming circa 1.8.
-    /// Now only used to display the game over screen (with enter combat and end combat completely ignored by the Notchain client)
-    CombatEvent {
-        event: combat::CombatEvent<'a>,
-    },
-
     /// Sent by the server to update the user list (<tab> in the client).
     PlayerInfo {
         value: players::PlayerInfoAction<'a>,

@@ -5,7 +5,6 @@ pub mod blocks;
 pub mod boss_bar;
 pub mod chat;
 pub mod chunk;
-pub mod combat;
 pub mod command_block;
 pub mod difficulty;
 pub mod effect;
