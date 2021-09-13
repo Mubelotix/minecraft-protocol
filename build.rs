@@ -3,8 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::io::{ErrorKind, Read, Write};
 use std::{collections::HashMap, fs::File};
 
-/// Changing this is not enough, please also change static urls in main() since  
-const VERSION: &str = "1.16.5";
+const VERSION: &str = "1.17.1";
 
 fn get_data(url: &str, cache: &str) -> serde_json::Value {
     match File::open(cache) {
@@ -114,14 +113,18 @@ mod blocks {
                     .map(|(k, _v)| k)
                     .collect(),
             );
-            raw_materials.push(
-                block
-                    .material
-                    .clone()
-                    .unwrap_or_else(|| "unknown_material".to_string())
-                    .from_case(Case::Snake)
-                    .to_case(Case::UpperCamel),
-            );
+            let mut material = block
+                .material
+                .clone()
+                .unwrap_or_else(|| "unknown_material".to_string())
+                .split(';')
+                .next()
+                .unwrap()
+                .to_string();
+            if material.starts_with("mineable") {
+                material = "unknown_material".to_string();
+            }
+            raw_materials.push(material.from_case(Case::Snake).to_case(Case::UpperCamel));
         }
 
         // Generate the MaterialBlock enum and array
@@ -420,7 +423,7 @@ mod items {
         items.sort_by_key(|item| item.id);
 
         // Look for missing items in the array
-        let mut expected = 0;
+        let mut expected = 1;
         for item in &items {
             if item.id != expected {
                 panic!("The item with id {} is missing.", expected)
@@ -504,7 +507,7 @@ const DISPLAY_NAMES: [&str; {max_value}] = {display_names:?};
 const TEXT_IDS: [&str; {max_value}] = {text_ids:?};
 "#,
             variants = variants,
-            max_value = expected,
+            max_value = expected - 1,
             max_stack_sizes = items.iter().map(|i| i.stack_size).collect::<Vec<_>>(),
             durabilities = items.iter().map(|i| i.durability).collect::<Vec<_>>(),
             display_names = items.iter().map(|i| &i.display_name).collect::<Vec<_>>(),
@@ -530,11 +533,12 @@ mod entities {
         display_name: String,
         width: f32,
         height: f32,
+        #[serde(rename = "type")]
         category: String,
     }
 
     pub fn generate_entity_enum(data: serde_json::Value) {
-        let mut entities: Vec<Entity> = serde_json::from_value(data).expect("Invalid block data");
+        let mut entities: Vec<Entity> = serde_json::from_value(data).expect("Invalid entity data");
         entities.sort_by_key(|entity| entity.id);
 
         // Look for missing items in the array
@@ -551,14 +555,16 @@ mod entities {
         categories.push('[');
         for entity in &entities {
             let variant_name = match entity.category.as_str() {
-                "Passive mobs" => "Passive",
-                "Hostile mobs" => "Hostile",
-                "Vehicles" => "Vehicle",
-                "Immobile" => "Immobile",
-                "Projectiles" => "Projectile",
-                "Drops" => "Drop",
-                "Blocks" => "Block",
-                "UNKNOWN" => "Unknown",
+                "other" => "Other",
+                "living" => "Living",
+                "projectile" => "Projectile",
+                "animal" => "Animal",
+                "ambient" => "Ambient",
+                "hostile" => "Hostile",
+                "water_creature" => "WaterCreature",
+                "mob" => "Mob",
+                "passive" => "Passive",
+                "player" => "Player",
                 unknown_category => panic!("Unknown entity category {}", unknown_category),
             };
             categories.push_str("EntityCategory::");
@@ -590,14 +596,16 @@ pub enum Entity {{
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum EntityCategory {{
-    Passive,
-    Hostile,
+    Other,
+    Living,
     Projectile,
-    Immobile,
-    Vehicle,
-    Drop,
-    Block,
-    Unknown
+    Animal,
+    Ambient,
+    Hostile,
+    WaterCreature,
+    Mob,
+    Passive,
+    Player,
 }}
 
 impl Entity {{
