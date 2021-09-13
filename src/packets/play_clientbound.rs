@@ -375,6 +375,27 @@ pub enum ClientboundPacket<'a> {
         entity_id: i32,
     },
 
+    /// The Notchian client determines how solid to display the warning by comparing to whichever is higher, the warning distance or whichever is lower, the distance from the current diameter to the target diameter or the place the border will be after warningTime seconds.
+    IntitializeWorldBorder {
+        x: f64,
+        y: f64,
+        /// Current length of a single side of the world border, in meters.
+        old_diameter: f64,
+        /// Target length of a single side of the world border, in meters.
+        new_diameter: f64,
+        /// Number of real-time milliseconds until New Diameter is reached.
+        /// It appears that Notchian server does not sync world border speed to game ticks, so it gets out of sync with server lag.
+        /// If the world border is not moving, this is set to 0.
+        speed: VarLong,
+        /// Resulting coordinates from a portal teleport are limited to ±value.
+        /// Usually 29999984.
+        portal_teleport_boundary: VarInt,
+        /// In meters
+        warning_blocks: VarInt,
+        /// In seconds as set by `/worldborder` warning time.
+        warning_time: VarInt,
+    },
+
     /// The server will frequently send out a keep-alive, each containing a random ID.
     /// The client must respond with the same payload (see [serverbound Keep Alive](https://wiki.vg/Protocol#Keep_Alive_.28serverbound.29)).
     /// If the client does not respond to them for over 30 seconds, the server kicks the client.
