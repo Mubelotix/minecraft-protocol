@@ -696,7 +696,7 @@ pub enum ClientboundPacket<'a> {
     },
 
     /// Sent by the server when a list of entities is to be destroyed on the client
-    DestoryEntities {
+    DestroyEntities {
         entity_ids: Array<'a, VarInt, VarInt>,
     },
 
