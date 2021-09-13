@@ -801,6 +801,11 @@ pub enum ClientboundPacket<'a> {
         warning_time: VarInt,
     },
 
+    WorldBorderWarningReach {
+        /// In meters
+        warning_blocks: VarInt,
+    },
+
     /// Sets the entity that the player renders from.
     /// This is normally used when the player left-clicks an entity while in spectator mode.
     ///
