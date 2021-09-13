@@ -392,7 +392,7 @@ pub enum ClientboundPacket<'a> {
         portal_teleport_boundary: VarInt,
         /// In meters
         warning_blocks: VarInt,
-        /// In seconds as set by `/worldborder` warning time.
+        /// In seconds as set by `/worldborder warning time`
         warning_time: VarInt,
     },
 
@@ -794,6 +794,11 @@ pub enum ClientboundPacket<'a> {
     WorldBorderSize {
         /// Length of a single side of the world border, in meters
         diameter: f64,
+    },
+
+    WorldBorderWarningDelay {
+        /// In seconds as set by `/worldborder warning time`
+        warning_time: VarInt,
     },
 
     /// Sets the entity that the player renders from.
