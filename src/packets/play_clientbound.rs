@@ -962,6 +962,15 @@ pub enum ClientboundPacket<'a> {
         title_text: Chat<'a>,
     },
 
+    SetTitleTimes {
+        /// Ticks to spend fading in
+        fade_in: i32,
+        /// Ticks to keep the title displayed
+        stay: i32,
+        /// Ticks to spend out, not when to start fading out
+        fade_out: i32,
+    },
+
     /// Plays a sound effect from an entity
     EntitySoundEffect {
         /// ID of hardcoded sound event ([events](https://pokechu22.github.io/Burger/1.16.5.html#sounds) as of 1.16.5).
