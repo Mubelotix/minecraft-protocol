@@ -957,7 +957,11 @@ pub enum ClientboundPacket<'a> {
         /// If negative the sun will stop moving.
         time_of_day: i64,
     },
-    
+
+    SetTitleText {
+        title_text: Chat<'a>,
+    },
+
     /// Plays a sound effect from an entity
     EntitySoundEffect {
         /// ID of hardcoded sound event ([events](https://pokechu22.github.io/Burger/1.16.5.html#sounds) as of 1.16.5).
