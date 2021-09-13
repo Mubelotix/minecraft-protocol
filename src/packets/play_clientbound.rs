@@ -88,6 +88,15 @@ pub enum ClientboundPacket<'a> {
         pitch: Angle,
     },
 
+    /// Shows a permanent particle.
+    SculkVibrationSignal {
+        /// Source position for the vibration
+        source_position: Position,
+        /// Identifier of the destination codec type
+        destination_identifier: Identifier<'a>,
+        rest: RawBytes<'a>,
+    },
+
     /// Sent whenever an entity should change animation
     EntityAnimation {
         id: VarInt,
