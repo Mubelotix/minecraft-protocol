@@ -562,7 +562,7 @@ mod entities {
                 unknown_category => panic!("Unknown entity category {}", unknown_category),
             };
             categories.push_str("EntityCategory::");
-            categories.push_str(&variant_name);
+            categories.push_str(variant_name);
             categories.push_str(", ");
         }
         categories.push(']');
