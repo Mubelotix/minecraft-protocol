@@ -28,6 +28,7 @@ pub enum EntityAttributeModifierOperation {
     /// `value = base_value * modifier`
     Multiply,
 }
+
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum EntityInteraction {

@@ -97,7 +97,7 @@ mod tests {
         send_packet(
             &mut stream,
             crate::packets::handshake::ServerboundPacket::Hello {
-                protocol_version: 754.into(),
+                protocol_version: 756.into(),
                 server_address: "127.0.0.1",
                 server_port: 25565,
                 next_state: crate::packets::ConnectionState::Login,

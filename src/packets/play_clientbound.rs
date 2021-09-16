@@ -1076,7 +1076,7 @@ pub enum ClientboundPacket<'a> {
         /// [Attributes](entity::EntityAttribute) also have [Attributes](entity::EntityAttributeModifier) that adjust the strength of their effect.
         ///
         /// [More information](https://minecraft.fandom.com/wiki/Attribute)
-        attributes: Map<'a, Identifier<'a>, entity::EntityAttribute<'a>, i32>,
+        attributes: Map<'a, Identifier<'a>, entity::EntityAttribute<'a>, VarInt>,
     },
 
     EntityEffect {
