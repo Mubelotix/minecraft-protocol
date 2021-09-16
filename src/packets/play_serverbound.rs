@@ -51,6 +51,9 @@ pub enum ServerboundPacket<'a> {
         /// Bit mask, see [the wiki](https://wiki.vg/Protocol#Client_Settings)
         displayed_skin_parts: u8,
         main_hand: slots::MainHand,
+        /// Disables filtering of text on signs and written book titles.
+        /// Currently always true (i.e. the filtering is disabled)
+        disable_text_filtering: bool,
     },
 
     /// *Request for [ClientboundPacket::TabComplete]*
