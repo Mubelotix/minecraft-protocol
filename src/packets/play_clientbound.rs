@@ -236,9 +236,13 @@ pub enum ClientboundPacket<'a> {
     WindowItems {
         /// The ID of window which items are being sent for. 0 for player inventory.
         window_id: i8,
+        /// The last recieved State ID from either a [ClientboundPacket::SetSlot] or a [ClientboundPacket::WindowItems] packet
+        state_id: VarInt,
         /// The [slots::Slot]s in this window.
         /// See [inventory windows](https://wiki.vg/Inventory#Windows) for further information about how slots are indexed.
-        slots: Array<'a, slots::Slot, i16>,
+        slots: Array<'a, slots::Slot, VarInt>,
+        /// Item held by player
+        carried_item: slots::Slot,
     },
 
     /// This packet is used to inform the client that part of a GUI window should be updated.
