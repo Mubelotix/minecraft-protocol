@@ -70,6 +70,7 @@ pub enum Pose {
     SpinAttack,
     Sneaking,
     Dying,
+    LongJumping,
 }
 
 #[derive(Debug, Clone)]
