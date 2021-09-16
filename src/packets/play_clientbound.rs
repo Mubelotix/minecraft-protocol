@@ -851,6 +851,8 @@ pub enum ClientboundPacket<'a> {
     /// It can be sent at any time to update the point compasses point at.
     SpawnPosition {
         location: Position,
+        /// The angle at which to respawn at
+        angle: f32,
     },
 
     /// This is sent to the client when it should display a scoreboard
