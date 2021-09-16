@@ -18,5 +18,6 @@ pub mod recipes;
 pub mod resource_pack;
 pub mod slots;
 pub mod sound;
+pub mod tags;
 pub mod teams;
 pub mod trades;

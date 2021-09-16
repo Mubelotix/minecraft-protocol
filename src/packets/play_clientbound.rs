@@ -1096,13 +1096,8 @@ pub enum ClientboundPacket<'a> {
     },
 
     Tags {
-        /// A map linking block tags to an array of corresponding IDs.
-        block_tags: Map<'a, Identifier<'a>, Array<'a, VarInt, VarInt>, VarInt>,
-        /// A map linking item tags to an array of corresponding IDs.
-        item_tags: Map<'a, Identifier<'a>, Array<'a, VarInt, VarInt>, VarInt>,
-        /// A map linking fluid tags to an array of corresponding IDs.
-        fluid_tags: Map<'a, Identifier<'a>, Array<'a, VarInt, VarInt>, VarInt>,
-        /// A map linking entity tags to an array of corresponding IDs.
-        entity_tags: Map<'a, Identifier<'a>, Array<'a, VarInt, VarInt>, VarInt>,
+        /// More information on tags is available at: https://minecraft.gamepedia.com/Tag
+        /// And a list of all tags is here: https://minecraft.gamepedia.com/Tag#List_of_tags
+        tags: Map<'a, Identifier<'a>, Array<'a, tags::Tag<'a>, VarInt>, VarInt>,
     },
 }
