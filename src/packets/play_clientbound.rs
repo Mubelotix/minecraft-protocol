@@ -689,6 +689,8 @@ pub enum ClientboundPacket<'a> {
         pitch: f32,
         flags: u8,
         teleport_id: VarInt,
+        /// True if the player should dismount their vehicle
+        dismount_vehicle: bool,
     },
 
     UnlockRecipes {
