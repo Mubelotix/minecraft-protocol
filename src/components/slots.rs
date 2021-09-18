@@ -104,6 +104,35 @@ impl<'a> MinecraftPacketPart<'a> for EquipmentSlotArray {
     }
 }
 
+#[minecraft_enum(VarInt)]
+#[derive(Debug)]
+pub enum WindowType {
+    OneRow,
+    TwoRows,
+    ThreeRows,
+    FourRows,
+    FiveRows,
+    SixRows,
+    ThreeByThree,
+    Anvil,
+    Beacon,
+    BlastFurnace,
+    BrewingStand,
+    Crafting,
+    Enchantment,
+    Furnace,
+    GrindStone,
+    Hopper,
+    Lectern,
+    Loom,
+    Merchant,
+    ShulkerBox,
+    Smithing,
+    Smoker,
+    Cartography,
+    StoneCutter,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

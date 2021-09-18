@@ -589,8 +589,7 @@ pub enum ClientboundPacket<'a> {
         /// Notchian server implementation is a counter, starting at 1.
         window_id: VarInt,
         /// The window type to use for display.
-        /// TODO: replace by an enum
-        window_type: VarInt,
+        window_type: slots::WindowType,
         /// The title of the window
         window_title: Chat<'a>,
     },
