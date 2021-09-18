@@ -103,7 +103,7 @@ impl<'a> ChunkData<'a> {
         }
         let primary_bit_mask: u64 = unsafe {
             // We don't care the type since we only want to check the bits
-            std::mem::transmute(self.primary_bit_mask.items.get_unchecked(0))
+            *self.primary_bit_mask.items.get_unchecked(0)
         };
 
         let mut chunk_sections: [Option<ChunkSection>; 16] = [
@@ -112,13 +112,7 @@ impl<'a> ChunkData<'a> {
         ];
         let mut mask = 0b1;
         for y in 0..16 {
-            chunk_sections[y] = if primary_bit_mask & mask != 0 {
-                if input.is_empty() {
-                    // No idea why this is necessary
-                    //println!("nothing left {:b} {:b}", primary_bit_mask, primary_bit_mask & mask);
-                    return Ok(chunk_sections);
-                }
-                
+            chunk_sections[y] = if primary_bit_mask & mask != 0 {                
                 let (block_count, new_input) = i16::deserialize_minecraft_packet_part(input)?;
                 let (mut bits_per_block, new_input) =
                     u8::deserialize_minecraft_packet_part(new_input)?;
