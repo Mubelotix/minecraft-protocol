@@ -77,15 +77,19 @@ pub enum ServerboundPacket<'a> {
     ClickWindowSlot {
         /// The ID of the window which was clicked. 0 for player inventory.
         window_id: i8,
+        /// The last received State ID from either a [ClientboundPacket::SetSlot] or a [ClientboundPacket::WindowItems] packet
+        state_id: VarInt,
         /// The clicked slot number, see [the wiki](https://wiki.vg/Protocol#Click_Window)
         slot: i16,
         /// The button used in the click, see [the wiki](https://wiki.vg/Protocol#Click_Window)
         button: u8,
-        /// A unique number for the action, implemented by Notchian as a counter, starting at 1 (different counter for every window ID). Used by the server to send back a [ClientboundPacket::WindowConfirmation].
-        action_id: i16,
         /// Inventory operation mode, see [the wiki](https://wiki.vg/Protocol#Click_Window)
         mode: VarInt,
-        /// The clicked slot. Has to be empty (item ID = -1) for drop mode. (TODO: check this)
+        /// New values for affected slots
+        new_slot_values: Map<'a, i16, slots::Slot, VarInt>,
+        /// The clicked slot
+        /// Has to be empty (item ID = -1) for drop mode. (TODO: check this)
+        /// Is always empty for mode 2 and mode 5 packets.
         clicked_item: slots::Slot,
     },
 
