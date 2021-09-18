@@ -114,8 +114,7 @@ pub enum ClientboundPacket<'a> {
         /// Position where the digging was happening
         location: Position,
         /// Block state ID of the block that should be at that position now.
-        /// Use [Block::from_state_id](blocks::Block::from_state_id) to get the corresponding [Block](blocks::Block).
-        block: VarInt,
+        block: block_states::BlockWithState,
         status: crate::components::blocks::PartialDiggingState,
         /// True if the digging succeeded; false if the client should undo any changes it made locally.
         successful: bool,
@@ -165,9 +164,8 @@ pub enum ClientboundPacket<'a> {
     BlockChange {
         /// Block Coordinates
         location: Position,
-        /// The new block state ID for the block as given in the [global palette](http://minecraft.gamepedia.com/Data_values%23Block_IDs). See that section for more information.
-        /// Use [Block::from_state_id](blocks::Block::from_state_id) to get the corresponding [Block](blocks::Block).
-        block_state: VarInt,
+        /// The new block state ID for the block
+        block_state: block_states::BlockWithState,
     },
 
     BossBar {

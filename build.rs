@@ -65,6 +65,106 @@ fn get_data(url: &str, cache: &str) -> serde_json::Value {
 mod blocks {
     use super::*;
 
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    struct BlockState {
+        name: String,
+        #[serde(rename = "type")]
+        ty: String,
+        num_values: usize,
+        values: Option<Vec<String>>,
+    }
+
+    impl BlockState {
+        fn ty(&self, block_name: &str, competing_definitions: bool) -> String {
+            match self.ty.as_str() {
+                "int" => {
+                    let values: Vec<i128> = self
+                        .values
+                        .as_ref()
+                        .expect("No values for int block state")
+                        .iter()
+                        .map(|v| v.parse().expect("Invalid block state value: expected int"))
+                        .collect();
+                    let mut min_value: i128 = *values.first().unwrap_or(&0);
+                    let mut max_value: i128 = *values.first().unwrap_or(&0);
+
+                    for value in values {
+                        if value < min_value {
+                            min_value = value;
+                        }
+                        if value > max_value {
+                            max_value = value;
+                        }
+                    }
+
+                    if min_value >= u8::MIN as i128 && max_value <= u8::MAX as i128 {
+                        return String::from("u8");
+                    }
+                    if min_value >= i8::MIN as i128 && max_value <= i8::MAX as i128 {
+                        return String::from("i8");
+                    }
+                    if min_value >= u16::MIN as i128 && max_value <= u16::MAX as i128 {
+                        return String::from("u16");
+                    }
+                    if min_value >= i16::MIN as i128 && max_value <= i16::MAX as i128 {
+                        return String::from("i16");
+                    }
+                    if min_value >= u32::MIN as i128 && max_value <= u32::MAX as i128 {
+                        return String::from("u32");
+                    }
+                    if min_value >= i32::MIN as i128 && max_value <= i32::MAX as i128 {
+                        return String::from("i32");
+                    }
+                    if min_value >= u64::MIN as i128 && max_value <= u64::MAX as i128 {
+                        return String::from("u64");
+                    }
+                    if min_value >= i64::MIN as i128 && max_value <= i64::MAX as i128 {
+                        return String::from("i64");
+                    }
+                    String::from("i128")
+                }
+                "enum" => match competing_definitions {
+                    true => format!("{}_{}", block_name, self.name),
+                    false => self.name.to_string(),
+                }
+                .from_case(Case::Snake)
+                .to_case(Case::UpperCamel),
+                "bool" => String::from("bool"),
+                _ => unimplemented!(),
+            }
+        }
+
+        fn define_enum(&self, block_name: &str, competing_definitions: bool) -> String {
+            if self.ty.as_str() != "enum" {
+                panic!("Called defined enum on non-enum");
+            }
+
+            let mut variants = String::new();
+            for (i, value) in self
+                .values
+                .as_ref()
+                .expect("Expecting values in enum (state id)")
+                .iter()
+                .enumerate()
+            {
+                variants.push_str(&format!(
+                    "\n\t{} = {},",
+                    value.from_case(Case::Snake).to_case(Case::UpperCamel),
+                    i
+                ));
+            }
+
+            format!(
+                r#"#[derive(Debug, Clone, Copy)]
+#[repr(u8)]
+pub enum {} {{{}
+}}"#,
+                self.ty(block_name, competing_definitions),
+                variants
+            )
+        }
+    }
+
     #[derive(Debug, Serialize, Deserialize)]
     #[serde(rename_all = "camelCase")]
     struct Block {
@@ -85,6 +185,7 @@ mod blocks {
         material: Option<String>,
         #[serde(default)]
         harvest_tools: HashMap<u32, bool>,
+        states: Vec<BlockState>,
     }
 
     #[allow(clippy::explicit_counter_loop)]
@@ -249,49 +350,49 @@ impl Block {{
 
     /// Get the textual identifier of this block.
     #[inline]
-    pub fn get_text_id(self) -> &'static str {{
+    pub fn text_id(self) -> &'static str {{
         unsafe {{*TEXT_IDS.get_unchecked((self as u32) as usize)}}
     }}
 
     #[inline]
-    pub fn get_default_state_id(self) -> u32 {{
+    pub fn default_state_id(self) -> u32 {{
         unsafe {{*DEFAULT_STATE_IDS.get_unchecked((self as u32) as usize)}}
     }}
 
     #[inline]
-    pub fn get_id(self) -> u32 {{
+    pub fn id(self) -> u32 {{
         self as u32
     }}
 
     /// This returns the item that will be dropped if you break the block.
     /// If the item is Air, there is actually no drop.
     #[inline]
-    pub fn get_associated_item_id(self) -> u32 {{
+    pub fn associated_item_id(self) -> u32 {{
         unsafe {{*ITEM_IDS.get_unchecked((self as u32) as usize)}}
     }}
 
     #[inline]
-    pub fn get_resistance(self) -> f32 {{
+    pub fn resistance(self) -> f32 {{
         unsafe {{*RESISTANCES.get_unchecked((self as u32) as usize)}}
     }}
 
     #[inline]
-    pub fn get_hardness(self) -> f32 {{
+    pub fn hardness(self) -> f32 {{
         unsafe {{*HARDNESSES.get_unchecked((self as u32) as usize)}}
     }}
 
     #[inline]
-    pub fn get_material(self) -> Option<BlockMaterial> {{
+    pub fn material(self) -> Option<BlockMaterial> {{
         unsafe {{*MATERIALS.get_unchecked((self as u32) as usize)}}
     }}
 
     #[inline]
-    pub fn get_display_name(self) -> &'static str {{
+    pub fn display_name(self) -> &'static str {{
         unsafe {{*DISPLAY_NAMES.get_unchecked((self as u32) as usize)}}
     }}
 
     #[inline]
-    pub fn get_state_id_range(self) -> std::ops::Range<u32> {{
+    pub fn state_id_range(self) -> std::ops::Range<u32> {{
         unsafe {{STATE_ID_RANGES.get_unchecked((self as u32) as usize).clone()}}
     }}
 
@@ -306,17 +407,17 @@ impl Block {{
     }}
 
     #[inline]
-    pub fn get_compatible_harvest_tools(self) -> &'static [u32] {{
+    pub fn compatible_harvest_tools(self) -> &'static [u32] {{
         unsafe {{*HARVEST_TOOLS.get_unchecked((self as u32) as usize)}}
     }}
 
     #[inline]
-    pub fn get_light_emissions(self) -> u8 {{
+    pub fn light_emissions(self) -> u8 {{
         unsafe {{*LIGHT_EMISSIONS.get_unchecked((self as u32) as usize)}}
     }}
 
     #[inline]
-    pub fn get_light_absorption(self) -> u8 {{
+    pub fn light_absorption(self) -> u8 {{
         unsafe {{*LIGHT_ABSORPTION.get_unchecked((self as u32) as usize)}}
     }}
 
@@ -337,6 +438,13 @@ impl Block {{
     #[inline]
     pub fn is_blocking(self) -> bool {{
         unsafe {{!(*AIR_BLOCKS.get_unchecked((self as u32) as usize))}}
+    }}
+}}
+
+impl From<super::block_states::BlockWithState> for Block {{
+    #[inline]
+    fn from(block_with_state: super::block_states::BlockWithState) -> Block {{
+        unsafe {{std::mem::transmute(block_with_state.block_id())}}
     }}
 }}
 
@@ -397,6 +505,250 @@ const AIR_BLOCKS: [bool; {max_value}] = {air_blocks:?};
         );
 
         File::create("src/ids/blocks.rs")
+            .unwrap()
+            .write_all(code.as_bytes())
+            .unwrap()
+    }
+
+    #[allow(clippy::explicit_counter_loop)]
+    pub fn generate_block_with_state_enum(data: serde_json::Value) {
+        let mut blocks: Vec<Block> = serde_json::from_value(data).expect("Invalid block data");
+        blocks.sort_by_key(|block| block.id);
+
+        // Look for missing blocks in the array
+        let mut expected = 0;
+        for block in &blocks {
+            if block.id != expected {
+                panic!("The block with id {} is missing.", expected)
+            }
+            expected += 1;
+        }
+
+        // Generate the enum definitions
+        let mut enum_definitions = Vec::new();
+        let mut enum_definitions_string = String::new();
+        let mut already_defined_enums = Vec::new();
+        for block in &blocks {
+            for state in &block.states {
+                if state.ty.as_str() == "enum" {
+                    enum_definitions.push((&block.text_id, state));
+                }
+            }
+        }
+        for (block_name, enum_definition) in &enum_definitions {
+            let mut competing_definitions = false;
+            for (_, enum_definition2) in &enum_definitions {
+                if enum_definition.name == enum_definition2.name
+                    && enum_definition.values != enum_definition2.values
+                {
+                    competing_definitions = true;
+                    break;
+                }
+            }
+            if !already_defined_enums
+                .contains(&enum_definition.ty(block_name, competing_definitions))
+            {
+                enum_definitions_string
+                    .push_str(&enum_definition.define_enum(block_name, competing_definitions));
+                enum_definitions_string.push('\n');
+                enum_definitions_string.push('\n');
+
+                already_defined_enums.push(enum_definition.ty(block_name, competing_definitions));
+            }
+        }
+
+        // Generate the variants of the Block enum
+        let mut variants = String::new();
+        for block in &blocks {
+            let name = block
+                .text_id
+                .from_case(Case::Snake)
+                .to_case(Case::UpperCamel);
+            let mut fields = String::new();
+            for state in &block.states {
+                let name = match state.name.as_str() == "type" {
+                    true => "ty",
+                    false => state.name.as_str(),
+                };
+                let competing_definitions =
+                    already_defined_enums.contains(&state.ty(&block.text_id, true));
+                fields.push_str(&format!(
+                    "{}: {}, ",
+                    name,
+                    state.ty(&block.text_id, competing_definitions)
+                ));
+            }
+            if fields.is_empty() {
+                variants.push_str(&format!("\t{},\n", name));
+            } else {
+                variants.push_str(&format!("\t{}{{ {}}},\n", name, fields));
+            }
+        }
+
+        // Generate the `match` of state ids
+        let mut state_id_match_arms = String::new();
+        for block in &blocks {
+            let name = block
+                .text_id
+                .from_case(Case::Snake)
+                .to_case(Case::UpperCamel);
+            let start = block.min_state_id;
+            let stop = block.max_state_id;
+
+            if block.states.is_empty() {
+                state_id_match_arms.push_str(&format!(
+                    "\n\t\t\t{} => Some(BlockWithState::{}),",
+                    start, name
+                ));
+                continue;
+            }
+
+            let mut state_calculations = String::new();
+            let mut fields = String::new();
+            for (i, state) in block.states.iter().enumerate().rev() {
+                let competing_definitions =
+                    already_defined_enums.contains(&state.ty(&block.text_id, true));
+                let ty = state.ty(&block.text_id, competing_definitions);
+                let name = match state.name.as_str() {
+                    "type" => "ty",
+                    _ => &state.name,
+                };
+                fields.push_str(&format!("{}, ", name));
+
+                if i == 0 {
+                    state_calculations.push_str("\n\t\t\t\tlet field_value = state_id;");
+                } else {
+                    state_calculations.push_str(&format!(
+                        "\n\t\t\t\tlet field_value = state_id.rem_euclid({});\
+                        \n\t\t\t\tstate_id -= field_value;\
+                        \n\t\t\t\tstate_id /= {};",
+                        state.num_values, state.num_values
+                    ));
+                }
+
+                match state.ty.as_str() {
+                    "enum" => {
+                        state_calculations.push_str(&format!(
+                            "\n\t\t\t\tlet {}: {} = unsafe{{std::mem::transmute(field_value as u8)}};\n",
+                            name, ty
+                        ));
+                    }
+                    "int" => {
+                        let values: Vec<i128> = state
+                            .values
+                            .as_ref()
+                            .expect("No values for int block state")
+                            .iter()
+                            .map(|v| v.parse().expect("Invalid block state value: expected int"))
+                            .collect();
+
+                        let mut expected = values[0];
+                        let mut standard = true;
+                        for value in &values {
+                            if value != &expected {
+                                standard = false;
+                                break;
+                            }
+                            expected += 1;
+                        }
+
+                        if standard && values[0] == 0 {
+                            state_calculations.push_str(&format!(
+                                "\n\t\t\t\tlet {}: {} = field_value as {};\n",
+                                name, ty, ty
+                            ));
+                        } else if standard {
+                            state_calculations.push_str(&format!(
+                                "\n\t\t\t\tlet {}: {} = {} + field_value as {};\n",
+                                name, ty, values[0], ty
+                            ));
+                        } else {
+                            state_calculations.push_str(&format!(
+                                "\n\t\t\t\tlet {}: {} = {:?}[field_value as usize];\n",
+                                name, ty, values
+                            ));
+                        }
+                    }
+                    "bool" => {
+                        state_calculations.push_str(&format!(
+                            "\n\t\t\t\tlet {}: bool = field_value == 0;\n",
+                            name
+                        ));
+                    }
+                    other => panic!("Unknown {} type", other),
+                }
+            }
+
+            state_id_match_arms.push_str(&format!(
+                "
+            {}..={} => {{
+                state_id -= {};
+                {}
+                Some(BlockWithState::{}{{ {}}})
+            }},",
+                start, stop, start, state_calculations, name, fields
+            ));
+        }
+
+        // Generate the code
+        let code = format!(
+            r#"//! Contains the [BlockWithState] enum to help with block state IDs.
+            
+use crate::*;
+
+{enum_definitions}
+
+/// Can be converted for free to [super::blocks::Block] which implements [useful methods](super::blocks::Block#implementations).
+#[derive(Debug, Clone)]
+#[repr(u32)]
+pub enum BlockWithState {{
+{variants}
+}}
+
+impl BlockWithState {{
+    #[inline]
+    pub fn from_state_id(mut state_id: u32) -> Option<BlockWithState> {{
+        match state_id {{
+{state_id_match_arms}
+            _ => None,
+        }}
+    }}
+
+    /// Returns the block id, **not the block state id**.
+    #[inline]
+    pub fn block_id(&self) -> u32 {{
+        unsafe {{std::mem::transmute(std::mem::discriminant(self))}}
+    }}
+}}
+
+impl From<super::blocks::Block> for BlockWithState {{
+    #[inline]
+    fn from(block: super::blocks::Block) -> BlockWithState {{
+        BlockWithState::from_state_id(block.default_state_id()).unwrap() // TODO: unwrap unchecked
+    }}
+}}
+
+impl<'a> MinecraftPacketPart<'a> for BlockWithState {{
+    #[inline]
+    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {{
+        unimplemented!("Cannot serialize BlockWithState yet");
+    }}
+
+    #[inline]
+    fn deserialize_minecraft_packet_part(input: &'a[u8]) -> Result<(Self, &'a[u8]), &'static str> {{
+        let (id, input) = VarInt::deserialize_minecraft_packet_part(input)?;
+        let id = std::cmp::max(id.0, 0) as u32;
+        let block_with_state = BlockWithState::from_state_id(id).ok_or("No block corresponding to the specified block state ID.")?;
+        Ok((block_with_state, input))
+    }}
+}}
+"#,
+            enum_definitions = enum_definitions_string,
+            state_id_match_arms = state_id_match_arms,
+            variants = variants,
+        );
+
+        File::create("src/ids/block_states.rs")
             .unwrap()
             .write_all(code.as_bytes())
             .unwrap()
@@ -686,10 +1038,11 @@ const CATEGORIES: [EntityCategory; {max_value}] = {categories};
 }
 
 fn main() {
-    //println!("cargo:rerun-if-changed=target/burger-cache-{}.json", VERSION);
+    println!("cargo:rerun-if-changed=target/cache-file-location-{}.json", VERSION);
+
     let mut file_locations = get_data(
         "https://raw.githubusercontent.com/PrismarineJS/minecraft-data/master/data/dataPaths.json",
-        "target/cache-file-location.json",
+        &format!("target/cache-file-location-{}.json", VERSION),
     );
     let file_locations = file_locations.get_mut("pc").unwrap().take();
     let file_locations: HashMap<String, HashMap<String, String>> =
@@ -706,7 +1059,8 @@ fn main() {
         &blocks_url,
         &format!("target/cache-blocks-{}.json", VERSION),
     );
-    blocks::generate_block_enum(block_data);
+    blocks::generate_block_enum(block_data.clone());
+    blocks::generate_block_with_state_enum(block_data);
 
     let items_url = format!(
         "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}/items.json",
