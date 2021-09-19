@@ -829,22 +829,22 @@ impl Item {{
     }}
 
     #[inline]
-    pub fn get_text_id(self) -> &'static str {{
+    pub fn text_id(self) -> &'static str {{
         unsafe {{*TEXT_IDS.get_unchecked((self as u32) as usize)}}
     }}
 
     #[inline]
-    pub fn get_display_name(self) -> &'static str {{
+    pub fn display_name(self) -> &'static str {{
         unsafe {{*DISPLAY_NAMES.get_unchecked((self as u32) as usize)}}
     }}
 
     #[inline]
-    pub fn get_max_stack_size(self) -> u8 {{
+    pub fn max_stack_size(self) -> u8 {{
         unsafe {{*STACK_SIZES.get_unchecked((self as u32) as usize)}}
     }}
 
     #[inline]
-    pub fn get_durability(self) -> Option<u16> {{
+    pub fn durability(self) -> Option<u16> {{
         unsafe {{*DURABILITIES.get_unchecked((self as u32) as usize)}}
     }}
 
@@ -992,27 +992,27 @@ impl Entity {{
     }}
 
     #[inline]
-    pub fn get_text_id(self) -> &'static str {{
+    pub fn text_id(self) -> &'static str {{
         unsafe {{*TEXT_IDS.get_unchecked((self as u32) as usize)}}
     }}
 
     #[inline]
-    pub fn get_display_name(self) -> &'static str {{
+    pub fn display_name(self) -> &'static str {{
         unsafe {{*DISPLAY_NAMES.get_unchecked((self as u32) as usize)}}
     }}
 
     #[inline]
-    pub fn get_category(self) -> EntityCategory {{
+    pub fn category(self) -> EntityCategory {{
         unsafe {{*CATEGORIES.get_unchecked((self as u32) as usize)}}
     }}
 
     #[inline]
-    pub fn get_height(self) -> f32 {{
+    pub fn height(self) -> f32 {{
         unsafe {{*HEIGHTS.get_unchecked((self as u32) as usize)}}
     }}
 
     #[inline]
-    pub fn get_width(self) -> f32 {{
+    pub fn width(self) -> f32 {{
         unsafe {{*WIDTHS.get_unchecked((self as u32) as usize)}}
     }}
 }}
