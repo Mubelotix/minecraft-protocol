@@ -2,3 +2,5 @@ blocks.rs
 block_states.rs
 items.rs
 entities.rs
+recipes.rs
+

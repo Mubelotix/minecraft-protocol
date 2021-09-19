@@ -697,7 +697,7 @@ pub enum ClientboundPacket<'a> {
     },
 
     UnlockRecipes {
-        action: recipes::UnlockRecipesAction<'a>,
+        action: crate::components::recipes::UnlockRecipesAction<'a>,
     },
 
     /// Sent by the server when a list of entities is to be destroyed on the client
