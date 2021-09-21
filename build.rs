@@ -513,7 +513,7 @@ const AIR_BLOCKS: [bool; {max_value}] = {air_blocks:?};
     #[allow(clippy::explicit_counter_loop)]
     pub fn generate_block_with_state_enum(data: serde_json::Value) {
         let mut blocks: Vec<Block> = serde_json::from_value(data).expect("Invalid block data");
-        blocks.sort_by_key(|block| block.id);
+        blocks.sort_by_key(|block| block.min_state_id);
 
         // Look for missing blocks in the array
         let mut expected = 0;
@@ -587,6 +587,7 @@ const AIR_BLOCKS: [bool; {max_value}] = {air_blocks:?};
 
         // Generate the `match` of state ids
         let mut state_id_match_arms = String::new();
+        let mut state_id_rebuild_arms = String::new();
         for block in &blocks {
             let name = block
                 .text_id
@@ -600,6 +601,8 @@ const AIR_BLOCKS: [bool; {max_value}] = {air_blocks:?};
                     "\n\t\t\t{} => Some(BlockWithState::{}),",
                     start, name
                 ));
+                state_id_rebuild_arms
+                    .push_str(&format!("\n\t\t\tBlockWithState::{} => Some({}),", name, start));
                 continue;
             }
 
@@ -679,6 +682,79 @@ const AIR_BLOCKS: [bool; {max_value}] = {air_blocks:?};
                 }
             }
 
+            let mut state_reformation = String::new();
+            for (i, state) in block.states.iter().enumerate() {
+                let name = match state.name.as_str() {
+                    "type" => "ty",
+                    _ => &state.name,
+                };
+
+                match state.ty.as_str() {
+                    "enum" => {
+                        state_reformation.push_str(&format!(
+                            "\n\t\t\t\tlet field_value = (*{} as u8) as u32;",
+                            name
+                        ));
+                    }
+                    "int" => {
+                        let values: Vec<i128> = state
+                            .values
+                            .as_ref()
+                            .expect("No values for int block state")
+                            .iter()
+                            .map(|v| v.parse().expect("Invalid block state value: expected int"))
+                            .collect();
+
+                        let mut expected = values[0];
+                        let mut standard = true;
+                        for value in &values {
+                            if value != &expected {
+                                standard = false;
+                                break;
+                            }
+                            expected += 1;
+                        }
+
+                        if standard && values[0] == 0 {
+                            state_reformation.push_str(&format!(
+                                "\n\t\t\t\tif *{name} > {max} {{ return None }}\
+                                \n\t\t\t\tlet field_value = *{name} as u32;",
+                                name=name, max=values.last().unwrap()
+                            ));
+                        } else if standard {
+                            state_reformation.push_str(&format!(
+                                "\n\t\t\t\tif *{name} < {min} || *{name} > {max} {{ return None }}\
+                                \n\t\t\t\tlet field_value = ({name} - {min}) as u32;",
+                                name=name, min=values[0], max=values.last().unwrap()
+                            ));
+                        } else {
+                            state_reformation.push_str(&format!(
+                                "\n\t\t\t\tlet field_value = {:?}.find({})?;",
+                                values, name
+                            ));
+                        }
+                    }
+                    "bool" => {
+                        state_reformation.push_str(&format!(
+                            "\n\t\t\t\tlet field_value = if *{} {{0}} else {{1}};",
+                            name
+                        ));
+                    }
+                    other => panic!("Unknown {} type", other),
+                }
+
+                if i == 0 {
+                    state_reformation.push_str("\n\t\t\t\tlet mut state_id = field_value;\n");
+                } else {
+                    state_reformation.push_str(&format!(
+                        "\n\t\t\t\tstate_id *= {};\
+                        \n\t\t\t\tstate_id += field_value;\n",
+                        state.num_values
+                    ));
+                }
+                
+            }
+
             state_id_match_arms.push_str(&format!(
                 "
             {}..={} => {{
@@ -687,6 +763,15 @@ const AIR_BLOCKS: [bool; {max_value}] = {air_blocks:?};
                 Some(BlockWithState::{}{{ {}}})
             }},",
                 start, stop, start, state_calculations, name, fields
+            ));
+            state_id_rebuild_arms.push_str(&format!(
+                "
+            BlockWithState::{}{{ {}}} => {{
+                {}
+                state_id += {};
+                Some(state_id)
+            }},",
+                name, fields, state_reformation, start
             ));
         }
 
@@ -719,6 +804,15 @@ impl BlockWithState {{
     pub fn block_id(&self) -> u32 {{
         unsafe {{std::mem::transmute(std::mem::discriminant(self))}}
     }}
+
+    /// Returns the block state id.
+    /// Returns None in case of error (invalid field value).
+    #[inline]
+    pub fn block_state_id(&self) -> Option<u32> {{
+        match self {{
+{state_id_rebuild_arms}
+        }}
+    }}
 }}
 
 impl From<super::blocks::Block> for BlockWithState {{
@@ -742,10 +836,26 @@ impl<'a> MinecraftPacketPart<'a> for BlockWithState {{
         Ok((block_with_state, input))
     }}
 }}
+
+#[cfg(test)]
+mod tests {{
+    use super::*;
+
+    #[test]
+    fn test_block_states() {{
+        for id in 0..={max_block_state_id} {{
+            let block = BlockWithState::from_state_id(id).unwrap();
+            let id_from_block = block.block_state_id().unwrap();
+            assert_eq!(id, id_from_block);
+        }}
+    }}
+}}
 "#,
             enum_definitions = enum_definitions_string,
             state_id_match_arms = state_id_match_arms,
+            state_id_rebuild_arms = state_id_rebuild_arms,
             variants = variants,
+            max_block_state_id = blocks.last().unwrap().max_state_id
         );
 
         File::create("src/ids/block_states.rs")
