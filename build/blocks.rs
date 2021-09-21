@@ -504,8 +504,35 @@ pub fn generate_block_with_state_enum(data: serde_json::Value) {
             };
             let competing_definitions =
                 already_defined_enums.contains(&state.ty(&block.text_id, true));
+            let doc = if state.ty == "int" {
+                let values: Vec<i128> = state
+                    .values
+                    .as_ref()
+                    .expect("No values for int block state")
+                    .iter()
+                    .map(|v| v.parse().expect("Invalid block state value: expected int"))
+                    .collect();
+
+                let mut expected = values[0];
+                let mut standard = true;
+                for value in &values {
+                    if value != &expected {
+                        standard = false;
+                        break;
+                    }
+                    expected += 1;
+                }
+
+                match standard {
+                    true => format!("\t\t/// Valid values are all values between {} and {}.\n", values[0], values.last().unwrap()),
+                    false => format!("\t\t/// Valid values: {:?}.\n", values),
+                }
+            } else {
+                String::new()
+            };
             fields.push_str(&format!(
-                "{}: {}, ",
+                "{}\t\t{}: {},\n",
+                doc,
                 name,
                 state.ty(&block.text_id, competing_definitions)
             ));
@@ -513,7 +540,7 @@ pub fn generate_block_with_state_enum(data: serde_json::Value) {
         if fields.is_empty() {
             variants.push_str(&format!("\t{},\n", name));
         } else {
-            variants.push_str(&format!("\t{}{{ {}}},\n", name, fields));
+            variants.push_str(&format!("\t{} {{\n{}\t}},\n", name, fields));
         }
     }
 
