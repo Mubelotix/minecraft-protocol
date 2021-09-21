@@ -32,11 +32,29 @@ impl RecipeItem {
             item_ident, count
         )
     }
+
+    fn format_count1(&self, items: &[super::items::Item]) -> String {
+        let (id, count) = self.to_id_and_count();
+        assert!(count == 1);
+        let item_ident = item_id_to_item(id, items);
+        format!(
+            "Item::{}",
+            item_ident
+        )
+    }
 }
 
+#[allow(dead_code)]
 fn format_option_item(item: &Option<RecipeItem>, items: &[super::items::Item]) -> String {
     match item {
         Some(item) => format!("Some({})", item.format(items)),
+        None => "None".to_string(),
+    }
+}
+
+fn format_option_item_count1(item: &Option<RecipeItem>, items: &[super::items::Item]) -> String {
+    match item {
+        Some(item) => format!("Some({})", item.format_count1(items)),
         None => "None".to_string(),
     }
 }
@@ -56,6 +74,7 @@ enum Shape {
 }
 
 impl Shape {
+    #[allow(dead_code)]
     fn format(&self, i: &[super::items::Item]) -> String {
         match self {
             Shape::ThreeByThree([[v1, v2, v3], [v4, v5, v6], [v7, v8, v9]]) => {
@@ -138,6 +157,89 @@ impl Shape {
             }
         }
     }
+
+    fn format_count1(&self, i: &[super::items::Item]) -> String {
+        match self {
+            Shape::ThreeByThree([[v1, v2, v3], [v4, v5, v6], [v7, v8, v9]]) => {
+                format!(
+                    "Shape::ThreeByThree([[{}, {}, {}], [{}, {}, {}], [{}, {}, {}]])",
+                    format_option_item_count1(v1, i),
+                    format_option_item_count1(v2, i),
+                    format_option_item_count1(v3, i),
+                    format_option_item_count1(v4, i),
+                    format_option_item_count1(v5, i),
+                    format_option_item_count1(v6, i),
+                    format_option_item_count1(v7, i),
+                    format_option_item_count1(v8, i),
+                    format_option_item_count1(v9, i)
+                )
+            }
+            Shape::ThreeByTwo([[v1, v2, v3], [v4, v5, v6]]) => {
+                format!(
+                    "Shape::ThreeByTwo([[{}, {}, {}], [{}, {}, {}]])",
+                    format_option_item_count1(v1, i),
+                    format_option_item_count1(v2, i),
+                    format_option_item_count1(v3, i),
+                    format_option_item_count1(v4, i),
+                    format_option_item_count1(v5, i),
+                    format_option_item_count1(v6, i)
+                )
+            }
+            Shape::ThreeByOne([[v1, v2, v3]]) => {
+                format!(
+                    "Shape::ThreeByOne([[{}, {}, {}]])",
+                    format_option_item_count1(v1, i),
+                    format_option_item_count1(v2, i),
+                    format_option_item_count1(v3, i)
+                )
+            }
+            Shape::TwoByThree([[v1, v2], [v3, v4], [v5, v6]]) => {
+                format!(
+                    "Shape::TwoByThree([[{}, {}], [{}, {}], [{}, {}]])",
+                    format_option_item_count1(v1, i),
+                    format_option_item_count1(v2, i),
+                    format_option_item_count1(v3, i),
+                    format_option_item_count1(v4, i),
+                    format_option_item_count1(v5, i),
+                    format_option_item_count1(v6, i)
+                )
+            }
+            Shape::TwoByTwo([[v1, v2], [v3, v4]]) => {
+                format!(
+                    "Shape::TwoByTwo([[{}, {}], [{}, {}]])",
+                    format_option_item_count1(v1, i),
+                    format_option_item_count1(v2, i),
+                    format_option_item_count1(v3, i),
+                    format_option_item_count1(v4, i)
+                )
+            }
+            Shape::TwoByOne([[v1, v2]]) => {
+                format!(
+                    "Shape::TwoByOne([[{}, {}]])",
+                    format_option_item_count1(v1, i),
+                    format_option_item_count1(v2, i)
+                )
+            }
+            Shape::OneByThree([[v1], [v2], [v3]]) => {
+                format!(
+                    "Shape::OneByThree([[{}], [{}], [{}]])",
+                    format_option_item_count1(v1, i),
+                    format_option_item_count1(v2, i),
+                    format_option_item_count1(v3, i)
+                )
+            }
+            Shape::OneByTwo([[v1], [v2]]) => {
+                format!(
+                    "Shape::OneByTwo([[{}], [{}]])",
+                    format_option_item_count1(v1, i),
+                    format_option_item_count1(v2, i)
+                )
+            }
+            Shape::OneByOne([[v1]]) => {
+                format!("Shape::OneByOne([[{}]])", format_option_item_count1(v1, i))
+            }
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -179,6 +281,11 @@ pub fn generate_recipes(data: serde_json::Value, items: Vec<super::items::Item>)
     let mut recipes_count = 0;
     for recipes in item_recipes.values() {
         recipes_count += recipes.len();
+        for recipe in recipes {
+            if matches!(recipe, Recipe::DoubleShaped{..}) {
+                panic!("Contains a double shaped recipe, which support has been removed as an optimization. It needs to be enabled again if required by future minecraft updates.")
+            }
+        }
     }
 
     // Generate recipes
@@ -192,7 +299,7 @@ pub fn generate_recipes(data: serde_json::Value, items: Vec<super::items::Item>)
                 } => {
                     let mut ingredients_string = String::new();
                     for ingredient in ingredients {
-                        ingredients_string.push_str(&ingredient.format(&items));
+                        ingredients_string.push_str(&ingredient.format_count1(&items));
                         ingredients_string.push_str(", ");
                     }
 
@@ -206,7 +313,7 @@ pub fn generate_recipes(data: serde_json::Value, items: Vec<super::items::Item>)
                     recipes_data.push_str(&format!(
                         "\tRecipe::Shaped {{ result: {}, in_shape: {} }},\n",
                         result.format(&items),
-                        in_shape.format(&items),
+                        in_shape.format_count1(&items),
                     ));
                 }
                 Recipe::DoubleShaped {
@@ -217,8 +324,8 @@ pub fn generate_recipes(data: serde_json::Value, items: Vec<super::items::Item>)
                     recipes_data.push_str(&format!(
                         "\tRecipe::DoubleShaped {{ result: {}, in_shape: {}, out_shape: {} }},\n",
                         result.format(&items),
-                        in_shape.format(&items),
-                        out_shape.format(&items),
+                        in_shape.format_count1(&items),
+                        out_shape.format_count1(&items),
                     ));
                 }
             }
@@ -250,15 +357,15 @@ pub struct RecipeItem {{
 
 #[derive(Debug, Clone)]
 pub enum Shape {{
-    ThreeByThree([[Option<RecipeItem>; 3]; 3]),
-    ThreeByTwo([[Option<RecipeItem>; 3]; 2]),
-    ThreeByOne([[Option<RecipeItem>; 3]; 1]),
-    TwoByThree([[Option<RecipeItem>; 2]; 3]),
-    TwoByTwo([[Option<RecipeItem>; 2]; 2]),
-    TwoByOne([[Option<RecipeItem>; 2]; 1]),
-    OneByThree([[Option<RecipeItem>; 1]; 3]),
-    OneByTwo([[Option<RecipeItem>; 1]; 2]),
-    OneByOne([[Option<RecipeItem>; 1]; 1]),
+    ThreeByThree([[Option<Item>; 3]; 3]),
+    ThreeByTwo([[Option<Item>; 3]; 2]),
+    ThreeByOne([[Option<Item>; 3]; 1]),
+    TwoByThree([[Option<Item>; 2]; 3]),
+    TwoByTwo([[Option<Item>; 2]; 2]),
+    TwoByOne([[Option<Item>; 2]; 1]),
+    OneByThree([[Option<Item>; 1]; 3]),
+    OneByTwo([[Option<Item>; 1]; 2]),
+    OneByOne([[Option<Item>; 1]; 1]),
 }}
 
 impl Shape {{
@@ -281,9 +388,8 @@ impl Shape {{
 
 #[derive(Debug, Clone)]
 pub enum Recipe {{
-    DoubleShaped {{ in_shape: Shape, out_shape: Shape, result: RecipeItem }},
     Shaped {{ in_shape: Shape, result: RecipeItem }},
-    ShapeLess {{ ingredients: &'static [RecipeItem], result: RecipeItem }},
+    ShapeLess {{ ingredients: &'static [Item], result: RecipeItem }},
 }}
 
 impl Recipe {{
@@ -299,7 +405,6 @@ impl Recipe {{
     #[inline]
     pub const fn result(&self) -> &RecipeItem {{
         match self {{
-            Recipe::DoubleShaped {{ result, .. }} => result,
             Recipe::Shaped {{ result, .. }} => result,
             Recipe::ShapeLess {{ result, .. }} => result,
         }}
@@ -308,25 +413,14 @@ impl Recipe {{
     #[inline]
     pub const fn in_shape(&self) -> Option<&Shape> {{
         match self {{
-            Recipe::DoubleShaped {{ in_shape, .. }} => Some(in_shape),
             Recipe::Shaped {{ in_shape, .. }} => Some(in_shape),
             Recipe::ShapeLess {{ .. }} => None,
         }}
     }}
 
     #[inline]
-    pub const fn out_shape(&self) -> Option<&Shape> {{
+    pub const fn ingredients(&self) -> Option<&'static [Item]> {{
         match self {{
-            Recipe::DoubleShaped {{ out_shape, .. }} => Some(out_shape),
-            Recipe::Shaped {{ .. }} => None,
-            Recipe::ShapeLess {{ .. }} => None,
-        }}
-    }}
-
-    #[inline]
-    pub const fn ingredients(&self) -> Option<&'static [RecipeItem]> {{
-        match self {{
-            Recipe::DoubleShaped {{ .. }} => None,
             Recipe::Shaped {{ .. }} => None,
             Recipe::ShapeLess {{ ingredients, .. }} => Some(ingredients),
         }}
