@@ -7,20 +7,20 @@ use std::io::prelude::*;
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[serde(untagged)]
-enum RecipeItem {
+enum CountedItem {
     IDAndMetadataAndCount { id: u32, metadata: u32, count: u8 },
     IDAndMetadata { id: u32, metadata: u32 },
     IDAndCount { id: u32, count: u8 },
     ID(u32),
 }
 
-impl RecipeItem {
+impl CountedItem {
     fn to_id_and_count(&self) -> (u32, u8) {
         match self {
-            RecipeItem::IDAndMetadataAndCount { .. } => panic!("Metadata not handled"),
-            RecipeItem::IDAndMetadata { .. } => panic!("Metadata not handled"),
-            RecipeItem::IDAndCount { id, count } => (*id, *count),
-            RecipeItem::ID(id) => (*id, 1),
+            CountedItem::IDAndMetadataAndCount { .. } => panic!("Metadata not handled"),
+            CountedItem::IDAndMetadata { .. } => panic!("Metadata not handled"),
+            CountedItem::IDAndCount { id, count } => (*id, *count),
+            CountedItem::ID(id) => (*id, 1),
         }
     }
 
@@ -28,7 +28,7 @@ impl RecipeItem {
         let (id, count) = self.to_id_and_count();
         let item_ident = item_id_to_item(id, items);
         format!(
-            "RecipeItem {{item: Item::{}, count: {}}}",
+            "CountedItem {{item: Item::{}, count: {}}}",
             item_ident, count
         )
     }
@@ -45,14 +45,14 @@ impl RecipeItem {
 }
 
 #[allow(dead_code)]
-fn format_option_item(item: &Option<RecipeItem>, items: &[super::items::Item]) -> String {
+fn format_option_item(item: &Option<CountedItem>, items: &[super::items::Item]) -> String {
     match item {
         Some(item) => format!("Some({})", item.format(items)),
         None => "None".to_string(),
     }
 }
 
-fn format_option_item_count1(item: &Option<RecipeItem>, items: &[super::items::Item]) -> String {
+fn format_option_item_count1(item: &Option<CountedItem>, items: &[super::items::Item]) -> String {
     match item {
         Some(item) => format!("Some({})", item.format_count1(items)),
         None => "None".to_string(),
@@ -62,15 +62,15 @@ fn format_option_item_count1(item: &Option<RecipeItem>, items: &[super::items::I
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 enum Shape {
-    ThreeByThree([[Option<RecipeItem>; 3]; 3]),
-    ThreeByTwo([[Option<RecipeItem>; 3]; 2]),
-    ThreeByOne([[Option<RecipeItem>; 3]; 1]),
-    TwoByThree([[Option<RecipeItem>; 2]; 3]),
-    TwoByTwo([[Option<RecipeItem>; 2]; 2]),
-    TwoByOne([[Option<RecipeItem>; 2]; 1]),
-    OneByThree([[Option<RecipeItem>; 1]; 3]),
-    OneByTwo([[Option<RecipeItem>; 1]; 2]),
-    OneByOne([[Option<RecipeItem>; 1]; 1]),
+    ThreeByThree([[Option<CountedItem>; 3]; 3]),
+    ThreeByTwo([[Option<CountedItem>; 3]; 2]),
+    ThreeByOne([[Option<CountedItem>; 3]; 1]),
+    TwoByThree([[Option<CountedItem>; 2]; 3]),
+    TwoByTwo([[Option<CountedItem>; 2]; 2]),
+    TwoByOne([[Option<CountedItem>; 2]; 1]),
+    OneByThree([[Option<CountedItem>; 1]; 3]),
+    OneByTwo([[Option<CountedItem>; 1]; 2]),
+    OneByOne([[Option<CountedItem>; 1]; 1]),
 }
 
 impl Shape {
@@ -247,16 +247,16 @@ impl Shape {
 enum Recipe {
     #[serde(rename_all = "camelCase")]
     DoubleShaped {
-        result: RecipeItem,
+        result: CountedItem,
         in_shape: Shape,
         out_shape: Shape,
     },
     #[serde(rename_all = "camelCase")]
-    Shaped { in_shape: Shape, result: RecipeItem },
+    Shaped { in_shape: Shape, result: CountedItem },
     #[serde(rename_all = "camelCase")]
     ShapeLess {
-        result: RecipeItem,
-        ingredients: Vec<RecipeItem>,
+        result: CountedItem,
+        ingredients: Vec<CountedItem>,
     },
 }
 
@@ -350,7 +350,7 @@ use crate::ids::items::Item;
 
 /// An [Item](crate::ids::items::Item) associated with a count of this item
 #[derive(Debug, Clone)]
-pub struct RecipeItem {{
+pub struct CountedItem {{
     pub item: Item,
     pub count: u8,
 }}
@@ -388,8 +388,8 @@ impl Shape {{
 
 #[derive(Debug, Clone)]
 pub enum Recipe {{
-    Shaped {{ in_shape: Shape, result: RecipeItem }},
-    ShapeLess {{ ingredients: &'static [Item], result: RecipeItem }},
+    Shaped {{ in_shape: Shape, result: CountedItem }},
+    ShapeLess {{ ingredients: &'static [Item], result: CountedItem }},
 }}
 
 impl Recipe {{
@@ -403,7 +403,7 @@ impl Recipe {{
     }}
 
     #[inline]
-    pub const fn result(&self) -> &RecipeItem {{
+    pub const fn result(&self) -> &CountedItem {{
         match self {{
             Recipe::Shaped {{ result, .. }} => result,
             Recipe::ShapeLess {{ result, .. }} => result,
