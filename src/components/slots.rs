@@ -121,7 +121,7 @@ pub enum WindowType {
     Crafting,
     Enchantment,
     Furnace,
-    GrindStone,
+    Grindstone,
     Hopper,
     Lectern,
     Loom,
