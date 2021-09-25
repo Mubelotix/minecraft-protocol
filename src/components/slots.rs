@@ -130,7 +130,7 @@ pub enum WindowType {
     Smithing,
     Smoker,
     Cartography,
-    StoneCutter,
+    Stonecutter,
 }
 
 #[cfg(test)]
