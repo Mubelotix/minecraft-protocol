@@ -1,7 +1,7 @@
 #[allow(unused_imports)]
 use super::play_clientbound::ClientboundPacket;
-use crate::components::*;
 use super::*;
+use crate::components::*;
 
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
@@ -37,9 +37,7 @@ pub enum ServerboundPacket<'a> {
     },
 
     /// *Request for [ClientboundPacket::Statistics]*
-    ClientStatus {
-        action: game_state::ClientStatus,
-    },
+    ClientStatus { action: game_state::ClientStatus },
 
     /// Sent when the player connects, or when settings are changed
     ClientSettings {
@@ -53,6 +51,9 @@ pub enum ServerboundPacket<'a> {
         /// Bit mask, see [the wiki](https://wiki.vg/Protocol#Client_Settings)
         displayed_skin_parts: u8,
         main_hand: slots::MainHand,
+        /// Disables filtering of text on signs and written book titles.
+        /// Currently always true (i.e. the filtering is disabled)
+        disable_text_filtering: bool,
     },
 
     /// *Request for [ClientboundPacket::TabComplete]*
@@ -60,20 +61,6 @@ pub enum ServerboundPacket<'a> {
         transaction_id: VarInt,
         /// All text behind the cursor without the `/` (e.g. to the left of the cursor in left-to-right languages like English).
         text: &'a str,
-    },
-
-    /// The server may reject client actions by sending [ClientboundPacket::WindowConfirmation] with the `accepted` field set to `false`.
-    /// When this happens, the client must send this packet to apologize (as with movement), otherwise the server ignores any successive confirmations.
-    ///
-    /// *Response to [ClientboundPacket::WindowConfirmation]*
-    WindowConfirmation {
-        /// The ID of the window that the action occurred in
-        window_id: i8,
-        /// Every action that is to be accepted has a unique id.
-        /// This id is an incrementing integer (starting at 1) with separate counts for each window ID.
-        action_id: i16,
-        /// Whether the action was accepted
-        accepted: bool,
     },
 
     /// Used when clicking on window buttons
@@ -90,15 +77,19 @@ pub enum ServerboundPacket<'a> {
     ClickWindowSlot {
         /// The ID of the window which was clicked. 0 for player inventory.
         window_id: i8,
+        /// The last received State ID from either a [ClientboundPacket::SetSlot] or a [ClientboundPacket::WindowItems] packet
+        state_id: VarInt,
         /// The clicked slot number, see [the wiki](https://wiki.vg/Protocol#Click_Window)
         slot: i16,
         /// The button used in the click, see [the wiki](https://wiki.vg/Protocol#Click_Window)
         button: u8,
-        /// A unique number for the action, implemented by Notchian as a counter, starting at 1 (different counter for every window ID). Used by the server to send back a [ClientboundPacket::WindowConfirmation].
-        action_id: i16,
         /// Inventory operation mode, see [the wiki](https://wiki.vg/Protocol#Click_Window)
         mode: VarInt,
-        /// The clicked slot. Has to be empty (item ID = -1) for drop mode. (TODO: check this)
+        /// New values for affected slots
+        new_slot_values: Map<'a, i16, slots::Slot, VarInt>,
+        /// The clicked slot
+        /// Has to be empty (item ID = -1) for drop mode. (TODO: check this)
+        /// Is always empty for mode 2 and mode 5 packets.
         clicked_item: slots::Slot,
     },
 
@@ -307,6 +298,11 @@ pub enum ServerboundPacket<'a> {
         /// Bit mask. 0x1: jump, 0x2: unmount.
         flags: u8,
     },
+
+    /// A response to the ping packet sync to the main thread.
+    /// Unknown what this is used for, this is ignored by the Notchian client and server.
+    /// Most likely added as a replacement to the removed window confirmation packet.
+    UselessPacket { id: i32 },
 
     /// Replaces Recipe Book Data, type 1.
     SetRecipeBookState {

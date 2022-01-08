@@ -84,6 +84,17 @@ pub struct Array<'a, T: MinecraftPacketPart<'a> + std::fmt::Debug, U: MinecraftP
     pub items: Vec<T>,
 }
 
+impl<'a, T: std::fmt::Debug + MinecraftPacketPart<'a>, U: MinecraftPacketPart<'a>> From<Vec<T>>
+    for Array<'a, T, U>
+{
+    fn from(value: Vec<T>) -> Self {
+        Array {
+            _len_prefix: std::marker::PhantomData,
+            items: value,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Map<
     'a,
@@ -93,6 +104,21 @@ pub struct Map<
 > {
     _len_prefix: std::marker::PhantomData<&'a U>,
     pub items: std::collections::BTreeMap<K, V>,
+}
+
+impl<
+        'a,
+        K: std::fmt::Debug + MinecraftPacketPart<'a>,
+        V: std::fmt::Debug + MinecraftPacketPart<'a>,
+        U: MinecraftPacketPart<'a>,
+    > From<std::collections::BTreeMap<K, V>> for Map<'a, K, V, U>
+{
+    fn from(value: std::collections::BTreeMap<K, V>) -> Self {
+        Map {
+            _len_prefix: std::marker::PhantomData,
+            items: value,
+        }
+    }
 }
 
 /// The possible packets are different for each state.

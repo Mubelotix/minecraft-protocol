@@ -1,10 +1,10 @@
 #[allow(unused_imports)]
 use super::play_serverbound::ServerboundPacket;
-use crate::nbt::NbtTag;
-use crate::components::*;
-use crate::ids::*;
-use crate::ids::blocks;
 use super::*;
+use crate::components::*;
+use crate::ids::blocks;
+use crate::ids::*;
+use crate::nbt::NbtTag;
 
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
@@ -88,6 +88,15 @@ pub enum ClientboundPacket<'a> {
         pitch: Angle,
     },
 
+    /// Shows a permanent particle.
+    SculkVibrationSignal {
+        /// Source position for the vibration
+        source_position: Position,
+        /// Identifier of the destination codec type
+        destination_identifier: Identifier<'a>,
+        rest: RawBytes<'a>,
+    },
+
     /// Sent whenever an entity should change animation
     EntityAnimation {
         id: VarInt,
@@ -105,8 +114,7 @@ pub enum ClientboundPacket<'a> {
         /// Position where the digging was happening
         location: Position,
         /// Block state ID of the block that should be at that position now.
-        /// Use [Block::from_state_id](blocks::Block::from_state_id) to get the corresponding [Block](blocks::Block).
-        block: VarInt,
+        block: block_states::BlockWithState,
         status: crate::components::blocks::PartialDiggingState,
         /// True if the digging succeeded; false if the client should undo any changes it made locally.
         successful: bool,
@@ -156,9 +164,8 @@ pub enum ClientboundPacket<'a> {
     BlockChange {
         /// Block Coordinates
         location: Position,
-        /// The new block state ID for the block as given in the [global palette](http://minecraft.gamepedia.com/Data_values%23Block_IDs). See that section for more information.
-        /// Use [Block::from_state_id](blocks::Block::from_state_id) to get the corresponding [Block](blocks::Block).
-        block_state: VarInt,
+        /// The new block state ID for the block
+        block_state: block_states::BlockWithState,
     },
 
     BossBar {
@@ -186,6 +193,11 @@ pub enum ClientboundPacket<'a> {
         sender: UUID,
     },
 
+    /// Clears the client's current title information, with the option to also reset it.
+    ClearTitles {
+        reset: bool,
+    },
+
     /// The server responds with a list of auto-completions of the last word sent to it.
     /// In the case of regular chat, this is a player username.
     /// Command names and parameters are also supported.
@@ -211,19 +223,6 @@ pub enum ClientboundPacket<'a> {
         data: RawBytes<'a>,
     },
 
-    /// A packet from the server indicating whether a request from the client was accepted, or whether there was a conflict (due to lag).
-    /// If the packet was not accepted, the client must respond with a serverbound window confirmation packet.
-    ///
-    /// *Request for [ServerboundPacket::WindowConfirmation]*
-    WindowConfirmation {
-        /// The ID of the window that the action occurred in.
-        window_id: i8,
-        /// Every action that is to be accepted has a unique ID. This number is an incrementing integer (starting at 0) with separate counts for each window ID.
-        action_id: i16,
-        /// Whether the action was accepted.
-        accepted: bool,
-    },
-
     /// This packet is sent from the server to the client when a window is forcibly closed, such as when a chest is destroyed while it's open.
     CloseWindow {
         /// This is the ID of the window that was closed. 0 for inventory.
@@ -235,9 +234,13 @@ pub enum ClientboundPacket<'a> {
     WindowItems {
         /// The ID of window which items are being sent for. 0 for player inventory.
         window_id: i8,
+        /// A state id required for future [ServerboundPacket::ClickWindowSlot]
+        state_id: VarInt,
         /// The [slots::Slot]s in this window.
         /// See [inventory windows](https://wiki.vg/Inventory#Windows) for further information about how slots are indexed.
-        slots: Array<'a, slots::Slot, i16>,
+        slots: Array<'a, slots::Slot, VarInt>,
+        /// Item held by player
+        carried_item: slots::Slot,
     },
 
     /// This packet is used to inform the client that part of a GUI window should be updated.
@@ -264,6 +267,8 @@ pub enum ClientboundPacket<'a> {
         /// This packet will only be sent for the currently opened window while the player is performing actions, even if it affects the player inventory.
         /// After the window is closed, a number of these packets are sent to update the player's inventory window (0).
         window_id: i8,
+        /// A state id required for future [ServerboundPacket::ClickWindowSlot]
+        state_id: VarInt,
         /// The slot that should be updated.
         slot_index: i16,
         slot_value: slots::Slot,
@@ -372,6 +377,27 @@ pub enum ClientboundPacket<'a> {
         window_id: i8,
         slot_count: VarInt,
         entity_id: i32,
+    },
+
+    /// The Notchian client determines how solid to display the warning by comparing to whichever is higher, the warning distance or whichever is lower, the distance from the current diameter to the target diameter or the place the border will be after warningTime seconds.
+    IntitializeWorldBorder {
+        x: f64,
+        y: f64,
+        /// Current length of a single side of the world border, in meters.
+        old_diameter: f64,
+        /// Target length of a single side of the world border, in meters.
+        new_diameter: f64,
+        /// Number of real-time milliseconds until New Diameter is reached.
+        /// It appears that Notchian server does not sync world border speed to game ticks, so it gets out of sync with server lag.
+        /// If the world border is not moving, this is set to 0.
+        speed: VarLong,
+        /// Resulting coordinates from a portal teleport are limited to ±value.
+        /// Usually 29999984.
+        portal_teleport_boundary: VarInt,
+        /// In meters
+        warning_blocks: VarInt,
+        /// In seconds as set by `/worldborder warning time`
+        warning_time: VarInt,
     },
 
     /// The server will frequently send out a keep-alive, each containing a random ID.
@@ -533,14 +559,6 @@ pub enum ClientboundPacket<'a> {
         on_ground: bool,
     },
 
-    /// This packet may be used to initialize an entity.
-    ///
-    /// For player entities, either this packet or any move/look packet is sent every game tick.
-    /// So the meaning of this packet is basically that the entity did not move/look since the last such packet.
-    EntityMovement {
-        entity_id: VarInt,
-    },
-
     /// Note that all fields use absolute positioning and do not allow for relative positioning.
     VehicleMove {
         /// Absolute position (X coordinate)
@@ -569,8 +587,7 @@ pub enum ClientboundPacket<'a> {
         /// Notchian server implementation is a counter, starting at 1.
         window_id: VarInt,
         /// The window type to use for display.
-        /// TODO: replace by an enum
-        window_type: VarInt,
+        window_type: slots::WindowType,
         /// The title of the window
         window_title: Chat<'a>,
     },
@@ -581,6 +598,12 @@ pub enum ClientboundPacket<'a> {
     /// *Request for [ServerboundPacket::UpdateSign]*
     OpenSignEditor {
         location: Position,
+    },
+
+    /// Unknown what this packet does just yet, not used by the Notchian server or client.
+    /// Most likely added as a replacement to the removed window confirmation packet.
+    UselessPacket {
+        id: i32,
     },
 
     // Todo make add doc links
@@ -602,10 +625,27 @@ pub enum ClientboundPacket<'a> {
         field_of_view_modifier: f32,
     },
 
-    /// Originally used for metadata for twitch streaming circa 1.8.
-    /// Now only used to display the game over screen (with enter combat and end combat completely ignored by the Notchain client)
-    CombatEvent {
-        event: combat::CombatEvent<'a>,
+    /// Unused by the Notchain client.
+    /// This data was once used for twitch.tv metadata circa 1.8.
+    EndCombatEvent {
+        /// Length of the combat in ticks.
+        duration: VarInt,
+        /// ID of the primary opponent of the ended combat, or -1 if there is no obvious primary opponent.
+        entity_id: i32,
+    },
+
+    /// Unused by the Notchain client.
+    /// This data was once used for twitch.tv metadata circa 1.8.
+    EnterCombatEvent,
+
+    /// Used to send a respawn screen.
+    DeathCombatEvent {
+        /// Entity ID of the player that died (should match the client's entity ID)
+        player_id: VarInt,
+        /// The killing entity's ID, or -1 if there is no obvious killer
+        entity_id: i32,
+        /// The death message
+        message: Chat<'a>,
     },
 
     /// Sent by the server to update the user list (<tab> in the client).
@@ -652,14 +692,16 @@ pub enum ClientboundPacket<'a> {
         pitch: f32,
         flags: u8,
         teleport_id: VarInt,
+        /// True if the player should dismount their vehicle
+        dismount_vehicle: bool,
     },
 
     UnlockRecipes {
-        action: recipes::UnlockRecipesAction<'a>,
+        action: crate::components::recipes::UnlockRecipesAction<'a>,
     },
 
     /// Sent by the server when a list of entities is to be destroyed on the client
-    DestoryEntities {
+    DestroyEntities {
         entity_ids: Array<'a, VarInt, VarInt>,
     },
 
@@ -733,8 +775,40 @@ pub enum ClientboundPacket<'a> {
         identifier: Option<Identifier<'a>>,
     },
 
-    WorldBorder {
-        action: chunk::WorldBorderAction,
+    /// Displays a message above the hotbar (the same as position 2 in Chat Message (clientbound).
+    ActionBar {
+        action_bar_text: Chat<'a>,
+    },
+
+    WorldBorderCenter {
+        x: f64,
+        y: f64,
+    },
+
+    WorldBorderLerpSize {
+        /// Current length of a single side of the world border, in meters
+        old_diameter: f64,
+        /// Target length of a single side of the world border, in meters
+        new_diameter: f64,
+        /// Number of real-time milliseconds until New Diameter is reached.
+        /// It appears that Notchian server does not sync world border speed to game ticks, so it gets out of sync with server lag.
+        /// If the world border is not moving, this is set to 0.
+        speed: VarLong,
+    },
+
+    WorldBorderSize {
+        /// Length of a single side of the world border, in meters
+        diameter: f64,
+    },
+
+    WorldBorderWarningDelay {
+        /// In seconds as set by `/worldborder warning time`
+        warning_time: VarInt,
+    },
+
+    WorldBorderWarningReach {
+        /// In meters
+        warning_blocks: VarInt,
     },
 
     /// Sets the entity that the player renders from.
@@ -780,6 +854,8 @@ pub enum ClientboundPacket<'a> {
     /// It can be sent at any time to update the point compasses point at.
     SpawnPosition {
         location: Position,
+        /// The angle at which to respawn at
+        angle: f32,
     },
 
     /// This is sent to the client when it should display a scoreboard
@@ -873,6 +949,10 @@ pub enum ClientboundPacket<'a> {
         score_action: teams::ScoreboardScoreAction<'a>,
     },
 
+    SetTitleSubTitle {
+        subtitle_text: Chat<'a>,
+    },
+
     /// Time is based on ticks, where 20 ticks happen every second.
     /// There are 24000 ticks in a day, making Minecraft days exactly 20 minutes long.
     /// The time of day is based on the timestamp modulo 24000. 0 is sunrise, 6000 is noon, 12000 is sunset, and 18000 is midnight.
@@ -885,8 +965,17 @@ pub enum ClientboundPacket<'a> {
         time_of_day: i64,
     },
 
-    Title {
-        action: chat::TitleAction<'a>,
+    SetTitleText {
+        title_text: Chat<'a>,
+    },
+
+    SetTitleTimes {
+        /// Ticks to spend fading in
+        fade_in: i32,
+        /// Ticks to keep the title displayed
+        stay: i32,
+        /// Ticks to spend out, not when to start fading out
+        fade_out: i32,
     },
 
     /// Plays a sound effect from an entity
@@ -929,7 +1018,7 @@ pub enum ClientboundPacket<'a> {
 
     /// This packet may be used by custom servers to display additional information above/below the player list.
     /// It is never sent by the Notchian server.
-    PlayerListSetHeaderAndFooter {
+    PlayerListHeaderAndFooter {
         /// To remove the header, send a empty text component: `{"text":""}`
         header: Chat<'a>,
         /// To remove the footer, send a empty text component: `{"text":""}`
@@ -982,8 +1071,7 @@ pub enum ClientboundPacket<'a> {
         advancement_mapping: Map<'a, Identifier<'a>, advancements::Advancement<'a>, VarInt>,
         /// The identifiers of the advancements that should be removed
         advancements_to_remove: Array<'a, Identifier<'a>, VarInt>,
-        progress_mapping:
-            Map<'a, Identifier<'a>, advancements::AdvancementProgress<'a>, VarInt>,
+        progress_mapping: Map<'a, Identifier<'a>, advancements::AdvancementProgress<'a>, VarInt>,
     },
 
     /// Sets [attributes](https://minecraft.fandom.com/wiki/Attribute) on the given entity
@@ -993,7 +1081,7 @@ pub enum ClientboundPacket<'a> {
         /// [Attributes](entity::EntityAttribute) also have [Attributes](entity::EntityAttributeModifier) that adjust the strength of their effect.
         ///
         /// [More information](https://minecraft.fandom.com/wiki/Attribute)
-        attributes: Map<'a, Identifier<'a>, entity::EntityAttribute<'a>, i32>,
+        attributes: Map<'a, Identifier<'a>, entity::EntityAttribute<'a>, VarInt>,
     },
 
     EntityEffect {
@@ -1015,13 +1103,8 @@ pub enum ClientboundPacket<'a> {
     },
 
     Tags {
-        /// A map linking block tags to an array of corresponding IDs.
-        block_tags: Map<'a, Identifier<'a>, Array<'a, VarInt, VarInt>, VarInt>,
-        /// A map linking item tags to an array of corresponding IDs.
-        item_tags: Map<'a, Identifier<'a>, Array<'a, VarInt, VarInt>, VarInt>,
-        /// A map linking fluid tags to an array of corresponding IDs.
-        fluid_tags: Map<'a, Identifier<'a>, Array<'a, VarInt, VarInt>, VarInt>,
-        /// A map linking entity tags to an array of corresponding IDs.
-        entity_tags: Map<'a, Identifier<'a>, Array<'a, VarInt, VarInt>, VarInt>,
+        /// More information on tags is available at: https://minecraft.gamepedia.com/Tag
+        /// And a list of all tags is here: https://minecraft.gamepedia.com/Tag#List_of_tags
+        tags: Map<'a, Identifier<'a>, Array<'a, tags::Tag<'a>, VarInt>, VarInt>,
     },
 }

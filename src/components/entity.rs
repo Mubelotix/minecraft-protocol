@@ -28,6 +28,7 @@ pub enum EntityAttributeModifierOperation {
     /// `value = base_value * modifier`
     Multiply,
 }
+
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum EntityInteraction {
@@ -69,6 +70,7 @@ pub enum Pose {
     SpinAttack,
     Sneaking,
     Dying,
+    LongJumping,
 }
 
 #[derive(Debug, Clone)]
@@ -180,8 +182,12 @@ mod tests {
 
     #[test]
     fn test_entity_metadata() {
-        let t1 = [/*68, 160, 129, 2, */0, 0, 0, 2, 5, 0, 6, 18, 0, 4, 7, 0, 15, 13, 10, 14, 0, 0, 12, 1, 0, 13, 10, 0, 8, 2, 66, 32, 0, 0, 9, 1, 0, 11, 1, 0, 10, 7, 0, 1, 1, 172, 2, 3, 7, 0, 7, 0, 0, 5, 7, 0, 16, 7, 0, 17, 7, 0, 255];
-        let t2 = [/*68, 219, 242, 1, */15, 13, 68, 255];
+        let t1 = [
+            /*68, 160, 129, 2, */ 0, 0, 0, 2, 5, 0, 6, 18, 0, 4, 7, 0, 15, 13, 10, 14, 0, 0,
+            12, 1, 0, 13, 10, 0, 8, 2, 66, 32, 0, 0, 9, 1, 0, 11, 1, 0, 10, 7, 0, 1, 1, 172, 2, 3,
+            7, 0, 7, 0, 0, 5, 7, 0, 16, 7, 0, 17, 7, 0, 255,
+        ];
+        let t2 = [/*68, 219, 242, 1, */ 15, 13, 68, 255];
 
         EntityMetadata::deserialize_uncompressed_minecraft_packet(&t1).unwrap();
         EntityMetadata::deserialize_uncompressed_minecraft_packet(&t2).unwrap();

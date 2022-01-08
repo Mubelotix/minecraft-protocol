@@ -9,15 +9,16 @@ pub struct ChunkData<'a> {
     pub chunk_x: i32,
     /// Chunk coordinate (block coordinate divided by 16, rounded down).
     pub chunk_z: i32,
-    /// Bitmask with bits set to 1 for every 16×16×16 chunk section whose data is included in Data.
-    /// The least significant bit represents the chunk section at the bottom of the chunk column (from y=0 to y=15).
-    pub primary_bit_mask: VarInt,
-    /// Compound containing one long array named `MOTION_BLOCKING`, which is a heightmap for the highest solid block at each position in the chunk (as a compacted long array with 256 entries at 9 bits per entry totaling 36 longs). The Notchian server also adds a `WORLD_SURFACE` long array, the purpose of which is unknown, but it's not required for the chunk to be accepted.
+    /// BitSet with bits (world height in blocks / 16) set to 1 for every 16×16×16 chunk section whose data is included in Data.
+    /// The least significant bit represents the chunk section at the bottom of the chunk column (from the lowest y to 15 blocks above).
+    pub primary_bit_mask: Array<'a, u64, VarInt>,
+    /// Compound containing one long array named `MOTION_BLOCKING`, which is a heightmap for the highest solid block at each position in the chunk (as a compacted long array with 256 entries at 9 bits per entry totaling 36 longs).
+    /// The Notchian server also adds a `WORLD_SURFACE` long array, the purpose of which is unknown, but it's not required for the chunk to be accepted.
     pub heightmaps: NbtTag,
     /// 1024 biome IDs, ordered by x then z then y, in 4×4×4 blocks.
     /// Biomes cannot be changed unless a chunk is re-sent.
     /// The structure is an array of 1024 integers, each representing a [Biome ID](http://minecraft.gamepedia.com/Biome/ID) (it is recommended that "Void" is used if there is no set biome - its default id is 127). The array is ordered by x then z then y, in 4×4×4 blocks. The array is indexed by `((y >> 2) & 63) << 4 | ((z >> 2) & 3) << 2 | ((x >> 2) & 3)`.
-    pub biomes: Option<Array<'a, VarInt, VarInt>>,
+    pub biomes: Array<'a, VarInt, VarInt>,
     /// The data section of the packet contains most of the useful data for the chunk.
     /// The number of elements in the array is equal to the number of bits set in [ChunkData::primary_bit_mask].
     /// Sections are sent bottom-to-top, i.e. the first section, if sent, extends from Y=0 to Y=15.
@@ -34,15 +35,10 @@ impl<'a> MinecraftPacketPart<'a> for ChunkData<'a> {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
         self.chunk_x.serialize_minecraft_packet_part(output)?;
         self.chunk_z.serialize_minecraft_packet_part(output)?;
-        self.biomes
-            .is_some()
-            .serialize_minecraft_packet_part(output)?;
         self.primary_bit_mask
             .serialize_minecraft_packet_part(output)?;
         self.heightmaps.serialize_minecraft_packet_part(output)?;
-        if let Some(biomes) = self.biomes {
-            biomes.serialize_minecraft_packet_part(output)?;
-        }
+        self.biomes.serialize_minecraft_packet_part(output)?;
         VarInt(self.data.len() as i32).serialize_minecraft_packet_part(output)?;
         output.extend_from_slice(self.data);
         self.entities.serialize_minecraft_packet_part(output)?;
@@ -54,18 +50,11 @@ impl<'a> MinecraftPacketPart<'a> for ChunkData<'a> {
     ) -> Result<(Self, &'a [u8]), &'static str> {
         let (chunk_x, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         let (chunk_z, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
-        let (full_chunk, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         let (primary_bit_mask, input) =
             MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         let (heightmaps, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
-        let (biomes, input) = match full_chunk {
-            false => (None, input),
-            true => {
-                let (biomes, input) =
+        let (biomes, input) =
                     <Array<'a, VarInt, VarInt>>::deserialize_minecraft_packet_part(input)?;
-                (Some(biomes), input)
-            }
-        };
         let (data_len, input) = VarInt::deserialize_minecraft_packet_part(input)?;
         let data_len = std::cmp::max(data_len.0, 0) as usize;
         let (data, input) = input.split_at(data_len);
@@ -109,9 +98,12 @@ impl<'a> ChunkData<'a> {
         &mut self,
     ) -> Result<[Option<ChunkSection>; 16], &'static str> {
         let mut input = self.data;
-        let primary_bit_mask: u32 = unsafe {
+        if self.primary_bit_mask.items.len() != 1 {
+            return Err("ChunkData::deserialize_chunk_sections: primary_bit_mask.items.len() != 1");
+        }
+        let primary_bit_mask: u64 = unsafe {
             // We don't care the type since we only want to check the bits
-            std::mem::transmute(self.primary_bit_mask.0)
+            *self.primary_bit_mask.items.get_unchecked(0)
         };
 
         let mut chunk_sections: [Option<ChunkSection>; 16] = [
@@ -120,7 +112,7 @@ impl<'a> ChunkData<'a> {
         ];
         let mut mask = 0b1;
         for y in 0..16 {
-            chunk_sections[y] = if primary_bit_mask & mask != 0 {
+            chunk_sections[y] = if primary_bit_mask & mask != 0 {                
                 let (block_count, new_input) = i16::deserialize_minecraft_packet_part(input)?;
                 let (mut bits_per_block, new_input) =
                     u8::deserialize_minecraft_packet_part(new_input)?;
@@ -217,51 +209,13 @@ impl<'a> ChunkData<'a> {
     }
 }
 
-#[derive(Debug, MinecraftPacketPart)]
-#[discriminant(VarInt)]
-pub enum WorldBorderAction {
-    SetSize {
-        /// Length of a single side of the world border, in meters
-        diameter: f64,
-    },
-    LerpSize {
-        /// Current length of a single side of the world border, in meters
-        old_diameter: f64,
-        /// Target length of a single side of the world border, in meters
-        new_diameter: f64,
-        /// Number of real-time milliseconds until New Diameter is reached.
-        /// It appears that Notchian server does not sync world border speed to game ticks, so it gets out of sync with server lag.
-        /// If the world border is not moving, this is set to 0.
-        speed: VarLong,
-    },
-    SetCenter {
-        x: f64,
-        z: f64,
-    },
-    Initialize {
-        x: f64,
-        z: f64,
-        /// Current length of a single side of the world border, in meters
-        old_diameter: f64,
-        /// Target length of a single side of the world border, in meters
-        new_diameter: f64,
-        /// Number of real-time milliseconds until New Diameter is reached.
-        /// It appears that Notchian server does not sync world border speed to game ticks, so it gets out of sync with server lag.
-        /// If the world border is not moving, this is set to 0.
-        speed: VarLong,
-        /// Resulting coordinates from a portal teleport are limited to ±value. Usually 29999984.
-        portal_teleport_value: VarInt,
-        /// In meters
-        warning_blocks: VarInt,
-        /// In seconds as set by `/worldborder warning time`
-        warning_time: VarInt,
-    },
-    SetWarningTime {
-        /// In seconds as set by `/worldborder warning time`
-        warning_time: VarInt,
-    },
-    SetWarningBlocks {
-        /// In meters
-        warning_blocks: VarInt,
-    },
+#[cfg(test)]
+#[test]
+fn test() {
+    let chunk_data = &include_bytes!("../../test_data/chunk.mc_packet")[1..];
+
+    let mut chunk_data_deserialized = ChunkData::deserialize_uncompressed_minecraft_packet(chunk_data).unwrap();
+    let _blocks = chunk_data_deserialized.deserialize_chunk_sections().unwrap();
+    
+    //println!("{:?}", chunk_data_deserialized);
 }
