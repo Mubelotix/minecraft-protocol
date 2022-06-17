@@ -11,6 +11,7 @@ pub mod effect;
 pub mod entity;
 pub mod game_state;
 pub mod gamemode;
+pub mod init;
 pub mod paintings;
 pub mod particle;
 pub mod players;

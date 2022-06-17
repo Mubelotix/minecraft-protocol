@@ -20,3 +20,16 @@ pub enum ChatMode {
     CommandsOnly,
     Hidden,
 }
+
+#[minecraft_enum(VarInt)]
+#[derive(Debug)]
+pub enum ChatType {
+    Chat,
+    SystemMessage,
+    GameInfo,
+    SayCommand,
+    MsgCommand,
+    TeamMsgCommand,
+    EmoteCommand,
+    TellrawCommand,
+}

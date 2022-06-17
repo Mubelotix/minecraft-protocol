@@ -37,10 +37,7 @@ impl CountedItem {
         let (id, count) = self.to_id_and_count();
         assert!(count == 1);
         let item_ident = item_id_to_item(id, items);
-        format!(
-            "Item::{}",
-            item_ident
-        )
+        format!("Item::{}", item_ident)
     }
 }
 
@@ -252,7 +249,10 @@ enum Recipe {
         out_shape: Shape,
     },
     #[serde(rename_all = "camelCase")]
-    Shaped { in_shape: Shape, result: CountedItem },
+    Shaped {
+        in_shape: Shape,
+        result: CountedItem,
+    },
     #[serde(rename_all = "camelCase")]
     ShapeLess {
         result: CountedItem,
@@ -282,7 +282,7 @@ pub fn generate_recipes(data: serde_json::Value, items: Vec<super::items::Item>)
     for recipes in item_recipes.values() {
         recipes_count += recipes.len();
         for recipe in recipes {
-            if matches!(recipe, Recipe::DoubleShaped{..}) {
+            if matches!(recipe, Recipe::DoubleShaped { .. }) {
                 panic!("Contains a double shaped recipe, which support has been removed as an optimization. It needs to be enabled again if required by future minecraft updates.")
             }
         }

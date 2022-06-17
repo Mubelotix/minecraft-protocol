@@ -19,6 +19,7 @@ pub enum ClientboundPacket<'a> {
         z: f64,
         pitch: Angle,
         yaw: Angle,
+        head_yaw: Angle,
         /// Meaning dependent on the value of the `type` field, see [Object Data](https://wiki.vg/Object_Data) for details.
         data: i32,
         /// Velocity is believed to be in units of 1/8000 of a block per server tick (50ms); for example, -1343 would move (-1343 / 8000) = −0.167875 blocks per tick (or −3,3575 blocks per second).
@@ -39,40 +40,9 @@ pub enum ClientboundPacket<'a> {
         count: i16,
     },
 
-    /// Sent by the server when a living entity is spawned
-    SpawnLivingEntity {
-        id: VarInt,
-        uuid: UUID,
-        entity_type: entities::Entity,
-        x: f64,
-        y: f64,
-        z: f64,
-        yaw: Angle,
-        pitch: Angle,
-        head_pitch: Angle,
-        /// Velocity is believed to be in units of 1/8000 of a block per server tick (50ms); for example, -1343 would move (-1343 / 8000) = −0.167875 blocks per tick (or −3,3575 blocks per second).
-        velocity_x: i16,
-        /// Velocity is believed to be in units of 1/8000 of a block per server tick (50ms); for example, -1343 would move (-1343 / 8000) = −0.167875 blocks per tick (or −3,3575 blocks per second).
-        velocity_y: i16,
-        /// Velocity is believed to be in units of 1/8000 of a block per server tick (50ms); for example, -1343 would move (-1343 / 8000) = −0.167875 blocks per tick (or −3,3575 blocks per second).
-        velocity_z: i16,
-    },
-
-    /// This packet shows location, name, and type of painting.
-    SpawnPainting {
-        id: VarInt,
-        uuid: UUID,
-        motive: paintings::Painting,
-        /// Center coordinates
-        location: Position,
-        /// Direction the painting faces
-        direction: Direction,
-    },
-
-    // todo add doc links
     /// This packet is sent by the server when a player comes into visible range, not when a player joins.
     ///
-    /// This packet must be sent after the Player Info packet that adds the player data for the client to use when spawning a player.
+    /// This packet must be sent after the [ClientboundPacket::PlayerInfo] packet that adds the player data for the client to use when spawning a player.
     /// If the Player Info for the player spawned by this packet is not present when this packet arrives, Notchian clients will not spawn the player entity.
     /// The Player Info packet includes skin/cape data.
     ///
@@ -88,15 +58,6 @@ pub enum ClientboundPacket<'a> {
         pitch: Angle,
     },
 
-    /// Shows a permanent particle.
-    SculkVibrationSignal {
-        /// Source position for the vibration
-        source_position: Position,
-        /// Identifier of the destination codec type
-        destination_identifier: Identifier<'a>,
-        rest: RawBytes<'a>,
-    },
-
     /// Sent whenever an entity should change animation
     EntityAnimation {
         id: VarInt,
@@ -110,14 +71,9 @@ pub enum ClientboundPacket<'a> {
         statistics: Array<'a, advancements::Statistic, VarInt>,
     },
 
-    AcknowledgePlayerDigging {
-        /// Position where the digging was happening
-        location: Position,
-        /// Block state ID of the block that should be at that position now.
-        block: block_states::BlockWithState,
-        status: crate::components::blocks::PartialDiggingState,
-        /// True if the digging succeeded; false if the client should undo any changes it made locally.
-        successful: bool,
+    AcknowledgeBlockChanges {
+        /// Represents the sequence to acknowledge, this is used for properly syncing block changes to the client after interactions.
+        sequence_id: VarInt,
     },
 
     /// 0–9 are the displayable destroy stages and each other number means that there is no animation on this coordinate.
@@ -181,16 +137,13 @@ pub enum ClientboundPacket<'a> {
         difficulty_locked: bool,
     },
 
-    /// Identifying the difference between Chat/System Message is important as it helps respect the user's chat visibility options. See [processing chat](https://wiki.vg/Chat#Processing_chat) for more info about these positions.
-    ///
-    /// **Warning**: Game info accepts json formatting but does not display it, although the deprecated §-based formatting works. This is not an issue when using the [Title] packet, so prefer that packet for displaying information in that slot. See MC-119145 for more information.
+    /// Sets the message to preview on the client.
     ///
     /// *See also [ServerboundPacket::ChatMessage]*
-    ChatMessage {
-        message: Chat<'a>,
-        position: chat::Position,
-        /// Used by the Notchian client for the disableChat launch option. Setting 0 will always display the message regardless of the setting.
-        sender: UUID,
+    ChatPreview {
+        query_id: i32,
+        /// Not sure what this is as wiki.vg does not know yet.
+        component: Option<Chat<'a>>,
     },
 
     /// Clears the client's current title information, with the option to also reset it.
@@ -294,7 +247,7 @@ pub enum ClientboundPacket<'a> {
     /// *See also [ServerboundPacket::PluginMessage]*
     PluginMessage {
         /// Name of the [plugin channel](https://wiki.vg/Plugin_channel) used to send the data.
-        identifier: Identifier<'a>,
+        channel: Identifier<'a>,
         /// Any data, depending on the channel.
         /// `minecraft:` channels are documented [here](https://wiki.vg/Plugin_channel).
         data: RawBytes<'a>,
@@ -316,6 +269,8 @@ pub enum ClientboundPacket<'a> {
         volume: f32,
         /// Float between 0.5 and 2.0 by Notchian clients.
         pitch: f32,
+        /// Seed used to pick sound variant.
+        seed: i64,
     },
 
     /// Sent by the server before it disconnects a client.
@@ -456,8 +411,24 @@ pub enum ClientboundPacket<'a> {
 
     /// Updates light levels for a chunk
     UpdateLight {
-        /// TODO: parse this
-        data: RawBytes<'a>,
+        /// Chunk coordinate (block coordinate divided by 16, rounded down).
+        chunk_x: i32,
+        /// Chunk coordinate (block coordinate divided by 16, rounded down).
+        chunk_z: i32,
+        /// If edges should be trusted for light updates.
+        trust_edges: bool,
+        /// BitSet containing bits for each section in the world + 2. Each set bit indicates that the corresponding 16×16×16 chunk section has data in the Sky Light array below. The least significant bit is for blocks 16 blocks to 1 block below the min world height (one section below the world), while the most significant bit covers blocks 1 to 16 blocks above the max world height (one section above the world).
+        sky_light_mask: Array<'a, u64, VarInt>,
+        /// BitSet containing bits for each section in the world + 2. Each set bit indicates that the corresponding 16×16×16 chunk section has data in the Block Light array below. The order of bits is the same as in Sky Light Mask.
+        block_light_mask: Array<'a, u64, VarInt>,
+        /// BitSet containing bits for each section in the world + 2. Each set bit indicates that the corresponding 16×16×16 chunk section has all zeros for its Sky Light data. The order of bits is the same as in Sky Light Mask.
+        empty_sky_light_mask: Array<'a, u64, VarInt>,
+        /// BitSet containing bits for each section in the world + 2. Each set bit indicates that the corresponding 16×16×16 chunk section has all zeros for its Block Light data. The order of bits is the same as in Sky Light Mask.
+        empty_block_sky_light_mask: Array<'a, u64, VarInt>,
+        /// There is 1 array for each bit set to true in the sky light mask, starting with the lowest value. Half a byte per light value. Indexed ((y<<8) | (z<<4) | x) / 2 If there's a remainder, masked 0xF0 else 0x0F.
+        sky_light: Array<'a, Array<'a, u8, VarInt>, VarInt>,
+        /// There is 1 array for each bit set to true in the block light mask, starting with the lowest value. Half a byte per light value. Indexed ((y<<8) | (z<<4) | x) / 2 If there's a remainder, masked 0xF0 else 0x0F.
+        block_light: Array<'a, Array<'a, u8, VarInt>, VarInt>,
     },
 
     /// See [Protocol Encryption](https://wiki.vg/Protocol_Encryption) for information on logging in.
@@ -467,16 +438,12 @@ pub enum ClientboundPacket<'a> {
         is_hardcore: bool,
         gamemode: gamemode::Gamemode,
         previous_gamemode: gamemode::PreviousGamemode,
-        /// Identifiers for all worlds on the server
-        worlds_names: Array<'a, Identifier<'a>, VarInt>,
-        /// The full extent of these is still unknown, but the tag represents a dimension and biome registry.
-        /// See [the wiki](https://wiki.vg/Protocol#Join_Game) for the vanilla default.
-        dimension_coded: NbtTag,
-        /// Valid dimensions are defined per dimension registry sent before this.
-        /// The structure of this tag is a dimension type (see [the wiki](https://wiki.vg/Protocol#Join_Game)).
-        dimension: NbtTag,
-        /// Name of the world being spawned into
-        world_name: Identifier<'a>,
+        /// Identifiers for all dimensions on the server
+        dimension_names: Array<'a, Identifier<'a>, VarInt>,
+        /// Represents certain registries that are sent from the server and are applied on the client.
+        registry_codec: NbtTag,
+        dimension_type: Identifier<'a>,
+        dimension_name: Identifier<'a>,
         /// First 8 bytes of the SHA-256 hash of the world's seed.
         /// Used client side for biome noise.
         hashed_seed: u64,
@@ -484,6 +451,8 @@ pub enum ClientboundPacket<'a> {
         max_players: VarInt,
         /// Render distance (2..=32).
         render_distance: VarInt,
+        /// The distance that the client will process specific things, such as entities.
+        simulation_distance: VarInt,
         /// If `true`, a Notchian client shows reduced information on the debug screen.
         /// For servers in development, this should almost always be `false`.
         reduced_debug_info: bool,
@@ -493,6 +462,7 @@ pub enum ClientboundPacket<'a> {
         is_debug: bool,
         /// `true` if the world is a [superflat world](http://minecraft.gamepedia.com/Superflat); flat worlds have different void fog and a horizon at y=0 instead of y=63.
         is_flat: bool,
+        last_death_location: Option<Position>,
     },
 
     /// Updates a rectangular area on a map **item**
@@ -600,9 +570,10 @@ pub enum ClientboundPacket<'a> {
         location: Position,
     },
 
-    /// Unknown what this packet does just yet, not used by the Notchian server or client.
-    /// Most likely added as a replacement to the removed window confirmation packet.
-    UselessPacket {
+    /// Packet is not used by the Notchian server. When sent to the client, client responds with a Pong packet with the same id.
+    ///
+    /// *Request for [ServerboundPacket::Pong]*
+    Ping {
         id: i32,
     },
 
@@ -623,6 +594,26 @@ pub enum ClientboundPacket<'a> {
         /// Modifies the field of view, like a speed potion.
         /// A Notchian server will use the same value as the movement speed sent in the Entity Properties packet, which defaults to 0.1 for players.
         field_of_view_modifier: f32,
+    },
+
+    /// Identifying the difference between Chat/System Message is important as it helps respect the user's chat visibility options.
+    PlayerChatMessage {
+        /// Original player message, not modifiable by the server without invalidating the sigature.
+        signed_chat: Chat<'a>,
+        /// Server modifiable message.
+        unsigned_chat: Option<Chat<'a>>,
+        ty: chat::ChatType,
+        sender_uuid: UUID,
+        /// This can be modified without disrupting the message signature.
+        sender_display_name: Chat<'a>,
+        sender_team_name: Option<Chat<'a>>,
+        /// Represents the time the message was signed, used to check if the message was received within 2 minutes of it being sent.
+        timestamp: i64,
+        /// Cryptography, used for validating the message signature.
+        salt: i64,
+        /// Cryptography, the signature consists of the Sender UUID, Timestamp and Original Chat Content.
+        /// Modifying any of these values in the packet will cause this signature to fail.
+        signature: Array<'a, u8, VarInt>,
     },
 
     /// Unused by the Notchain client.
@@ -717,6 +708,11 @@ pub enum ClientboundPacket<'a> {
         /// A 40 character hexadecimal and lowercase SHA-1 hash of the resource pack file. (must be lower case in order to work)
         /// If it's not a 40 character hexadecimal string, the client will not use it for hash verification and likely waste bandwidth — but it will still treat it as a unique id.
         hash: &'a str,
+        /// The notchian client will be forced to use the resource pack from the server.
+        /// If they decline they will be kicked from the server.
+        forced: bool,
+        /// This is shown in the prompt making the client accept or decline the resource pack.
+        prompt_message: Option<Chat<'a>>,
     },
 
     /// To change the player's dimension (overworld/nether/end), send them a respawn packet with the appropriate dimension, followed by prechunks/chunks for the new dimension, and finally a position and look packet.
@@ -728,9 +724,9 @@ pub enum ClientboundPacket<'a> {
     /// You do not need to complete the first respawn; it only matters that you send two packets.
     Respawn {
         /// Valid dimensions are defined per dimension registry sent in [ClientboundPacket::JoinGame].
-        dimension: NbtTag,
-        /// Name of the world being spawned into
-        world_name: Identifier<'a>,
+        dimension_ty: Identifier<'a>,
+        /// Name of the dimension being spawned into.
+        dimension_name: Identifier<'a>,
         /// First 8 bytes of the SHA-256 hash of the world's seed.
         /// Used client side for biome noise.
         hashed_seed: u64,
@@ -743,6 +739,8 @@ pub enum ClientboundPacket<'a> {
         /// If false, metadata is reset on the respawned player entity.
         /// Set to true for dimension changes (including the dimension change triggered by sending client status perform respawn to exit the end poem/credits), and false for normal respawns.
         copy_metadata: bool,
+        /// Death location, unsupported parsing yet
+        death_location: Option<RawBytes<'a>>,
     },
 
     /// Changes the direction an entity's head is facing.
@@ -773,6 +771,13 @@ pub enum ClientboundPacket<'a> {
         ///
         /// If no or an invalid identifier is sent, the client will switch to the first tab in the GUI.
         identifier: Option<Identifier<'a>>,
+    },
+
+    ServerData {
+        motd: Option<bool>,
+        /// Base64 encoded icon
+        icon: Option<String>,
+        preview_chats: bool,
     },
 
     /// Displays a message above the hotbar (the same as position 2 in Chat Message (clientbound).
@@ -856,6 +861,11 @@ pub enum ClientboundPacket<'a> {
         location: Position,
         /// The angle at which to respawn at
         angle: f32,
+    },
+
+    /// Sets if chat preview is enabled or disabled on the server. Not used by the server.
+    SetDisplayChatPreview {
+        preview_chats: bool,
     },
 
     /// This is sent to the client when it should display a scoreboard
@@ -949,6 +959,11 @@ pub enum ClientboundPacket<'a> {
         score_action: teams::ScoreboardScoreAction<'a>,
     },
 
+    UpdateSimulationDistance {
+        /// The distance that the client will process specific things, such as entities.
+        simulation_distance: VarInt,
+    },
+
     SetTitleSubTitle {
         subtitle_text: Chat<'a>,
     },
@@ -1014,6 +1029,12 @@ pub enum ClientboundPacket<'a> {
 
     StopSound {
         value: sound::StopSoundPacket<'a>,
+    },
+
+    /// Identifying the difference between Chat/System Message is important as it helps respect the user's chat visibility options. See processing chat for more info about these positions.
+    SystemChatMessage {
+        json_data: Chat<'a>,
+        ty: chat::ChatType,
     },
 
     /// This packet may be used by custom servers to display additional information above/below the player list.
