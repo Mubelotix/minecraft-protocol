@@ -18,9 +18,9 @@ pub enum ConnectionState {
 #[derive(Debug, MinecraftPacketPart)]
 pub struct LoginSignature<'a> {
     /// When the key data will expire.
-    expiration_ts: i64,
+    pub expiration_ts: i64,
     /// The public key the client received from Mojang.
-    public_key: Array<'a, u8, VarInt>,
+    pub public_key: Array<'a, u8, VarInt>,
     /// The public key signature the client received from Mojang.
-    signature: Array<'a, u8, VarInt>,
+    pub signature: Array<'a, u8, VarInt>,
 }
