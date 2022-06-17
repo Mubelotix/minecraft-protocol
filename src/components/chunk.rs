@@ -54,7 +54,7 @@ impl<'a> MinecraftPacketPart<'a> for ChunkData<'a> {
             MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         let (heightmaps, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
         let (biomes, input) =
-                    <Array<'a, VarInt, VarInt>>::deserialize_minecraft_packet_part(input)?;
+            <Array<'a, VarInt, VarInt>>::deserialize_minecraft_packet_part(input)?;
         let (data_len, input) = VarInt::deserialize_minecraft_packet_part(input)?;
         let data_len = std::cmp::max(data_len.0, 0) as usize;
         let (data, input) = input.split_at(data_len);
@@ -112,7 +112,7 @@ impl<'a> ChunkData<'a> {
         ];
         let mut mask = 0b1;
         for y in 0..16 {
-            chunk_sections[y] = if primary_bit_mask & mask != 0 {                
+            chunk_sections[y] = if primary_bit_mask & mask != 0 {
                 let (block_count, new_input) = i16::deserialize_minecraft_packet_part(input)?;
                 let (mut bits_per_block, new_input) =
                     u8::deserialize_minecraft_packet_part(new_input)?;
@@ -214,8 +214,11 @@ impl<'a> ChunkData<'a> {
 fn test() {
     let chunk_data = &include_bytes!("../../test_data/chunk.mc_packet")[1..];
 
-    let mut chunk_data_deserialized = ChunkData::deserialize_uncompressed_minecraft_packet(chunk_data).unwrap();
-    let _blocks = chunk_data_deserialized.deserialize_chunk_sections().unwrap();
-    
+    let mut chunk_data_deserialized =
+        ChunkData::deserialize_uncompressed_minecraft_packet(chunk_data).unwrap();
+    let _blocks = chunk_data_deserialized
+        .deserialize_chunk_sections()
+        .unwrap();
+
     //println!("{:?}", chunk_data_deserialized);
 }

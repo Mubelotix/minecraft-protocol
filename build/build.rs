@@ -72,9 +72,7 @@ fn main() {
         "cargo:rerun-if-changed=target/cache-file-location-{}.json",
         VERSION
     );
-    println!(
-        "cargo:rerun-if-changed=build"
-    );
+    println!("cargo:rerun-if-changed=build");
 
     let mut file_locations = get_data(
         "https://raw.githubusercontent.com/PrismarineJS/minecraft-data/master/data/dataPaths.json",

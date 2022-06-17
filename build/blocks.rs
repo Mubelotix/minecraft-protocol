@@ -524,7 +524,12 @@ pub fn generate_block_with_state_enum(data: serde_json::Value) {
                 }
 
                 match standard {
-                    true => format!("\t\t/// Valid if {} <= {} <= {}\n", values[0], name, values.last().unwrap()),
+                    true => format!(
+                        "\t\t/// Valid if {} <= {} <= {}\n",
+                        values[0],
+                        name,
+                        values.last().unwrap()
+                    ),
                     false => format!("\t\t/// Valid if {} ∈ {:?}\n", name, values),
                 }
             } else {
