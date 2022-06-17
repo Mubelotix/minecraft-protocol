@@ -1,4 +1,5 @@
 use super::*;
+use crate::components::*;
 
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
@@ -14,6 +15,6 @@ pub enum ServerboundPacket<'a> {
         /// Default is 25565.
         /// The Notchian server does not use this information.
         server_port: u16,
-        next_state: ConnectionState,
+        next_state: init::ConnectionState,
     },
 }

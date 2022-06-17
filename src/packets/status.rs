@@ -7,7 +7,7 @@ use crate::*;
 pub enum ClientboundPacket<'a> {
     /// *Response to [ServerboundPacket::Request]*
     Response {
-        /// See [Server List Ping#Response](https://wiki.vg/Server_List_Ping#Response); as with all strings this is prefixed by its length as a VarInt.
+        /// See [Server List Ping](https://wiki.vg/Server_List_Ping#Response); as with all strings this is prefixed by its length as a VarInt.
         json_response: &'a str,
     },
 
@@ -26,7 +26,8 @@ pub enum ServerboundPacket {
 
     /// *Request for [ClientboundPacket::Pong]*
     Ping {
-        /// May be any number. Notchian clients use a system-dependent time value which is counted in milliseconds.
+        /// May be any number.  
+        /// Notchian clients use a system-dependent time value which is counted in milliseconds.
         payload: i64,
     },
 }

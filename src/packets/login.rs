@@ -1,5 +1,6 @@
 //! For general information about login, see [the wiki](https://wiki.vg/Protocol#Login).
 
+use crate::components::*;
 use crate::*;
 
 #[derive(Debug, MinecraftPacketPart)]
@@ -59,6 +60,8 @@ pub enum ServerboundPacket<'a> {
     LoginStart {
         /// Player's Username
         username: &'a str,
+        /// Information given by an authority (like Mojang) to check user authentification.
+        auth: Option<init::LoginSignature<'a>>,
     },
 
     /// See [Protocol Encryption](https://wiki.vg/Protocol_Encryption) for details.
