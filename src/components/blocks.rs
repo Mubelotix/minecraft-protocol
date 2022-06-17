@@ -1,4 +1,17 @@
-use crate::*;
+use crate::{nbt::NbtTag, *};
+
+#[derive(Debug, MinecraftPacketPart)]
+pub struct BlockEntity {
+    /// The packed section coordinates, calculated from `((blockX & 15) << 4) | (blockZ & 15)`.
+    pub packed_xz: u8,
+    /// The height relative to the world.
+    pub y: i64,
+    /// The type of block entity.
+    /// Todo: Should be a convenient enum.
+    pub ty: VarInt,
+    /// The block entity's data, without the X, Y, and Z values.
+    pub data: NbtTag,
+}
 
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]

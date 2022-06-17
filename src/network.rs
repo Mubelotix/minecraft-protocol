@@ -101,7 +101,7 @@ mod tests {
                 protocol_version: 756.into(),
                 server_address: "127.0.0.1",
                 server_port: 25565,
-                next_state: crate::packets::ConnectionState::Login,
+                next_state: crate::components::init::ConnectionState::Login,
             }
             .serialize_minecraft_packet()
             .unwrap(),
@@ -112,9 +112,12 @@ mod tests {
 
         send_packet(
             &mut stream,
-            crate::packets::login::ServerboundPacket::LoginStart { username: "bot2" }
-                .serialize_minecraft_packet()
-                .unwrap(),
+            crate::packets::login::ServerboundPacket::LoginStart {
+                username: "bot2",
+                auth: None,
+            }
+            .serialize_minecraft_packet()
+            .unwrap(),
             None,
             None,
         )
@@ -160,12 +163,12 @@ mod tests {
                     value.deserialize_chunk_sections().unwrap();
                     println!("chunk parsed successfully!")
                 }
-                ClientboundPacket::ChatMessage {
-                    message,
-                    position: _,
+                ClientboundPacket::PlayerChatMessage {
+                    signed_chat,
                     sender,
+                    ..
                 } => {
-                    println!("{}: {}", sender, message);
+                    println!("{}: {}", sender, signed_chat);
                 }
                 _ => (),
             }
