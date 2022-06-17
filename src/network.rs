@@ -19,6 +19,7 @@ impl From<&'static str> for NetworkError {
     }
 }
 
+#[allow(clippy::uninit_vec)]
 pub fn read_packet(
     mut reader: impl Read,
     _compression: Option<u32>,
