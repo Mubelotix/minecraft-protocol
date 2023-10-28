@@ -111,7 +111,7 @@ mod tests {
 
         send_packet(
             &mut stream,
-            crate::packets::login::ServerboundPacket::LoginStart { username: "bot2" }
+            crate::packets::login::ServerboundPacket::LoginStart { username: "bot2", player_uuid: 0 }
                 .serialize_minecraft_packet()
                 .unwrap(),
             None,

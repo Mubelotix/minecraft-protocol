@@ -59,6 +59,8 @@ pub enum ServerboundPacket<'a> {
     LoginStart {
         /// Player's Username
         username: &'a str,
+        /// The UUID of the player logging in. Unused by the Notchian server.
+        player_uuid: UUID,
     },
 
     /// See [Protocol Encryption](https://wiki.vg/Protocol_Encryption) for details.
