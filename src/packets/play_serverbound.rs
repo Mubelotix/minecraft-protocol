@@ -40,15 +40,19 @@ pub enum ServerboundPacket<'a> {
         signatures: RawBytes<'a>,
     },
 
-    /// Used to send a chat message to the server.
+    /// Used to send a chat message to the server. The message may not be longer than 256 characters or else the server will kick the client.
     ///
-    /// If the message starts with a /, the server will attempt to interpret it as a command.
-    /// Otherwise, the server will broadcast the same chat message to all players on the server (including the player that sent the message), prepended with player's name.
+    /// The server will broadcast the same chat message to all players on the server (including the player that sent the message), prepended with player's name. Specifically, it will respond with a translate chat component, "chat.type.text" with the first parameter set to the display name of the player (including some chat component logic to support clicking the name to send a PM) and the second parameter set to the message. See processing chat for more information.
     ///
     /// *See also [ClientboundPacket::ChatMessage]*
     ChatMessage {
         /// The message may not be longer than 256 characters or else the server will kick the client.
         message: Chat<'a>,
+        timestamp: i64,
+        /// The salt used to verify the signature hash.
+        salt: u64,
+        /// Signature (not implemented)
+        signatures: RawBytes<'a>,
     },
 
     /// *Request for [ClientboundPacket::Statistics]*
