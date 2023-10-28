@@ -354,7 +354,7 @@ pub enum ServerboundPacket<'a> {
     },
 
     /// Sent by the client to indicate that it has performed certain actions: sneaking (crouching), sprinting, exiting a bed, jumping with a horse, and opening a horse's inventory while riding it.
-    EntityAction {
+    PlayerAction {
         player_id: VarInt,
         action_id: entity::PlayerAction,
         /// Only used by the [“start jump with horse” action](entity::PlayerAction::StartJumpWithHorse), in which case it ranges from 0 to 100. In all other cases it is 0.
