@@ -351,6 +351,61 @@ pub enum ClientboundPacket<'a> {
         source_postion: Option<Position>,
     },
 
+    /// Removes a message from the client's chat. This only works for messages with signatures, system messages cannot be deleted with this packet.
+    DeleteMessage {
+        /// The message Id + 1, used for validating message signature. The next field is present only when value of this field is equal to 0.
+        msg_id: VarInt,
+        /// The previous message's signature. Always 256 bytes and not length-prefixed.
+        signature: RawBytes<'a>, // TODO: implement it
+    }, 
+
+    /// Sent by the server before it disconnects a client.
+    /// The client assumes that the server has already closed the connection by the time the packet arrives.
+    Disconnect {
+        /// Displayed to the client when the connection terminates
+        reason: Chat<'a>,
+    },
+
+    /// Used to send system chat messages to the client.
+    DisguisedChatMessage {
+        message: Chat<'a>,
+        /// The chat message type.
+        chat_type: VarInt,
+        /// The name associated with the chat type. Usually the message sender's display name.
+        chat_type_name: Chat<'a>,
+        /// The target name associated with the chat type. Usually the message target's display name. Only present if previous boolean is true.
+        target_name: Option<Chat<'a>>,
+    },
+
+    /// Entity statuses generally trigger an animation for an entity.
+    /// The available statuses vary by the entity's type (and are available to subclasses of that type as well).
+    EntityEvent {
+        entity_id: i32,
+        /// See [Entity statuses](https://wiki.vg/Entity_statuses) for a list of which statuses are valid for each type of entity.
+        entity_status: u8,
+    },
+
+    /// Sent when an explosion occurs (creepers, TNT, and ghast fireballs).
+    /// Each block in Records is set to air. Coordinates for each axis in record is int(X) + record.x
+    Explosion {
+        /// The coordinate x of the explosion
+        x: f64,
+        /// The coordinate y of the explosion
+        y: f64,
+        /// The coordinate z of the explosion
+        z: f64,
+        /// A strength greater than or equal to 2.0 spawns a `minecraft:explosion_emitter` particle, while a lesser strength spawns a `minecraft:explosion` particle.
+        strenght: f32,
+        /// Each record is 3 signed bytes long; the 3 bytes are the XYZ (respectively) signed offsets of affected blocks.
+        affected_blocks: Array<'a, (i8, i8, i8), VarInt>,
+        /// X velocity of the player being pushed by the explosion.
+        player_acceleration_x: f32,
+        /// Y velocity of the player being pushed by the explosion.
+        player_acceleration_y: f32,
+        /// Z velocity of the player being pushed by the explosion.
+        player_acceleration_z: f32,
+    },
+
     /// Used to play a sound effect on the client.
     /// Custom sounds may be added by resource packs.
     NamedSoundEffect {
@@ -367,42 +422,6 @@ pub enum ClientboundPacket<'a> {
         volume: f32,
         /// Float between 0.5 and 2.0 by Notchian clients.
         pitch: f32,
-    },
-
-    /// Sent by the server before it disconnects a client.
-    /// The client assumes that the server has already closed the connection by the time the packet arrives.
-    Disconnect {
-        /// Displayed to the client when the connection terminates
-        reason: Chat<'a>,
-    },
-
-    /// Entity statuses generally trigger an animation for an entity.
-    /// The available statuses vary by the entity's type (and are available to subclasses of that type as well).
-    EntityStatus {
-        entity_id: i32,
-        /// See [Entity statuses](https://wiki.vg/Entity_statuses) for a list of which statuses are valid for each type of entity.
-        entity_status: u8,
-    },
-
-    /// Sent when an explosion occurs (creepers, TNT, and ghast fireballs).
-    /// Each block in Records is set to air. Coordinates for each axis in record is int(X) + record.x
-    Explosion {
-        /// The coordinate x of the explosion
-        x: f32,
-        /// The coordinate y of the explosion
-        y: f32,
-        /// The coordinate z of the explosion
-        z: f32,
-        /// A strength greater than or equal to 2.0 spawns a `minecraft:explosion_emitter` particle, while a lesser strength spawns a `minecraft:explosion` particle.
-        strenght: f32,
-        /// Each record is 3 signed bytes long; the 3 bytes are the XYZ (respectively) signed offsets of affected blocks.
-        affected_blocks: Array<'a, (i8, i8, i8), i32>,
-        /// X velocity of the player being pushed by the explosion.
-        player_acceleration_x: f32,
-        /// Y velocity of the player being pushed by the explosion.
-        player_acceleration_y: f32,
-        /// Z velocity of the player being pushed by the explosion.
-        player_acceleration_z: f32,
     },
 
     /// Tells the client to unload a chunk column.
@@ -425,9 +444,17 @@ pub enum ClientboundPacket<'a> {
     /// This packet is used exclusively for opening the horse GUI.
     /// [Self::OpenWindow] is used for all other GUIs.
     OpenHorseWindow {
-        window_id: i8,
+        window_id: u8,
         slot_count: VarInt,
         entity_id: i32,
+    },
+
+    /// Plays a bobbing animation for the entity receiving damage.
+    HurtAnimation {
+        /// The ID of the entity taking damage
+        entity_id: VarInt,
+        /// The direction the damage is coming from in relation to the entity
+        yaw: f32,
     },
 
     /// The Notchian client determines how solid to display the warning by comparing to whichever is higher, the warning distance or whichever is lower, the distance from the current diameter to the target diameter or the place the border will be after warningTime seconds.
