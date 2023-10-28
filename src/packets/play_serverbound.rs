@@ -280,7 +280,7 @@ pub enum ServerboundPacket<'a> {
     /// Sent when a player moves in a vehicle.
     /// Fields are the same as in [ServerboundPacket::PlayerPositionAndRotation].
     /// Note that all fields use absolute positioning and do not allow for relative positioning.
-    VehicleMove {
+    MoveVehicle {
         /// Absolute position
         x: f64,
         /// Absolute position
