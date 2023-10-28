@@ -147,86 +147,6 @@ pub enum ClientboundPacket<'a> {
         reset: bool,
     },
 
-    /// Sent by the server when a living entity is spawned
-    SpawnLivingEntity {
-        id: VarInt,
-        uuid: UUID,
-        entity_type: entities::Entity,
-        x: f64,
-        y: f64,
-        z: f64,
-        yaw: Angle,
-        pitch: Angle,
-        head_pitch: Angle,
-        /// Velocity is believed to be in units of 1/8000 of a block per server tick (50ms); for example, -1343 would move (-1343 / 8000) = −0.167875 blocks per tick (or −3,3575 blocks per second).
-        velocity_x: i16,
-        /// Velocity is believed to be in units of 1/8000 of a block per server tick (50ms); for example, -1343 would move (-1343 / 8000) = −0.167875 blocks per tick (or −3,3575 blocks per second).
-        velocity_y: i16,
-        /// Velocity is believed to be in units of 1/8000 of a block per server tick (50ms); for example, -1343 would move (-1343 / 8000) = −0.167875 blocks per tick (or −3,3575 blocks per second).
-        velocity_z: i16,
-    },
-
-    /// This packet shows location, name, and type of painting.
-    SpawnPainting {
-        id: VarInt,
-        uuid: UUID,
-        motive: paintings::Painting,
-        /// Center coordinates
-        location: Position,
-        /// Direction the painting faces
-        direction: Direction,
-    },
-
-    // todo add doc links
-    /// This packet is sent by the server when a player comes into visible range, not when a player joins.
-    ///
-    /// This packet must be sent after the Player Info packet that adds the player data for the client to use when spawning a player.
-    /// If the Player Info for the player spawned by this packet is not present when this packet arrives, Notchian clients will not spawn the player entity.
-    /// The Player Info packet includes skin/cape data.
-    ///
-    /// Servers can, however, safely spawn player entities for players not in visible range.
-    /// The client appears to handle it correctly.
-    SpawnPlayer {
-        id: VarInt,
-        uuid: UUID,
-        x: f64,
-        y: f64,
-        z: f64,
-        yaw: Angle,
-        pitch: Angle,
-    },
-
-    /// Shows a permanent particle.
-    SculkVibrationSignal {
-        /// Source position for the vibration
-        source_position: Position,
-        /// Identifier of the destination codec type
-        destination_identifier: Identifier<'a>,
-        rest: RawBytes<'a>,
-    },
-
-    AcknowledgePlayerDigging {
-        /// Position where the digging was happening
-        location: Position,
-        /// Block state ID of the block that should be at that position now.
-        block: block_states::BlockWithState,
-        status: crate::components::blocks::PartialDiggingState,
-        /// True if the digging succeeded; false if the client should undo any changes it made locally.
-        successful: bool,
-    },
-
-    /// Identifying the difference between Chat/System Message is important as it helps respect the user's chat visibility options. See [processing chat](https://wiki.vg/Chat#Processing_chat) for more info about these positions.
-    ///
-    /// **Warning**: Game info accepts json formatting but does not display it, although the deprecated §-based formatting works. This is not an issue when using the [Title] packet, so prefer that packet for displaying information in that slot. See MC-119145 for more information.
-    ///
-    /// *See also [ServerboundPacket::ChatMessage]*
-    ChatMessage {
-        message: Chat<'a>,
-        position: chat::Position,
-        /// Used by the Notchian client for the disableChat launch option. Setting 0 will always display the message regardless of the setting.
-        sender: UUID,
-    },
-
     /// The server responds with a list of auto-completions of the last word sent to it.
     /// In the case of regular chat, this is a player username.
     /// Command names and parameters are also supported.
@@ -405,25 +325,7 @@ pub enum ClientboundPacket<'a> {
         player_acceleration_y: f32,
         /// Z velocity of the player being pushed by the explosion.
         player_acceleration_z: f32,
-    },
-
-    /// Used to play a sound effect on the client.
-    /// Custom sounds may be added by resource packs.
-    NamedSoundEffect {
-        /// All sound effect names as of 1.16.5 can be seen [here](https://pokechu22.github.io/Burger/1.16.5.html#sounds).
-        sound_name: Identifier<'a>,
-        sound_category: sound::SoundCategory,
-        /// Effect X multiplied by 8 ([fixed-point number](https://wiki.vg/Data_types#Fixed-point_numbers) with only 3 bits dedicated to the fractional part).
-        effect_position_x: i32,
-        /// Effect Y multiplied by 8 ([fixed-point number](https://wiki.vg/Data_types#Fixed-point_numbers) with only 3 bits dedicated to the fractional part).
-        effect_position_y: i32,
-        /// Effect Z multiplied by 8 ([fixed-point number](https://wiki.vg/Data_types#Fixed-point_numbers) with only 3 bits dedicated to the fractional part).
-        effect_position_z: i32,
-        /// `1.0` is 100%, can be more.
-        volume: f32,
-        /// Float between 0.5 and 2.0 by Notchian clients.
-        pitch: f32,
-    },
+    },    
 
     /// Tells the client to unload a chunk column.
     /// It is legal to send this packet even if the given chunk is not currently loaded.
@@ -717,6 +619,106 @@ pub enum ClientboundPacket<'a> {
         /// A Notchian server will use the same value as the movement speed sent in the Entity Properties packet, which defaults to 0.1 for players.
         field_of_view_modifier: f32,
     },
+
+    /// Sent by the server when a living entity is spawned
+    SpawnLivingEntity {
+        id: VarInt,
+        uuid: UUID,
+        entity_type: entities::Entity,
+        x: f64,
+        y: f64,
+        z: f64,
+        yaw: Angle,
+        pitch: Angle,
+        head_pitch: Angle,
+        /// Velocity is believed to be in units of 1/8000 of a block per server tick (50ms); for example, -1343 would move (-1343 / 8000) = −0.167875 blocks per tick (or −3,3575 blocks per second).
+        velocity_x: i16,
+        /// Velocity is believed to be in units of 1/8000 of a block per server tick (50ms); for example, -1343 would move (-1343 / 8000) = −0.167875 blocks per tick (or −3,3575 blocks per second).
+        velocity_y: i16,
+        /// Velocity is believed to be in units of 1/8000 of a block per server tick (50ms); for example, -1343 would move (-1343 / 8000) = −0.167875 blocks per tick (or −3,3575 blocks per second).
+        velocity_z: i16,
+    },
+
+    /// This packet shows location, name, and type of painting.
+    SpawnPainting {
+        id: VarInt,
+        uuid: UUID,
+        motive: paintings::Painting,
+        /// Center coordinates
+        location: Position,
+        /// Direction the painting faces
+        direction: Direction,
+    },
+
+    // todo add doc links
+    /// This packet is sent by the server when a player comes into visible range, not when a player joins.
+    ///
+    /// This packet must be sent after the Player Info packet that adds the player data for the client to use when spawning a player.
+    /// If the Player Info for the player spawned by this packet is not present when this packet arrives, Notchian clients will not spawn the player entity.
+    /// The Player Info packet includes skin/cape data.
+    ///
+    /// Servers can, however, safely spawn player entities for players not in visible range.
+    /// The client appears to handle it correctly.
+    SpawnPlayer {
+        id: VarInt,
+        uuid: UUID,
+        x: f64,
+        y: f64,
+        z: f64,
+        yaw: Angle,
+        pitch: Angle,
+    },
+
+    /// Shows a permanent particle.
+    SculkVibrationSignal {
+        /// Source position for the vibration
+        source_position: Position,
+        /// Identifier of the destination codec type
+        destination_identifier: Identifier<'a>,
+        rest: RawBytes<'a>,
+    },
+
+    AcknowledgePlayerDigging {
+        /// Position where the digging was happening
+        location: Position,
+        /// Block state ID of the block that should be at that position now.
+        block: block_states::BlockWithState,
+        status: crate::components::blocks::PartialDiggingState,
+        /// True if the digging succeeded; false if the client should undo any changes it made locally.
+        successful: bool,
+    },
+
+    /// Identifying the difference between Chat/System Message is important as it helps respect the user's chat visibility options. See [processing chat](https://wiki.vg/Chat#Processing_chat) for more info about these positions.
+    ///
+    /// **Warning**: Game info accepts json formatting but does not display it, although the deprecated §-based formatting works. This is not an issue when using the [Title] packet, so prefer that packet for displaying information in that slot. See MC-119145 for more information.
+    ///
+    /// *See also [ServerboundPacket::ChatMessage]*
+    ChatMessage {
+        message: Chat<'a>,
+        position: chat::Position,
+        /// Used by the Notchian client for the disableChat launch option. Setting 0 will always display the message regardless of the setting.
+        sender: UUID,
+    },
+
+    /// Used to play a sound effect on the client.
+    /// Custom sounds may be added by resource packs.
+    NamedSoundEffect {
+        /// All sound effect names as of 1.16.5 can be seen [here](https://pokechu22.github.io/Burger/1.16.5.html#sounds).
+        sound_name: Identifier<'a>,
+        sound_category: sound::SoundCategory,
+        /// Effect X multiplied by 8 ([fixed-point number](https://wiki.vg/Data_types#Fixed-point_numbers) with only 3 bits dedicated to the fractional part).
+        effect_position_x: i32,
+        /// Effect Y multiplied by 8 ([fixed-point number](https://wiki.vg/Data_types#Fixed-point_numbers) with only 3 bits dedicated to the fractional part).
+        effect_position_y: i32,
+        /// Effect Z multiplied by 8 ([fixed-point number](https://wiki.vg/Data_types#Fixed-point_numbers) with only 3 bits dedicated to the fractional part).
+        effect_position_z: i32,
+        /// `1.0` is 100%, can be more.
+        volume: f32,
+        /// Float between 0.5 and 2.0 by Notchian clients.
+        pitch: f32,
+    },
+    
+    
 
     /// Unused by the Notchain client.
     /// This data was once used for twitch.tv metadata circa 1.8.
