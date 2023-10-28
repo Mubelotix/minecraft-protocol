@@ -20,7 +20,13 @@ fn proxy_serverbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
         } else if let Ok(packet) = HandshakeServerbound::deserialize_uncompressed_minecraft_packet(&packet) {
             println!("\u{001b}[35mclient\u{001b}[0m: {packet:?}");
         } else {
-            println!("\u{001b}[35mclient\u{001b}[0m: \u{001b}[31m{packet:?}\u{001b}[0m");
+            let fpacket = if packet.len() > 200 {
+                format!("{:?}...", &packet[..200])
+            } else {
+                format!("{:?}", packet)
+            };
+            let err = PlayServerbound::deserialize_uncompressed_minecraft_packet(&packet).unwrap_err();
+            println!("\u{001b}[35mclient\u{001b}[0m: \u{001b}[31m{fpacket:?}\nwith {err}\u{001b}[0m");
         }
 
         send_packet(&server_stream, packet, None, None)?;
@@ -35,7 +41,13 @@ fn proxy_clientbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
         } else if let Ok(packet) = LoginClientbound::deserialize_uncompressed_minecraft_packet(&packet) {
             println!("\u{001b}[33mserver\u{001b}[0m: {packet:?}\u{001b}[0m");
         } else {
-            println!("\u{001b}[33mserver\u{001b}[0m: \u{001b}[31m{packet:?}\u{001b}[0m");
+            let fpacket = if packet.len() > 200 {
+                format!("{:?}...", &packet[..200])
+            } else {
+                format!("{:?}", packet)
+            };
+            let err = PlayClientbound::deserialize_uncompressed_minecraft_packet(&packet).unwrap_err();
+            println!("\u{001b}[33mserver\u{001b}[0m: \u{001b}[31m{fpacket:?}\nwith {err}\u{001b}[0m");
         }
 
         send_packet(&client_stream, packet, None, None)?;
