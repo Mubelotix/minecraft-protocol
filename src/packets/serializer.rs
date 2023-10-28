@@ -854,3 +854,13 @@ impl<'a, T: MinecraftPacketPart<'a>> MinecraftPacketPart<'a> for Option<T> {
         }
     }
 }
+
+
+#[test]
+fn print_varint() {
+    let value = 0x25;
+    let varint = VarInt::from(value);
+    let mut data = Vec::new();
+    varint.serialize_minecraft_packet_part(&mut data).unwrap();
+    println!("{:?}", data);
+}
