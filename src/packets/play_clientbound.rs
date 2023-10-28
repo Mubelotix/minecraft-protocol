@@ -685,18 +685,24 @@ pub enum ClientboundPacket<'a> {
     /// *Request for [ServerboundPacket::UpdateSign]*
     OpenSignEditor {
         location: Position,
+        /// Whether the opened editor is for the front or on the back of the sign
+        is_front_text: bool,
     },
 
-    /// Unknown what this packet does just yet, not used by the Notchian server or client.
-    /// Most likely added as a replacement to the removed window confirmation packet.
-    UselessPacket {
+    /// Packet is not used by the Notchian server. When sent to the client, client responds with a [Pong](https://wiki.vg/Protocol#Pong_.28play.29) packet with the same id.
+    Ping {
         id: i32,
+    },
+
+    PingResponse {
+        /// Should be the same as sent by the client.
+        payload: i64, 
     },
 
     // Todo make add doc links
     /// Response to the serverbound packet (Craft Recipe Request), with the same recipe ID.
     /// Appears to be used to notify the UI.
-    CraftRecipeResponse {
+    PlaceGhostRecipe {
         window_id: i8,
         /// A recipe ID
         recipe: Identifier<'a>,
