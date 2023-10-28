@@ -274,18 +274,18 @@ fn item_id_to_item(id: u32, items: &[super::items::Item]) -> String {
 }
 
 pub fn generate_recipes(data: serde_json::Value, items: Vec<super::items::Item>) {
-    let item_recipes: HashMap<u32, Vec<Recipe>> =
+    let mut item_recipes: HashMap<u32, Vec<Recipe>> =
         serde_json::from_value(data).expect("Invalid recipes");
 
     // Count recipes
     let mut recipes_count = 0;
-    for recipes in item_recipes.values() {
-        recipes_count += recipes.len();
-        for recipe in recipes {
-            if matches!(recipe, Recipe::DoubleShaped{..}) {
-                panic!("Contains a double shaped recipe, which support has been removed as an optimization. It needs to be enabled again if required by future minecraft updates.")
-            }
+    for recipes in item_recipes.values_mut() {
+        let recipes_len = recipes.len();
+        recipes.retain(|recipe| !matches!(recipe, Recipe::DoubleShaped{..}));
+        if recipes.len() != recipes_len {
+            println!("Contains a double shaped recipe, which support has been removed as an optimization. It needs to be enabled again if required by future minecraft updates.");
         }
+        recipes_count += recipes.len();
     }
 
     // Generate recipes
