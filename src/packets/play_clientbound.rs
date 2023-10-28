@@ -9,6 +9,8 @@ use crate::nbt::NbtTag;
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum ClientboundPacket<'a> {
+    /// The delimiter for a bundle of packets. When received, the client should store every subsequent packet it receives, and wait until another delimiter is received. Once that happens, the client is guaranteed to process every packet in the bundle on the same tick.
+    BundleDelimiter,
     /// Sent by the server when a vehicle or other **non-living entity** is created
     SpawnEntity {
         id: VarInt,
@@ -19,8 +21,10 @@ pub enum ClientboundPacket<'a> {
         z: f64,
         pitch: Angle,
         yaw: Angle,
+        // Only used by living entities, where the head of the entity may differ from the general body rotation.
+        head_yaw: Angle,
         /// Meaning dependent on the value of the `type` field, see [Object Data](https://wiki.vg/Object_Data) for details.
-        data: i32,
+        data: VarInt,
         /// Velocity is believed to be in units of 1/8000 of a block per server tick (50ms); for example, -1343 would move (-1343 / 8000) = −0.167875 blocks per tick (or −3,3575 blocks per second).
         velocity_x: i16,
         /// Velocity is believed to be in units of 1/8000 of a block per server tick (50ms); for example, -1343 would move (-1343 / 8000) = −0.167875 blocks per tick (or −3,3575 blocks per second).
@@ -37,6 +41,104 @@ pub enum ClientboundPacket<'a> {
         z: f64,
         /// The amount of experience this orb will reward once collected.
         count: i16,
+    },
+
+    /// Sent whenever an entity should change animation
+    EntityAnimation {
+        id: VarInt,
+        animation: animations::Animation,
+    },
+
+    /// Will only send the changed values if previously requested.
+    ///
+    /// *Response to [ServerboundPacket::ClientStatus]*
+    AwardStatistics {
+        statistic: Array<'a, advancements::Statistic, VarInt>,
+    },
+
+    /// Acknowledges a user-initiated block change. After receiving this packet, the client will display 
+    /// the block state sent by the server instead of the one predicted by the client.
+    AcknowledgeBlockChange {
+        /// Represents the sequence to acknowledge, this is used for properly syncing block changes to the client after interactions.
+        id: VarInt, 
+    },
+
+    /// 0–9 are the displayable destroy stages and each other number means that there is no animation on this coordinate.
+    ///
+    /// Block break animations can still be applied on air; the animation will remain visible although there is no block being broken. However, if this is applied to a transparent block, odd graphical effects may happen, including water losing its transparency. (An effect similar to this can be seen in normal gameplay when breaking ice blocks)
+    ///
+    /// If you need to display several break animations at the same time you have to give each of them a unique Entity ID. The entity ID does not need to correspond to an actual entity on the client. It is valid to use a randomly generated number.
+    SetBlockDestroyStage {
+        /// Entity ID of the entity breaking the block
+        id: VarInt,
+        /// Block Position
+        location: Position,
+        /// 0–9 to set it, any other value to remove it
+        destroy_stage: u8,
+    },
+
+    /// Sets the block entity associated with the block at the given location.
+    BlockEntityData {
+        location: Position,
+        /// The type of the block entity
+        block_entity: VarInt,
+        /// Data to set. May be [nbt::NbtTag::Null], in which case the block entity at the given location is removed (though this is not required since the client will remove the block entity automatically on chunk unload or block removal).
+        data: NbtTag,
+    },
+
+    /// This packet is used for a number of actions and animations performed by blocks, usually non-persistent.
+    ///
+    /// See [Block Actions](https://wiki.vg/Block_Actions) for a list of values.
+    BlockAction {
+        /// Block coordinates
+        location: Position,
+        /// Varies depending on block — see [Block Actions](https://wiki.vg/Block_Actions)
+        action_id: u8,
+        /// Varies depending on block — see [Block Actions](https://wiki.vg/Block_Actions)
+        action_param: u8,
+        /// The block ID. This must match the block at the given coordinates
+        block: blocks::Block,
+    },
+
+    /// Fired whenever a block is changed within the render distance.
+    ///
+    /// **Warning**: Changing a block in a chunk that is not loaded is not a stable action. The Notchian client currently uses a shared empty chunk which is modified for all block changes in unloaded chunks; while in 1.9 this chunk never renders in older versions the changed block will appear in all copies of the empty chunk. Servers should avoid sending block changes in unloaded chunks and clients should ignore such packets.
+    BlockUpdate {
+        /// Block Coordinates
+        location: Position,
+        /// The new block state ID for the block
+        block_state: block_states::BlockWithState,
+    },
+
+    BossBar {
+        /// Unique ID for this bar.
+        uuid: UUID,
+        /// The action to apply on the boss bar.
+        action: boss_bar::BossBarAction<'a>,
+    },
+
+    /// Changes the difficulty setting in the client's option menu
+    ChangeDifficulty {
+        difficulty: difficulty::Difficulty,
+        difficulty_locked: bool,
+    },
+
+    /// Marks the end of a chunk batch. The Notchian client marks the time it receives this packet and calculates the ellapsed
+    /// duration since the [beggining of the chunk batch](https://wiki.vg/Protocol#Chunk_Batch_Start). The server uses this duration and the batch size received in this packet
+    /// to estimate the number of milliseconds ellapsed per chunk received. This value is then used to calculate the desired
+    /// number of chunks per tick through the formula `25 / millisPerChunk`, which is reported to the server through
+    /// [Chunk Batch Received](https://wiki.vg/Protocol#Chunk_Batch_Received)
+    /// The Notchian client uses the samples from the latest 15 batches to estimate the milliseconds per chunk number.
+    ChunkBatchFinished {
+        /// Number of chunks
+        batch_size: VarInt,
+    },
+
+    /// Marks the start of a chunk batch. The Notchian client marks and stores the time it receives this packet.
+    ChunkBatchStart,
+    
+    ChunkBiomes {
+        chunk_biome_data: Array<'a, i32, VarInt>,
     },
 
     /// Sent by the server when a living entity is spawned
@@ -97,19 +199,6 @@ pub enum ClientboundPacket<'a> {
         rest: RawBytes<'a>,
     },
 
-    /// Sent whenever an entity should change animation
-    EntityAnimation {
-        id: VarInt,
-        animation: animations::Animation,
-    },
-
-    /// Will only send the changed values if previously requested.
-    ///
-    /// *Response to [ServerboundPacket::ClientStatus]*
-    Statistics {
-        statistics: Array<'a, advancements::Statistic, VarInt>,
-    },
-
     AcknowledgePlayerDigging {
         /// Position where the digging was happening
         location: Position,
@@ -118,67 +207,6 @@ pub enum ClientboundPacket<'a> {
         status: crate::components::blocks::PartialDiggingState,
         /// True if the digging succeeded; false if the client should undo any changes it made locally.
         successful: bool,
-    },
-
-    /// 0–9 are the displayable destroy stages and each other number means that there is no animation on this coordinate.
-    ///
-    /// Block break animations can still be applied on air; the animation will remain visible although there is no block being broken. However, if this is applied to a transparent block, odd graphical effects may happen, including water losing its transparency. (An effect similar to this can be seen in normal gameplay when breaking ice blocks)
-    ///
-    /// If you need to display several break animations at the same time you have to give each of them a unique Entity ID. The entity ID does not need to correspond to an actual entity on the client. It is valid to use a randomly generated number.
-    BlockBreakAnimation {
-        /// Entity ID of the entity breaking the block
-        id: VarInt,
-        /// Block Position
-        location: Position,
-        /// 0–9 to set it, any other value to remove it
-        destroy_stage: u8,
-    },
-
-    /// Sets the block entity associated with the block at the given location.
-    BlockEntityData {
-        location: Position,
-        /// The type of update to perform, see [crate::components::blocks::BlockEntityDataAction].
-        action: crate::components::blocks::BlockEntityDataAction,
-        /// Data to set. May be [nbt::NbtTag::Null], in which case the block entity at the given location is removed (though this is not required since the client will remove the block entity automatically on chunk unload or block removal).
-        data: NbtTag,
-    },
-
-    /// This packet is used for a number of actions and animations performed by blocks, usually non-persistent.
-    ///
-    /// See [Block Actions](https://wiki.vg/Block_Actions) for a list of values.
-    BlockAction {
-        /// Block coordinates
-        location: Position,
-        /// Varies depending on block — see [Block Actions](https://wiki.vg/Block_Actions)
-        action_id: u8,
-        /// Varies depending on block — see [Block Actions](https://wiki.vg/Block_Actions)
-        action_param: u8,
-        /// The block ID. This must match the block at the given coordinates
-        block: blocks::Block,
-    },
-
-    /// Fired whenever a block is changed within the render distance.
-    /// Changes include plant growth, cake bites, redstone repeater delay changes, block facing changes (bed, chest, hopper...) and many other values depending on the type of the block.
-    ///
-    /// **Warning**: Changing a block in a chunk that is not loaded is not a stable action. The Notchian client currently uses a shared empty chunk which is modified for all block changes in unloaded chunks; while in 1.9 this chunk never renders in older versions the changed block will appear in all copies of the empty chunk. Servers should avoid sending block changes in unloaded chunks and clients should ignore such packets.
-    BlockChange {
-        /// Block Coordinates
-        location: Position,
-        /// The new block state ID for the block
-        block_state: block_states::BlockWithState,
-    },
-
-    BossBar {
-        /// Unique ID for this bar.
-        uuid: UUID,
-        /// The action to apply on the boss bar.
-        action: boss_bar::BossBarAction<'a>,
-    },
-
-    /// Changes the difficulty setting in the client's option menu
-    ServerDifficulty {
-        difficulty: difficulty::Difficulty,
-        difficulty_locked: bool,
     },
 
     /// Identifying the difference between Chat/System Message is important as it helps respect the user's chat visibility options. See [processing chat](https://wiki.vg/Chat#Processing_chat) for more info about these positions.
