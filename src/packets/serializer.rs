@@ -349,7 +349,7 @@ mod integers {
                 result |= value << (7 * num_read);
 
                 num_read += 1;
-                if num_read > 5 {
+                if num_read > 4 { // TODO check this out
                     return Err("VarInt is too big");
                 }
 
