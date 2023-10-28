@@ -12,8 +12,8 @@ pub struct Trade {
     pub input_item1: Slot,
     /// The item the player will receive from this villager trade
     pub output_item: Slot,
-    /// The second item the player has to supply for this villager trade
-    pub input_item2: Option<Slot>,
+    /// The second item the player has to supply for this villager trade. May be an empty slot.
+    pub input_item2: Slot,
     /// True if the trade is disabled; false if the trade is enabled
     pub disabled: bool,
     /// Number of times the trade has been used so far.
