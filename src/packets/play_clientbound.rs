@@ -621,7 +621,7 @@ pub enum ClientboundPacket<'a> {
 
     /// This packet is sent by the server when an entity rotates and moves.
     /// Since a `i16` range is limited from -32768 to 32767, and movement is offset of fixed-point numbers, this packet allows at most 8 blocks movement in any direction. `(-32768 / (32 * 128) == -8)`
-    EntityPositionAndRotation {
+    UpdateEntityPositionAndRotation {
         entity_id: VarInt,
         /// Change in X position as `(currentX * 32 - prevX * 32) * 128`
         delta_x: i16,
