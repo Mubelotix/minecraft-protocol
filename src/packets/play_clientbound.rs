@@ -458,6 +458,7 @@ pub enum ClientboundPacket<'a> {
     },
 
     /// The Notchian client determines how solid to display the warning by comparing to whichever is higher, the warning distance or whichever is lower, the distance from the current diameter to the target diameter or the place the border will be after warningTime seconds.
+    /// Look at the [pseudo code](https://wiki.vg/Protocol#Initialize_World_Border)
     IntitializeWorldBorder {
         x: f64,
         y: f64,
@@ -489,6 +490,9 @@ pub enum ClientboundPacket<'a> {
         keep_alive_id: u64,
     },
 
+    /// This packet sends all block entities in the chunk (though sending them is not required; it is still legal to send them with
+    /// [Block Entity Data](https://wiki.vg/Protocol#Block_Entity_Data) later). The light data in this packet is the same format as in the [Update Light](https://wiki.vg/Protocol#Update_Light) packet.
+    // TODO: parse this
     ChunkData {
         value: chunk::ChunkData<'a>,
     },
