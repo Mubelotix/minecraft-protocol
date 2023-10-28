@@ -97,8 +97,12 @@ pub enum ServerboundPacket<'a> {
         allow_server_listings: bool,
     },
 
+    /// Sent when the client needs to tab-complete a minecraft:ask_server suggestion type.
+    /// 
     /// *Request for [ClientboundPacket::TabComplete]*
-    TabComplete {
+    CommandSuggestionsRequest {
+        /// The id of the transaction that the server will send back to the client in the response of this packet.
+        /// Client generates this and increments it each time it sends another tab completion that doesn't get a response.
         transaction_id: VarInt,
         /// All text behind the cursor without the `/` (e.g. to the left of the cursor in left-to-right languages like English).
         text: &'a str,
