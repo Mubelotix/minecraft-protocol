@@ -235,8 +235,8 @@ pub enum ServerboundPacket<'a> {
         on_ground: bool,
     },
 
-    /// A combination of [ServerboundPacket::PlayerRotation] and [ServerboundPacket::PlayerPosition]
-    PlayerPositionAndRotation {
+    /// A combination of [ServerboundPacket::SetPlayerRotation] and [ServerboundPacket::SetPlayerPosition]
+    SetPlayerPositionAndRotation {
         x: f64,
         /// The feet position (`feet_y = head_y - 1.62`)
         y: f64,
@@ -252,7 +252,7 @@ pub enum ServerboundPacket<'a> {
     },
 
     /// Updates the direction the player is looking in
-    PlayerRotation {
+    SetPlayerRotation {
         /// Absolute rotation on the X Axis, in degrees.
         /// [Learn more about yaw and pitch](https://wiki.vg/Protocol#Player_Rotation)
         yaw: f32,
