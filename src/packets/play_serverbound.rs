@@ -175,10 +175,13 @@ pub enum ServerboundPacket<'a> {
         title: Option<String>,
     },
 
+    /// Used when F3+I is pressed while looking at an entity.
+    /// 
     /// *Request for [ClientboundPacket::NbtQueryResponse]*
     QueryEntityNbt {
         /// An incremental ID so that the client can verify that the response matches
         transaction_id: VarInt,
+        /// The ID of the entity to query.
         entity_id: VarInt,
     },
 
