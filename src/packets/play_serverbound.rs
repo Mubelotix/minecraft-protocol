@@ -108,6 +108,11 @@ pub enum ServerboundPacket<'a> {
         text: &'a str,
     },
 
+    /// This packet switches the connection state to configuration.
+    /// 
+    /// *Response to [ClientboundPacket::StartConfiguration]*
+    AcknowledgeConfiguration,
+
     /// Used when clicking on window buttons
     ClickWindowButton {
         /// The ID of the window sent by [ClientboundPacket::OpenWindow].
