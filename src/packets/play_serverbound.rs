@@ -25,6 +25,10 @@ pub enum ServerboundPacket<'a> {
         new_difficulty: difficulty::Difficulty,
     },
 
+    MessageAcknowledgment {
+        message_id: VarInt,
+    },
+
     /// Used to send a chat message to the server.
     ///
     /// If the message starts with a /, the server will attempt to interpret it as a command.
