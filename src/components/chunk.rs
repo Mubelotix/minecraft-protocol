@@ -1,77 +1,50 @@
-use crate::{nbt::NbtTag, *};
+use crate::{nbt::NbtTag, *, components::blocks::BlockEntity};
 
 /// A complex data structure including block data and optionally entities of a chunk.
 ///
 /// Note that the Notchian client requires an [ClientboundPacket::UpdateViewPosition](crate::packets::play_clientbound::ClientboundPacket::UpdateViewPosition) packet when it crosses a chunk border, otherwise it'll only display `render distance + 2` chunks around the chunk it spawned in.
-#[derive(Debug)]
+#[derive(MinecraftPacketPart, Debug)]
 pub struct ChunkData<'a> {
     /// Chunk coordinate (block coordinate divided by 16, rounded down).
     pub chunk_x: i32,
     /// Chunk coordinate (block coordinate divided by 16, rounded down).
     pub chunk_z: i32,
-    /// BitSet with bits (world height in blocks / 16) set to 1 for every 16×16×16 chunk section whose data is included in Data.
-    /// The least significant bit represents the chunk section at the bottom of the chunk column (from the lowest y to 15 blocks above).
-    pub primary_bit_mask: Array<'a, u64, VarInt>,
     /// Compound containing one long array named `MOTION_BLOCKING`, which is a heightmap for the highest solid block at each position in the chunk (as a compacted long array with 256 entries at 9 bits per entry totaling 36 longs).
     /// The Notchian server also adds a `WORLD_SURFACE` long array, the purpose of which is unknown, but it's not required for the chunk to be accepted.
     pub heightmaps: NbtTag,
-    /// 1024 biome IDs, ordered by x then z then y, in 4×4×4 blocks.
-    /// Biomes cannot be changed unless a chunk is re-sent.
-    /// The structure is an array of 1024 integers, each representing a [Biome ID](http://minecraft.gamepedia.com/Biome/ID) (it is recommended that "Void" is used if there is no set biome - its default id is 127). The array is ordered by x then z then y, in 4×4×4 blocks. The array is indexed by `((y >> 2) & 63) << 4 | ((z >> 2) & 3) << 2 | ((x >> 2) & 3)`.
-    pub biomes: Array<'a, VarInt, VarInt>,
     /// The data section of the packet contains most of the useful data for the chunk.
     /// The number of elements in the array is equal to the number of bits set in [ChunkData::primary_bit_mask].
     /// Sections are sent bottom-to-top, i.e. the first section, if sent, extends from Y=0 to Y=15.
     ///
     /// **Use [ChunkData::deserialize_chunk_sections] to get ready to use [ChunkSection]s.**
-    pub data: &'a [u8],
-    /// All block entities in the chunk.
-    /// Use the x, y, and z tags in the NBT to determine their positions.
-    /// Sending entities is not required; it is still legal to send them with [ClientboundPacket::UpdateBlockEntity] later.
-    pub entities: Array<'a, NbtTag, VarInt>,
-}
-
-impl<'a> MinecraftPacketPart<'a> for ChunkData<'a> {
-    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
-        self.chunk_x.serialize_minecraft_packet_part(output)?;
-        self.chunk_z.serialize_minecraft_packet_part(output)?;
-        self.primary_bit_mask
-            .serialize_minecraft_packet_part(output)?;
-        self.heightmaps.serialize_minecraft_packet_part(output)?;
-        self.biomes.serialize_minecraft_packet_part(output)?;
-        VarInt(self.data.len() as i32).serialize_minecraft_packet_part(output)?;
-        output.extend_from_slice(self.data);
-        self.entities.serialize_minecraft_packet_part(output)?;
-        Ok(())
-    }
-
-    fn deserialize_minecraft_packet_part(
-        input: &'a [u8],
-    ) -> Result<(Self, &'a [u8]), &'static str> {
-        let (chunk_x, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
-        let (chunk_z, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
-        let (primary_bit_mask, input) =
-            MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
-        let (heightmaps, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
-        let (biomes, input) =
-                    <Array<'a, VarInt, VarInt>>::deserialize_minecraft_packet_part(input)?;
-        let (data_len, input) = VarInt::deserialize_minecraft_packet_part(input)?;
-        let data_len = std::cmp::max(data_len.0, 0) as usize;
-        let (data, input) = input.split_at(data_len);
-        let (entities, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
-        Ok((
-            ChunkData {
-                chunk_x,
-                chunk_z,
-                primary_bit_mask,
-                heightmaps,
-                biomes,
-                data,
-                entities,
-            },
-            input,
-        ))
-    }
+    pub data: Array<'a, u8, VarInt>,
+    pub block_entities: Array<'a, BlockEntity, VarInt>,
+    /// BitSet containing bits for each section in the world + 2.
+    /// Each set bit indicates that the corresponding 16×16×16 chunk section has data in the Sky Light array below.
+    /// The least significant bit is for blocks 16 blocks to 1 block below the min world height (one section below the world), while the most significant bit covers blocks 1 to 16 blocks above the max world height (one section above the world).
+    pub sky_light_mask: Array<'a, u64, VarInt>,
+    /// BitSet containing bits for each section in the world + 2.
+    /// Each set bit indicates that the corresponding 16×16×16 chunk section has data in the Block Light array below.
+    /// The order of bits is the same as in Sky Light Mask.
+    pub block_light_mask: Array<'a, u64, VarInt>,
+    /// BitSet containing bits for each section in the world + 2.
+    /// Each set bit indicates that the corresponding 16×16×16 chunk section has data in the Block Light array below.
+    /// The order of bits is the same as in Sky Light Mask.
+    pub empty_sky_light_mask: Array<'a, u64, VarInt>,
+    /// BitSet containing bits for each section in the world + 2.
+    /// Each set bit indicates that the corresponding 16×16×16 chunk section has data in the Block Light array below.
+    /// The order of bits is the same as in Sky Light Mask.
+    pub empty_block_light_mask: Array<'a, u64, VarInt>,
+    /// Length should match the number of bits set in Sky Light Mask.
+    /// Each entry is an array of 2048 bytes.
+    /// There is 1 array for each bit set to true in the sky light mask, starting with the lowest value. Half a byte per light value. Indexed ((y<<8) | (z<<4) | x) / 2
+    /// If there's a remainder, masked 0xF0 else 0x0F.
+    pub sky_light: Array<'a, Array<'a, u8, VarInt>, VarInt>,
+    /// Length should match the number of bits set in Block Light Mask.
+    /// Each entry is an array of 2048 bytes.
+    /// There is 1 array for each bit set to true in the block light mask, starting with the lowest value. Half a byte per light value. Indexed ((y<<8) | (z<<4) | x) / 2
+    /// If there's a remainder, masked 0xF0 else 0x0F.
+    pub block_light: Array<'a, Array<'a, u8, VarInt>, VarInt>,
 }
 
 /// A [chunk section](ChunkSection) is a 16×16×16 collection of blocks (chunk sections are cubic).
@@ -97,13 +70,13 @@ impl<'a> ChunkData<'a> {
     pub fn deserialize_chunk_sections(
         &mut self,
     ) -> Result<[Option<ChunkSection>; 16], &'static str> {
-        let mut input = self.data;
-        if self.primary_bit_mask.items.len() != 1 {
-            return Err("ChunkData::deserialize_chunk_sections: primary_bit_mask.items.len() != 1");
+        /*let mut input = self.data;
+        if self.sky_light_mask.items.len() != 1 {
+            return Err("ChunkData::deserialize_chunk_sections: sky_light_mask.items.len() != 1");
         }
-        let primary_bit_mask: u64 = unsafe {
+        let sky_light_mask: u64 = unsafe {
             // We don't care the type since we only want to check the bits
-            *self.primary_bit_mask.items.get_unchecked(0)
+            *self.sky_light_mask.items.get_unchecked(0)
         };
 
         let mut chunk_sections: [Option<ChunkSection>; 16] = [
@@ -112,7 +85,7 @@ impl<'a> ChunkData<'a> {
         ];
         let mut mask = 0b1;
         for y in 0..16 {
-            chunk_sections[y] = if primary_bit_mask & mask != 0 {                
+            chunk_sections[y] = if sky_light_mask & mask != 0 {                
                 let (block_count, new_input) = i16::deserialize_minecraft_packet_part(input)?;
                 let (mut bits_per_block, new_input) =
                     u8::deserialize_minecraft_packet_part(new_input)?;
@@ -205,7 +178,8 @@ impl<'a> ChunkData<'a> {
             mask <<= 1;
         }
 
-        Ok(chunk_sections)
+        Ok(chunk_sections)*/
+        todo!()
     }
 }
 
