@@ -204,6 +204,8 @@ pub enum ServerboundPacket<'a> {
         keep_jigsaws: bool,
     },
 
+    /// The server will frequently send out a keep-alive (see Clientbound Keep Alive), each containing a random ID. The client must respond with the same packet.
+    /// 
     /// *Response to [ClientboundPacket::KeepAlive]*
     KeepAlive {
         /// The id sent in the [ClientboundPacket::KeepAlive] packet
