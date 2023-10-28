@@ -223,8 +223,10 @@ pub enum ServerboundPacket<'a> {
     /// - *Total movement distance* squared is computed as `Δx² + Δy² + Δz²`
     /// - The *expected movement distance* squared is computed as `velocityX² + veloctyY² + velocityZ²`
     /// - If the *total movement distance* squared value minus the *expected movement distance* squared value is more than 100 (300 if the player is using an elytra), they are moving too fast.
+    /// 
     /// If the player is moving too fast, it will be logged that "<player> moved too quickly! " followed by the change in x, y, and z, and the player will be [teleported](ClientboundPacket::TeleportEntity) back to their current (before this packet) serverside position.
-    PlayerPosition {
+    /// Also, if the absolute value of X or the absolute value of Z is a value greater than 3.2×107, or X, Y, or Z are not finite (either positive infinity, negative infinity, or NaN), the client will be kicked for “Invalid move player packet received”.
+    SetPlayerPosition {
         x: f64,
         /// The feet position (`feet_y = head_y - 1.62`)
         y: f64,
