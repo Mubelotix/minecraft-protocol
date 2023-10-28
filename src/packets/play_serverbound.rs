@@ -297,7 +297,9 @@ pub enum ServerboundPacket<'a> {
 
     /// Used to visually update whether boat paddles are turning.
     /// The server will update the [Boat entity metadata](https://wiki.vg/Entities#Boat) to match the values here.
-    SteerBoat {
+    /// 
+    /// Right paddle turning is set to true when the left button or forward button is held, left paddle turning is set to true when the right button or forward button is held.
+    PaddleBoat {
         /// Left paddle turning is set to true when the right button or forward button is held.
         left_paddle_turnin: bool,
         /// Right paddle turning is set to true when the left button or forward button is held.
