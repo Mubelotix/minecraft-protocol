@@ -647,7 +647,7 @@ pub enum ClientboundPacket<'a> {
     },
 
     /// Note that all fields use absolute positioning and do not allow for relative positioning.
-    VehicleMove {
+    MoveVehicule {
         /// Absolute position (X coordinate)
         x: f64,
         /// Absolute position (Y coordinate)
