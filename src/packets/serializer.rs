@@ -110,7 +110,7 @@ mod integers {
             }
             Ok(unsafe {
                 (
-                    i16::from_be(*(input.as_ptr() as *mut i16)),
+                    i16::from_be_bytes(*(input.as_ptr() as *mut [u8; 2])),
                     input.get_unchecked(2..),
                 )
             })
@@ -131,7 +131,7 @@ mod integers {
             }
             Ok(unsafe {
                 (
-                    u16::from_be(*(input.as_ptr() as *mut u16)),
+                    u16::from_be_bytes(*(input.as_ptr() as *mut [u8; 2])),
                     input.get_unchecked(2..),
                 )
             })
@@ -154,7 +154,7 @@ mod integers {
             }
             Ok(unsafe {
                 (
-                    i32::from_be(*(input.as_ptr() as *mut i32)),
+                    i32::from_be_bytes(*(input.as_ptr() as *mut [u8; 4])),
                     input.get_unchecked(4..),
                 )
             })
@@ -181,7 +181,7 @@ mod integers {
             }
             Ok(unsafe {
                 (
-                    i64::from_be(*(input.as_ptr() as *mut i64)),
+                    i64::from_be_bytes(*(input.as_ptr() as *mut [u8; 8])),
                     input.get_unchecked(8..),
                 )
             })
@@ -208,7 +208,7 @@ mod integers {
             }
             Ok(unsafe {
                 (
-                    u64::from_be(*(input.as_ptr() as *mut u64)),
+                    u64::from_be_bytes(*(input.as_ptr() as *mut [u8; 8])),
                     input.get_unchecked(8..),
                 )
             })
@@ -243,7 +243,7 @@ mod integers {
             }
             Ok(unsafe {
                 (
-                    u128::from_be(*(input.as_ptr() as *mut u128)),
+                    u128::from_be_bytes(*(input.as_ptr() as *mut [u8; 16])),
                     input.get_unchecked(16..),
                 )
             })
