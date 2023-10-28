@@ -1,6 +1,7 @@
 pub mod advancements;
 pub mod animations;
 pub mod auto_completion;
+pub mod biomes;
 pub mod blocks;
 pub mod boss_bar;
 pub mod chat;
