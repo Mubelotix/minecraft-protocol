@@ -67,6 +67,14 @@ pub enum ServerboundPacket<'a> {
         key_signature: Array<'a, u8, VarInt>,
     },
 
+    /// Notifies the server that the chunk batch has been received by the client. The server uses the value sent in this packet to adjust the number of chunks to be sent in a batch.
+    ///
+    /// The Notchian server will stop sending further chunk data until the client acknowledges the sent chunk batch. After the first acknowledgement, the server adjusts this number to allow up to 10 unacknowledged batches.
+    ChunkBatchReceived {
+        /// Desired chunks per tick.
+        chunks_per_tick: f32,
+    },
+
     /// *Request for [ClientboundPacket::Statistics]*
     ClientStatus { action: game_state::ClientStatus },
 
