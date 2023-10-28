@@ -161,6 +161,29 @@ mod integers {
         }
     }
 
+    impl<'a> MinecraftPacketPart<'a> for u32 {
+        fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+            let bytes = self.to_le_bytes();
+            output.push(bytes[3]);
+            output.push(bytes[2]);
+            output.push(bytes[1]);
+            output.push(bytes[0]);
+            Ok(())
+        }
+
+        fn deserialize_minecraft_packet_part(input: &[u8]) -> Result<(Self, &[u8]), &'static str> {
+            if input.len() < 4 {
+                return Err("Missing byte while parsing u32.");
+            }
+            Ok(unsafe {
+                (
+                    u32::from_be_bytes(*(input.as_ptr() as *mut [u8; 4])),
+                    input.get_unchecked(4..),
+                )
+            })
+        }
+    }
+
     impl<'a> MinecraftPacketPart<'a> for i64 {
         fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
             let bytes = self.to_le_bytes();

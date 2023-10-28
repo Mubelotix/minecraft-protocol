@@ -361,15 +361,6 @@ pub enum ServerboundPacket<'a> {
         jump_boost: bool,
     },
 
-    PlayerInput {
-        /// Positive to the left of the player.
-        sideways: f32,
-        /// Positive forward.
-        forward: f32,
-        /// Bit mask. 0x1: jump, 0x2: unmount.
-        flags: u8,
-    },
-
     SteerVehicle {
         /// Movement to the left, can be negative to move to the right.
         to_the_left: f32,
@@ -379,10 +370,10 @@ pub enum ServerboundPacket<'a> {
         flags: u8,
     },
 
-    /// A response to the ping packet sync to the main thread.
-    /// Unknown what this is used for, this is ignored by the Notchian client and server.
-    /// Most likely added as a replacement to the removed window confirmation packet.
-    UselessPacket { id: i32 },
+    /// *Response to [ClientboundPacket::Ping]*
+    Pong {
+        id: u32
+    },
 
     /// Replaces Recipe Book Data, type 1.
     SetRecipeBookState {
