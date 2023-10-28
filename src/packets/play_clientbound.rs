@@ -2,6 +2,7 @@
 use super::play_serverbound::ServerboundPacket;
 use super::*;
 use crate::components::*;
+use crate::components::players::DeathLocation;
 use crate::ids::blocks;
 use crate::ids::*;
 use crate::nbt::NbtTag;
@@ -546,34 +547,39 @@ pub enum ClientboundPacket<'a> {
         /// The player's Entity ID (EID)
         player_id: i32,
         is_hardcore: bool,
-        gamemode: gamemode::Gamemode,
-        previous_gamemode: gamemode::PreviousGamemode,
-        /// Identifiers for all worlds on the server
-        worlds_names: Array<'a, Identifier<'a>, VarInt>,
-        /// The full extent of these is still unknown, but the tag represents a dimension and biome registry.
-        /// See [the wiki](https://wiki.vg/Protocol#Join_Game) for the vanilla default.
-        dimension_coded: NbtTag,
-        /// Valid dimensions are defined per dimension registry sent before this.
-        /// The structure of this tag is a dimension type (see [the wiki](https://wiki.vg/Protocol#Join_Game)).
-        dimension: NbtTag,
-        /// Name of the world being spawned into
-        world_name: Identifier<'a>,
-        /// First 8 bytes of the SHA-256 hash of the world's seed.
-        /// Used client side for biome noise.
-        hashed_seed: u64,
+        /// Identifiers for all dimensions on the server.
+        dimensions_names: Array<'a, Identifier<'a>, VarInt>,
         /// Was once used by the client to draw the player list, but now is ignored.
         max_players: VarInt,
         /// Render distance (2..=32).
         render_distance: VarInt,
+        /// The distance that the client will process specific things, such as entities.
+        simulation_distance: VarInt,
         /// If `true`, a Notchian client shows reduced information on the debug screen.
         /// For servers in development, this should almost always be `false`.
         reduced_debug_info: bool,
         /// Set to false when the `doImmediateRespawn` gamerule is `true`.
         enable_respawn_screen: bool,
+        /// Whether players can only craft recipes they have already unlocked. Currently unused by the client.
+        do_limited_crafting: bool,
+        /// Name of the dimension type being spawned into.
+        dimension_type: Identifier<'a>,
+        /// Name of the dimension being spawned into.
+        dimension_name: Identifier<'a>,
+        /// First 8 bytes of the SHA-256 hash of the world's seed. 
+        /// Used client side for biome noise
+        hashed_seed: u64,
+        gamemode: gamemode::Gamemode,
+        /// The previous game mode. Vanilla client uses this for the debug (F3 + N & F3 + F4) game mode switch. (More information needed)
+        previous_gamemode: gamemode::PreviousGamemode,
         /// `true` if the world is a [debug mode world](http://minecraft.gamepedia.com/Debug_mode); debug mode worlds cannot be modified and have predefined blocks.
         is_debug: bool,
         /// `true` if the world is a [superflat world](http://minecraft.gamepedia.com/Superflat); flat worlds have different void fog and a horizon at y=0 instead of y=63.
         is_flat: bool,
+        /// The location that the player died at.
+        death_location: Option<DeathLocation<'a>>,
+        /// The number of ticks until the player can use the portal again.
+        portal_cooldown: VarInt,
     },
 
     /// Updates a rectangular area on a map **item**
