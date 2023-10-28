@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::io::{ErrorKind, Read, Write};
 use std::{collections::HashMap, fs::File};
 
-const VERSION: &str = "1.17.1";
+const VERSION: &str = "1.20.1";
 
 fn get_data(url: &str, cache: &str) -> serde_json::Value {
     match File::open(cache) {
