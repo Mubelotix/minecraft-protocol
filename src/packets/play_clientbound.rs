@@ -138,7 +138,12 @@ pub enum ClientboundPacket<'a> {
     ChunkBatchStart,
     
     ChunkBiomes {
-        chunk_biome_data: Array<'a, i32, VarInt>,
+        chunk_biome_data: Array<'a, biomes::ChunkBiomeData<'a>, VarInt>,
+    },
+    
+    /// Clears the client's current title information, with the option to also reset it.
+    ClearTitles {
+        reset: bool,
     },
 
     /// Sent by the server when a living entity is spawned
@@ -221,18 +226,13 @@ pub enum ClientboundPacket<'a> {
         sender: UUID,
     },
 
-    /// Clears the client's current title information, with the option to also reset it.
-    ClearTitles {
-        reset: bool,
-    },
-
     /// The server responds with a list of auto-completions of the last word sent to it.
     /// In the case of regular chat, this is a player username.
     /// Command names and parameters are also supported.
     /// The client sorts these alphabetically before listing them.
     ///
     /// *Response to [ClientboundPacket::TabComplete]*
-    TabComplete {
+    CommandSuggestionsResponse {
         transaction_id: VarInt,
         /// Start of the text to replace
         start: VarInt,
@@ -247,21 +247,22 @@ pub enum ClientboundPacket<'a> {
     DeclareCommands {
         count: VarInt,
         /// An array of [Node](https://wiki.vg/Command_Data) followed by the index of the `root` node in the array.
-        /// Parsing is unimplemented yet.
+        /// TODO: Parsing is unimplemented yet.
         data: RawBytes<'a>,
     },
 
     /// This packet is sent from the server to the client when a window is forcibly closed, such as when a chest is destroyed while it's open.
-    CloseWindow {
+    CloseContainer {
         /// This is the ID of the window that was closed. 0 for inventory.
-        window_id: i8,
+        window_id: u8,
     },
 
     /// Sent by the server when items in multiple slots (in a window) are added/removed.
     /// This includes the main inventory, equipped armour and crafting slots.
-    WindowItems {
+    /// This packet with Window ID set to "0" is sent during the player joining sequence to initialise the player's inventory.
+    SetContainerContent {
         /// The ID of window which items are being sent for. 0 for player inventory.
-        window_id: i8,
+        window_id: u8,
         /// A state id required for future [ServerboundPacket::ClickWindowSlot]
         state_id: VarInt,
         /// The [slots::Slot]s in this window.
@@ -272,8 +273,8 @@ pub enum ClientboundPacket<'a> {
     },
 
     /// This packet is used to inform the client that part of a GUI window should be updated.
-    WindowProperty {
-        window_id: i8,
+    SetContainerProperty {
+        window_id: u8,
         /// The property to be updated.
         /// The meaning of this field depends on the type of the window.
         /// The [the wiki](https://wiki.vg/Protocol#Window_Property) shows the known combinations of window type and property, and how the value is to be interpreted.
@@ -288,8 +289,8 @@ pub enum ClientboundPacket<'a> {
     ///
     /// To set the cursor (the item currently dragged with the mouse), use -1 as `window_id` and as `slot_index`.
     ///
-    /// This packet can only be used to edit the hotbar of the player's inventory if window ID is set to 0 (slots 36 through 44). If the window ID is set to -2, then any slot in the inventory can be used but no add item animation will be played.
-    SetSlot {
+    /// This packet can only be used to edit the hotbar and offhand of the player's inventory if window ID is set to 0 (slots 36 through 45) if the player is in creative, with their inventory open, and not in their survival inventory tab. Otherwise, when window ID is 0, it can edit any slot in the player's inventory. If the window ID is set to -2, then any slot in the inventory can be used but no add item animation will be played.
+    SetContainerSlot {
         /// The window which is being updated. 0 for player inventory.
         /// Note that all known window types include the player inventory.
         /// This packet will only be sent for the currently opened window while the player is performing actions, even if it affects the player inventory.
@@ -313,6 +314,13 @@ pub enum ClientboundPacket<'a> {
         cooldown_ticks: VarInt,
     },
 
+    /// Unused by the Notchian server. Likely provided for custom servers to send chat message completions to clients.
+    ChatSuggestions {
+        action: chat::ChatAction,
+        /// Number of elements in the following array.
+        entries: Array<'a, &'a str, VarInt>,
+    },
+
     /// Mods and plugins can use this to send their data.
     /// Minecraft itself uses several [plugin channels](https://wiki.vg/Plugin_channel).
     /// These internal channels are in the `minecraft` namespace.
@@ -326,6 +334,21 @@ pub enum ClientboundPacket<'a> {
         /// Any data, depending on the channel.
         /// `minecraft:` channels are documented [here](https://wiki.vg/Plugin_channel).
         data: RawBytes<'a>,
+    },
+
+    DamageEvent {
+        /// The ID of the entity taking damage
+        entity_id: VarInt,
+        /// The ID of the type of damage taken
+        source_type_id: VarInt,
+        /// The ID + 1 of the entity responsible for the damage, if present. If not present, the value is 0
+        source_cause_id: VarInt,
+        /// The ID + 1 of the entity that directly dealt the damage, if present. If not present, the value is 0. If this field is present:
+        ///  - and damage was dealt indirectly, such as by the use of a projectile, this field will contain the ID of such projectile;
+        ///  - and damage was dealt dirctly, such as by manually attacking, this field will contain the same value as Source Cause ID.
+        source_direct_id: VarInt,
+        /// The Notchian server sends the Source Position when the damage was dealt by the /damage command and a position was specified
+        source_postion: Option<Position>,
     },
 
     /// Used to play a sound effect on the client.
