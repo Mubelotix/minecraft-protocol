@@ -4,7 +4,7 @@ use crate::*;
 #[derive(Debug)]
 pub enum Animation {
     SwingMainArm = 0,
-    TakeDamage,
+    TakeDamage, /// Not in the wiki maybe disapeared?
     LeaveBed,
     SwingOffhand,
     CriticalEffect,
