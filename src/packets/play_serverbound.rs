@@ -361,6 +361,15 @@ pub enum ServerboundPacket<'a> {
         jump_boost: bool,
     },
 
+    PlayerInput {
+        /// Positive to the left of the player.
+        sideways: f32,
+        /// Positive forward.
+        forward: f32,
+        /// Bit mask. 0x1: jump, 0x2: unmount.
+        flags: u8,
+    },
+
     SteerVehicle {
         /// Movement to the left, can be negative to move to the right.
         to_the_left: f32,
