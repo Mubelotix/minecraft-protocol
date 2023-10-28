@@ -132,15 +132,15 @@ pub enum ServerboundPacket<'a> {
         /// The clicked slot number, see [the wiki](https://wiki.vg/Protocol#Click_Window)
         slot: i16,
         /// The button used in the click, see [the wiki](https://wiki.vg/Protocol#Click_Window)
-        button: u8,
+        button: i8,
         /// Inventory operation mode, see [the wiki](https://wiki.vg/Protocol#Click_Window)
         mode: VarInt,
         /// New values for affected slots
         new_slot_values: Map<'a, i16, slots::Slot, VarInt>,
-        /// The clicked slot
-        /// Has to be empty (item ID = -1) for drop mode. (TODO: check this)
+        /// Item carried by the cursor
+        /// Has to be empty (item ID = -1) for drop mode, otherwise nothing will happen.
         /// Is always empty for mode 2 and mode 5 packets.
-        clicked_item: slots::Slot,
+        carried_item: slots::Slot,
     },
 
     /// This packet is sent by the client when closing a window.
