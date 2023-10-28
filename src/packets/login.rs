@@ -80,4 +80,6 @@ pub enum ServerboundPacket<'a> {
         /// `Some(data)` if the client understands the [request](ClientboundPacket::LoginPluginRequest), `None` otherwise
         data: Option<RawBytes<'a>>,
     },
+
+    LoginAcknowledged,
 }
