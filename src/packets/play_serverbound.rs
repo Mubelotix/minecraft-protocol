@@ -29,6 +29,17 @@ pub enum ServerboundPacket<'a> {
         message_id: VarInt,
     },
 
+    ChatCommand {
+        /// The command typed by the client.
+        command: &'a str,
+        /// The timestamp that the command was executed.
+        timestamp: i64,
+        /// The salt for the following argument signatures.
+        salt: u64,
+        /// Argument Signatures (not implemented)
+        signatures: RawBytes<'a>,
+    },
+
     /// Used to send a chat message to the server.
     ///
     /// If the message starts with a /, the server will attempt to interpret it as a command.
