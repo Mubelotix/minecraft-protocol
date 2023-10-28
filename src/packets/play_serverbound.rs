@@ -25,7 +25,7 @@ pub enum ServerboundPacket<'a> {
         new_difficulty: difficulty::Difficulty,
     },
 
-    MessageAcknowledgment {
+    AcknowledgeMessage {
         message_id: VarInt,
     },
 
