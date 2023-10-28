@@ -90,9 +90,11 @@ pub enum ServerboundPacket<'a> {
         /// Bit mask, see [the wiki](https://wiki.vg/Protocol#Client_Settings)
         displayed_skin_parts: u8,
         main_hand: slots::MainHand,
-        /// Disables filtering of text on signs and written book titles.
-        /// Currently always true (i.e. the filtering is disabled)
-        disable_text_filtering: bool,
+        /// Enables filtering of text on signs and written book titles.
+        /// Currently always false (i.e. the filtering is disabled)
+        enable_text_filtering: bool,
+        /// Servers usually list online players, this option should let you not show up in that list.
+        allow_server_listings: bool,
     },
 
     /// *Request for [ClientboundPacket::TabComplete]*
