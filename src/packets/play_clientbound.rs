@@ -637,7 +637,7 @@ pub enum ClientboundPacket<'a> {
     },
 
     /// This packet is sent by the server when an entity rotates.
-    EntityRotation {
+    UpdateEntityRotation {
         entity_id: VarInt,
         /// New angle, not a delta
         yaw: Angle,
