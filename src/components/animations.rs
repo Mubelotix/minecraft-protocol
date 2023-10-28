@@ -71,13 +71,16 @@ pub enum Effect {
 
     /// Spawns 10 smoke particles, e.g. from a fire.
     SmokeParticules = 2000,
+    /// Block state, as an index into the global palette.
     BlockBreack,
     /// Particle effect + glass break sound.
+    /// RGB color as an integer (e.g. 8364543 for #7FA1FF).
     SplashPotion,
     /// particles and sound
     EyeOfEnderBreak,
     /// particle effect: smoke + flames
     MobSpawn,
+    /// How many particles to spawn (if set to 0, 15 are spawned).
     BonemealParticules,
     DragonBreath,
     /// Particle effect + glass break sound.
@@ -87,4 +90,7 @@ pub enum Effect {
 
     EndGatewaySpawn = 3000,
     EnderdragonGrowl,
+    ElectricSpark,
+    CopperRemoveWax,
+    CopperScrapeOxidation,
 }

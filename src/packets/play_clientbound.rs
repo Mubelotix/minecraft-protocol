@@ -498,7 +498,7 @@ pub enum ClientboundPacket<'a> {
     },
 
     /// Sent when a client is to play a sound or particle effect.
-    Effect {
+    WorldEvent {
         effect_id: animations::Effect,
         /// The location of the effect
         location: Position,
@@ -513,7 +513,7 @@ pub enum ClientboundPacket<'a> {
     /// Displays the named particle
     Particle {
         /// The particle ID listed in the [particle data type](https://wiki.vg/Protocol#Particle)
-        particle_id: i32,
+        particle_id: VarInt,
         /// If true, particle distance increases from 256 to 65536.
         long_distance: bool,
         /// X position of the particle
@@ -528,8 +528,7 @@ pub enum ClientboundPacket<'a> {
         offset_y: f32,
         /// This is added to the Z position after being multiplied by `random.nextGaussian()`.
         offset_z: f32,
-        /// The data of each particle
-        particule_data: f32,
+        max_speed: f32,
         /// The number of particles to create
         particule_count: i32,
         /// The variable data listed in the [particle data type](https://wiki.vg/Protocol#Particle)
