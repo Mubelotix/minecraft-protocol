@@ -55,6 +55,18 @@ pub enum ServerboundPacket<'a> {
         signatures: RawBytes<'a>,
     },
 
+    PlayerSession {
+        session_id: UUID,
+        /// The time the play session key expires in epoch milliseconds.
+        expires_at: i64,
+        /// A byte array of an X.509-encoded public key.
+        /// Maximum length in Notchian server is 512 bytes.
+        public_key: Array<'a, u8, VarInt>,
+        /// The signature consists of the player UUID, the key expiration timestamp, and the public key data. These values are hashed using SHA-1 and signed using Mojang's private RSA key.
+        /// Maximum length in Notchian server is 4096 bytes.
+        key_signature: Array<'a, u8, VarInt>,
+    },
+
     /// *Request for [ClientboundPacket::Statistics]*
     ClientStatus { action: game_state::ClientStatus },
 
