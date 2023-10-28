@@ -608,7 +608,7 @@ pub enum ClientboundPacket<'a> {
 
     /// This packet is sent by the server when an entity moves less then 8 blocks; if an entity moves more than 8 blocks [ClientboundPacket::TeleportEntity] should be sent instead.
     /// This packet allows at most 8 blocks movement in any direction, because `i16` range is from -32768 to 32767. And 32768 / (128 * 32) = 8.
-    EntityPosition {
+    UpdateEntityPosition {
         entity_id: VarInt,
         /// Change in X position as `(currentX * 32 - prevX * 32) * 128`
         delta_x: i16,
