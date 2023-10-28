@@ -368,11 +368,16 @@ mod integers {
                     input.split_first().ok_or("Not enough bytes for varint!")?;
                 let read = *read;
                 input = new_input;
-                let value: u32 = (read & 0b01111111) as u32;
-                result |= value << (7 * num_read);
+                let mut value: u32 = (read & 0b01111111) as u32;
+                if num_read == 5 {
+                    value = value & 0b1111;
+                    result |= value << (4 * num_read);
+                } else {
+                    result |= value << (7 * num_read);
+                }
 
                 num_read += 1;
-                if num_read > 4 { // TODO check this out
+                if num_read > 5 {
                     return Err("VarInt is too big");
                 }
 
