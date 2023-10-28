@@ -166,11 +166,13 @@ pub enum ServerboundPacket<'a> {
     },
 
     EditBook {
-        /// See [the wiki](https://wiki.vg/Protocol#Edit_Book) for information about the NBT data structure of this slot.
-        new_book: slots::Slot,
-        /// `true` if the player is signing the book; `false` if the player is saving a draft.
-        is_signing: bool,
-        hand: slots::Hand,
+        /// The hotbar slot where the written book is located
+        slot: VarInt,
+        /// Text from each page (max 200).
+        /// Maximum string length is 8192 chars.
+        entries: Array<'a, &'a str, VarInt>,
+        /// Some if book is being signed, None if book is being edited.
+        title: Option<String>,
     },
 
     /// *Request for [ClientboundPacket::NbtQueryResponse]*
