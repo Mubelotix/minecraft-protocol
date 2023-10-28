@@ -350,6 +350,7 @@ pub enum ServerboundPacket<'a> {
         location: Position,
         /// The face being hit
         face: crate::components::blocks::BlockFace,
+        sequence: VarInt,
     },
 
     /// Sent by the client to indicate that it has performed certain actions: sneaking (crouching), sprinting, exiting a bed, jumping with a horse, and opening a horse's inventory while riding it.
