@@ -24,12 +24,10 @@ fn get_data(url: &str, cache: &str) -> serde_json::Value {
                 Err(e) => panic!("The minecraft-format library uses a build script to generate data structures from extracted data. The extracted data is downloaded and cached to `{}`. Unfortunately, this file appears to contain invalid text data. Error: {}\nNote: Deleting the file will allow the library to download it again.", cache, e),
             };
 
-            let json = match serde_json::from_str(&json_text) {
+            match serde_json::from_str(&json_text) {
                 Ok(json) => json,
                 Err(e) => panic!("The minecraft-format library uses a build script to generate data structures from extracted data. The extracted data is downloaded and cached to `{}`. Unfortunately, this file appears to contain invalid json data. Error: {}\nNote: Deleting the file will allow the library to download it again.", cache, e),
-            };
-
-            json
+            }
         }
         // The cache file needs to be downloaded
         Err(e) if e.kind() == ErrorKind::NotFound => {
@@ -52,12 +50,10 @@ fn get_data(url: &str, cache: &str) -> serde_json::Value {
                 panic!("The minecraft-format library uses a build script to generate data structures from extracted data. The extracted data is downloaded and cached to `{}`. Unfortunately, we can't write to this path. Error: {}", cache, e)
             };
 
-            let json = match serde_json::from_str(json_text) {
+            match serde_json::from_str(json_text) {
                 Ok(json) => json,
                 Err(e) => panic!("The minecraft-format library uses a build script to generate data structures from extracted data. The extracted data is downloaded and cached to `{}`. Unfortunately, this file appears to contain invalid json data. Error: {}\nNote: Deleting the file will allow the library to download it again.", cache, e),
-            };
-
-            json
+            }
         }
 
         // The cache file cannot be accessed
