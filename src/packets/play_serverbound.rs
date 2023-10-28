@@ -6,9 +6,9 @@ use crate::components::*;
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum ServerboundPacket<'a> {
-    /// *Response to [ClientboundPacket::PlayerPositionAndLook]*
-    TeleportConfirm {
-        /// The ID given in [ClientboundPacket::PlayerPositionAndLook::teleport_id]
+    /// *Response to [ClientboundPacket::SynchronizePlayerPosition]*
+    ConfirmTeleportation {
+        /// The ID given in [ClientboundPacket::SynchronizePlayerPosition::teleport_id]
         teleport_id: VarInt,
     },
 
