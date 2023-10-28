@@ -21,7 +21,7 @@ pub enum ServerboundPacket<'a> {
     },
 
     /// Appears to only be used on singleplayer; the difficulty buttons are still disabled in multiplayer.
-    SetDifficulty {
+    ChangeDifficulty {
         new_difficulty: difficulty::Difficulty,
     },
 
