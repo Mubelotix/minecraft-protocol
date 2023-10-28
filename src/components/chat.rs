@@ -20,3 +20,11 @@ pub enum ChatMode {
     CommandsOnly,
     Hidden,
 }
+
+#[minecraft_enum(VarInt)]
+#[derive(Debug)]
+pub enum ChatAction {
+    Add,
+    Remove,
+    Set
+}

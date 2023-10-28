@@ -58,7 +58,7 @@ pub type UUID = u128;
 pub type Angle = u8;
 /// Json encoded data, stored in a String.
 /// See [the wiki](https://wiki.vg/Chat).
-pub type Chat<'a> = &'a str;
+pub type Chat<'a> = &'a str; /// TODO: Check is 
 /// Identifiers are a namespaced location, in the form of `minecraft:thing`.
 /// If the namespace is not provided, it defaults to `minecraft` (i.e. thing is `minecraft:thing`).
 /// Custom content should always be in its own namespace, not the default one.
