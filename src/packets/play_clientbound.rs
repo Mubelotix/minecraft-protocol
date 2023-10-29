@@ -691,7 +691,7 @@ pub enum ClientboundPacket<'a> {
         target: Option<players::FaceTarget>,
     },
 
-        /// Updates the player's position on the server.
+    /// Updates the player's position on the server.
     /// This packet will also close the “Downloading Terrain” screen when joining/respawning.
     ///
     /// If the distance between the last known position of the player on the server and the new position set by this packet is greater than 100 meters, the client will be kicked for `You moved too quickly`.
@@ -718,6 +718,10 @@ pub enum ClientboundPacket<'a> {
         teleport_id: VarInt,
         /// True if the player should dismount their vehicle
         dismount_vehicle: bool,
+    },
+
+    UnlockRecipes {
+        action: crate::components::recipes::UnlockRecipesAction<'a>,
     },
 
     /// Sent by the server when a living entity is spawned
@@ -804,10 +808,6 @@ pub enum ClientboundPacket<'a> {
         volume: f32,
         /// Float between 0.5 and 2.0 by Notchian clients.
         pitch: f32,
-    },
-
-    UnlockRecipes {
-        action: crate::components::recipes::UnlockRecipesAction<'a>,
     },
 
     /// Sent by the server when a list of entities is to be destroyed on the client
