@@ -560,11 +560,13 @@ pub enum ServerboundPacket<'a> {
         /// This value is only true when the player is directly in the box.
         /// In practice, though, this value is only used by scaffolding to place in front of the player when sneaking inside of it (other blocks will place behind when you intersect with them -- try with glass for instance).
         inside_block: bool,
+        sequence: VarInt,
     },
 
     /// Sent when pressing the Use Item key (default: right click) with an item in hand.
     UseItem {
         /// Hand used for the animation
         hand: slots::Hand,
+        sequence: VarInt,
     },
 }
