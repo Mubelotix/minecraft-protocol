@@ -797,6 +797,20 @@ pub enum ClientboundPacket<'a> {
         value: crate::components::blocks::MultiBlockChange<'a>,
     },
 
+    /// Sent by the server to indicate that the client should switch advancement tab.
+    /// Sent either when the client switches tab in the GUI or when an advancement in another tab is made.
+    SelectAdvancementTab {
+        /// The Identifier can be one of the following:
+        /// - "minecraft:story/root"
+        /// - "minecraft:nether/root"
+        /// - "minecraft:end/root"
+        /// - "minecraft:adventure/root"
+        /// - "minecraft:husbandry/root"
+        ///
+        /// If no or an invalid identifier is sent, the client will switch to the first tab in the GUI.
+        identifier: Option<Identifier<'a>>,
+    },
+
     /// Sent by the server when a living entity is spawned
     SpawnLivingEntity {
         id: VarInt,
@@ -881,20 +895,6 @@ pub enum ClientboundPacket<'a> {
         volume: f32,
         /// Float between 0.5 and 2.0 by Notchian clients.
         pitch: f32,
-    },
-
-    /// Sent by the server to indicate that the client should switch advancement tab.
-    /// Sent either when the client switches tab in the GUI or when an advancement in another tab is made.
-    SelectAdvancementTab {
-        /// The Identifier can be one of the following:
-        /// - "minecraft:story/root"
-        /// - "minecraft:nether/root"
-        /// - "minecraft:end/root"
-        /// - "minecraft:adventure/root"
-        /// - "minecraft:husbandry/root"
-        ///
-        /// If no or an invalid identifier is sent, the client will switch to the first tab in the GUI.
-        identifier: Option<Identifier<'a>>,
     },
 
     /// Displays a message above the hotbar (the same as position 2 in Chat Message (clientbound).
