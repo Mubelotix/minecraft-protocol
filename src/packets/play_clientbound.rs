@@ -829,6 +829,11 @@ pub enum ClientboundPacket<'a> {
         action_bar_text: Chat<'a>,
     },
 
+    SetBorderCenter {
+        x: f64,
+        y: f64,
+    },
+
     /// Sent by the server when a living entity is spawned
     SpawnLivingEntity {
         id: VarInt,
@@ -913,11 +918,6 @@ pub enum ClientboundPacket<'a> {
         volume: f32,
         /// Float between 0.5 and 2.0 by Notchian clients.
         pitch: f32,
-    },
-
-    WorldBorderCenter {
-        x: f64,
-        y: f64,
     },
 
     WorldBorderLerpSize {
