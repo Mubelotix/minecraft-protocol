@@ -399,7 +399,7 @@ pub enum ServerboundPacket<'a> {
         status: resource_pack::ResourcePackStatus,
     },
 
-    AdvancementTab {
+    SetSeenAdvancements {
         value: advancements::AdvancementTabPacket<'a>,
     },
 
