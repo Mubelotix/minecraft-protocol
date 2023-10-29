@@ -746,6 +746,41 @@ pub enum ClientboundPacket<'a> {
         prompt_message: Option<Chat<'a>>,
     },
 
+    /// To change the player's dimension (overworld/nether/end), send them a respawn packet with the appropriate dimension, followed by prechunks/chunks for the new dimension, and finally a position and look packet.
+    /// You do not need to unload chunks, the client will do it automatically.
+    ///
+    /// **Warning**: Avoid changing player's dimension to same dimension they were already in unless they are dead.
+    /// If you change the dimension to one they are already in, weird bugs can occur, such as the player being unable to attack other players in new world (until they die and respawn).
+    /// If you must respawn a player in the same dimension without killing them, send two respawn packets, one to a different world and then another to the world you want.
+    /// You do not need to complete the first respawn; it only matters that you send two packets.
+    Respawn {
+        /// Valid dimensions are defined per dimension registry sent in [ClientboundPacket::JoinGame].
+        dimension_type: Identifier<'a>,
+        /// Name of the world being spawned into
+        dimension_name: Identifier<'a>,
+        /// First 8 bytes of the SHA-256 hash of the world's seed.
+        /// Used client side for biome noise.
+        hashed_seed: u64,
+        gamemode: gamemode::Gamemode,
+        previous_gamemode: gamemode::PreviousGamemode,
+        /// `true` if the world is a [debug mode world](http://minecraft.gamepedia.com/Debug_mode); debug mode worlds cannot be modified and have predefined blocks.
+        is_debug: bool,
+        /// `true` if the world is a [superflat world](http://minecraft.gamepedia.com/Superflat); flat worlds have different void fog and a horizon at y=0 instead of y=63.
+        is_flat: bool,
+        /// If false, metadata is reset on the respawned player entity.
+        /// Set to true for dimension changes (including the dimension change triggered by sending client status perform respawn to exit the end poem/credits), and false for normal respawns.
+        copy_metadata: bool,
+        death_location: players::DeathLocation<'a>,
+        /// The number of ticks until the player can use the portal again.
+        portal_cooldown: VarInt,
+        /// Bit mask. 0x01: Keep attributes, 0x02: Keep metadata. Tells which data should be kept on the client side once the player has respawned.
+        /// In the Notchian implementation, this is context dependent:
+        ///  - normal respawns (after death) keep no data;
+        ///  - exiting the end poem/credits keeps the attributes;
+        ///  - other dimension changes (portals or teleports) keep all data.
+        data_kept: i8,
+    },
+
     /// Sent by the server when a living entity is spawned
     SpawnLivingEntity {
         id: VarInt,
