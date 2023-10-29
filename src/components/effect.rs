@@ -1,7 +1,7 @@
 use crate::*;
 
 /// [Read about effects](https://minecraft.fandom.com/wiki/Effect)
-#[minecraft_enum(u8)]
+#[minecraft_enum(VarInt)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Effect {
     Speed = 1,

@@ -726,12 +726,12 @@ pub enum ClientboundPacket<'a> {
 
     /// Sent by the server when a list of entities is to be destroyed on the client
     RemoveEntities {
-        entity_ids: Array<'a, VarInt, effect::Effect>,
+        entity_ids: Array<'a, effect::Effect, VarInt>,
     },
 
     RemoveEntityEffect {
         entity_id: VarInt,
-        effect: VarInt,
+        effect: effect::Effect,
     },
 
     /// Sent by the server when a living entity is spawned
