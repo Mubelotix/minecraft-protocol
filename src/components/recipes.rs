@@ -48,7 +48,7 @@ pub enum UnlockRecipesAction<'a> {
 #[discriminant(VarInt)]
 pub enum RecipeBook {
     Crafting,
-    Furnance,
+    Furnace,
     BlastFurnace,
     Smoker,
 }

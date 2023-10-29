@@ -376,7 +376,7 @@ pub enum ServerboundPacket<'a> {
     },
 
     /// Replaces Recipe Book Data, type 1.
-    SetRecipeBookState {
+    ChangeRecipeBookSettings {
         book: recipes::RecipeBook,
         is_open: bool,
         is_filter_active: bool,
