@@ -834,6 +834,17 @@ pub enum ClientboundPacket<'a> {
         y: f64,
     },
 
+    SetBorderLerpSize {
+        /// Current length of a single side of the world border, in meters
+        old_diameter: f64,
+        /// Target length of a single side of the world border, in meters
+        new_diameter: f64,
+        /// Number of real-time milliseconds until New Diameter is reached.
+        /// It appears that Notchian server does not sync world border speed to game ticks, so it gets out of sync with server lag.
+        /// If the world border is not moving, this is set to 0.
+        speed: VarLong,
+    },
+
     /// Sent by the server when a living entity is spawned
     SpawnLivingEntity {
         id: VarInt,
@@ -918,17 +929,6 @@ pub enum ClientboundPacket<'a> {
         volume: f32,
         /// Float between 0.5 and 2.0 by Notchian clients.
         pitch: f32,
-    },
-
-    WorldBorderLerpSize {
-        /// Current length of a single side of the world border, in meters
-        old_diameter: f64,
-        /// Target length of a single side of the world border, in meters
-        new_diameter: f64,
-        /// Number of real-time milliseconds until New Diameter is reached.
-        /// It appears that Notchian server does not sync world border speed to game ticks, so it gets out of sync with server lag.
-        /// If the world border is not moving, this is set to 0.
-        speed: VarLong,
     },
 
     WorldBorderSize {
