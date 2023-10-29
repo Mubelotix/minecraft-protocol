@@ -461,7 +461,7 @@ pub enum ServerboundPacket<'a> {
     },
 
     /// Sent when Done is pressed on the [Jigsaw Block](http://minecraft.gamepedia.com/Jigsaw_Block) interface.
-    UpdateJigsawBlock {
+    ProgramJigsawBlock {
         /// Block entity location
         location: Position,
         name: Identifier<'a>,
@@ -473,8 +473,37 @@ pub enum ServerboundPacket<'a> {
         joint_type: &'a str,
     },
 
-    /// Unsupported yet (todo)
-    UpdateStrutureBlock { data: RawBytes<'a> },
+    // TODO add enums
+    ProgramStrutureBlock {
+        /// Block entity location.
+        location: Position,
+        /// An additional action to perform beyond simply saving the given data; see below.
+        action: VarInt,
+        mode: VarInt,
+        name: &'a str,
+        /// Between -48 and 48.
+        offset_x: i8,
+        /// Between -48 and 48.
+        offset_y: i8,
+        /// Between -48 and 48.
+        offset_z: i8,
+        /// Between 0 and 48.
+        size_x: i8,
+        /// Between 0 and 48.
+        size_y: i8,
+        /// Between 0 and 48.
+        size_z: i8,
+        /// One of NONE (0), LEFT_RIGHT (1), FRONT_BACK (2).
+        mirror: VarInt,
+        /// One of NONE (0), CLOCKWISE_90 (1), CLOCKWISE_180 (2), COUNTERCLOCKWISE_90 (3).
+        rotation: VarInt,
+        metadata: &'a str,
+        /// Between 0 and 1.
+        integrity: f32,
+        seed: VarLong,
+        /// 0x01: Ignore entities; 0x02: Show air; 0x04: Show bounding box.
+        flags: u8,
+    },
 
     /// This message is sent from the client to the server when the “Done” button is pushed after placing a sign.
     /// The server only accepts this packet after [ClientboundPacket::OpenSignEditor], otherwise this packet is silently ignored.
