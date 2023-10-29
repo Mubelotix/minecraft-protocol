@@ -845,6 +845,11 @@ pub enum ClientboundPacket<'a> {
         speed: VarLong,
     },
 
+    SetBorderSize {
+        /// Length of a single side of the world border, in meters
+        diameter: f64,
+    },
+
     /// Sent by the server when a living entity is spawned
     SpawnLivingEntity {
         id: VarInt,
@@ -929,11 +934,6 @@ pub enum ClientboundPacket<'a> {
         volume: f32,
         /// Float between 0.5 and 2.0 by Notchian clients.
         pitch: f32,
-    },
-
-    WorldBorderSize {
-        /// Length of a single side of the world border, in meters
-        diameter: f64,
     },
 
     WorldBorderWarningDelay {
