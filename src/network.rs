@@ -47,12 +47,6 @@ pub fn read_packet(
     unsafe { data.set_len(len) }
     reader.read_exact(&mut data)?;
 
-    if data.starts_with(&[25]) {
-        if let Ok(message) = std::str::from_utf8(data.get(3..).unwrap()) {
-            println!("{}", message);
-        }
-    }
-
     Ok(data)
 }
 
