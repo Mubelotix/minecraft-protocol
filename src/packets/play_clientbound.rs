@@ -12,6 +12,7 @@ use crate::nbt::NbtTag;
 pub enum ClientboundPacket<'a> {
     /// The delimiter for a bundle of packets. When received, the client should store every subsequent packet it receives, and wait until another delimiter is received. Once that happens, the client is guaranteed to process every packet in the bundle on the same tick.
     BundleDelimiter,
+    
     /// Sent by the server when a vehicle or other **non-living entity** is created
     SpawnEntity {
         id: VarInt,
