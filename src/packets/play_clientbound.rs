@@ -724,6 +724,16 @@ pub enum ClientboundPacket<'a> {
         action: crate::components::recipes::UnlockRecipesAction<'a>,
     },
 
+    /// Sent by the server when a list of entities is to be destroyed on the client
+    RemoveEntities {
+        entity_ids: Array<'a, VarInt, effect::Effect>,
+    },
+
+    RemoveEntityEffect {
+        entity_id: VarInt,
+        effect: VarInt,
+    },
+
     /// Sent by the server when a living entity is spawned
     SpawnLivingEntity {
         id: VarInt,
@@ -808,16 +818,6 @@ pub enum ClientboundPacket<'a> {
         volume: f32,
         /// Float between 0.5 and 2.0 by Notchian clients.
         pitch: f32,
-    },
-
-    /// Sent by the server when a list of entities is to be destroyed on the client
-    DestroyEntities {
-        entity_ids: Array<'a, VarInt, VarInt>,
-    },
-
-    RemoveEntityEffect {
-        entity_id: VarInt,
-        effect: effect::Effect,
     },
 
     /// *Request for [ServerboundPacket::ResourcePackStatus]*
