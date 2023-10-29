@@ -943,7 +943,7 @@ pub enum ClientboundPacket<'a> {
         velocity_z: i16,
     },
 
-    EntityEquipment {
+    SetEquipment {
         entity_id: VarInt,
         equipment: slots::EquipmentSlotArray,
     },
@@ -952,13 +952,13 @@ pub enum ClientboundPacket<'a> {
     SetExperience {
         /// Between 0.0 and 1.0
         experience_bar: f32,
-        experience_level: VarInt,
         /// See [Experience#Leveling up on the Minecraft Wiki](http://minecraft.gamepedia.com/Experience%23Leveling_up) for `total_experience` to `experience_level`.
         total_experience: VarInt,
+        experience_level: VarInt,
     },
 
     /// Sent by the server to update/set the health of the player it is sent to
-    UpdateHealth {
+    SetHealth {
         /// 0.0 or less = dead, 20.0 = full HP
         health: f32,
         /// 0–20
