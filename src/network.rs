@@ -153,6 +153,13 @@ mod tests {
                     value.deserialize_chunks().unwrap();
                     println!("chunk parsed successfully!")
                 }
+                ClientboundPacket::ChatMessage {
+                    message,
+                    sender,
+                    ..
+                } => {
+                    println!("{}: {}", sender, message);
+                }
 
                 _ => (),
             }
