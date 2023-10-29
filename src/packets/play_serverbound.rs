@@ -435,7 +435,7 @@ pub enum ServerboundPacket<'a> {
         flags: u8,
     },
 
-    UpdateCommandBlockMinecart {
+    ProgramCommandBlockMinecart {
         entity_id: VarInt,
         command: &'a str,
         /// If `false`, the output of the previous command will not be stored within the command block.
