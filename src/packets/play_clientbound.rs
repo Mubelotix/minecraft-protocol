@@ -917,7 +917,7 @@ pub enum ClientboundPacket<'a> {
 
     /// Updates one or more metadata properties for an existing entity.
     /// Any properties not included in the Metadata field are left unchanged.
-    EntityMetadata {
+    SetEntityMetadata {
         entity_id: VarInt,
         metadata: entity::EntityMetadata,
     },
@@ -933,7 +933,7 @@ pub enum ClientboundPacket<'a> {
     /// Sets the velocity of an entity
     ///
     /// Velocity is believed to be in units of 1/8000 of a block per server tick (50ms); for example, -1343 would move (-1343 / 8000) = −0.167875 blocks per tick (or −3,3575 blocks per second).
-    EntityVelocity {
+    SetEntityVelocity {
         entity_id: VarInt,
         /// Velocity on the X axis
         velocity_x: i16,
