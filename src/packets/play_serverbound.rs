@@ -512,6 +512,8 @@ pub enum ServerboundPacket<'a> {
     UpdateSign {
         /// Sign block Coordinates
         location: Position,
+        /// Whether the updated text is in front or on the back of the sign
+        is_front_text: bool,
         line1: &'a str,
         line2: &'a str,
         line3: &'a str,
