@@ -140,7 +140,7 @@ impl<'a> MinecraftPacketPart<'a> for PlayersInfos<'a> {
                 // The mask is the sum of all the player actions. The variants of the player actions are the same for all players.
                 // So we can just take the first player and sum all the variants.
                 let first_player = &self.players_infos[0];
-                first_player.actions.iter().fold(0, |acc, action| acc + action.get_descriminent()),
+                first_player.actions.iter().fold(0, |acc, action| acc + action.get_descriminent())
             }
         };
         let n_players = self.players_infos.len();
