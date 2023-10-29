@@ -521,7 +521,7 @@ pub enum ServerboundPacket<'a> {
     },
 
     /// Sent when the player's arm swings
-    Animation { hand: slots::Hand },
+    SwingArms { hand: slots::Hand },
 
     /// Teleports the player to the given entity.
     /// The player must be in spectator mode.
