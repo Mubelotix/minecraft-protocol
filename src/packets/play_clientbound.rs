@@ -676,6 +676,21 @@ pub enum ClientboundPacket<'a> {
         players_info: players::PlayersInfos<'a>,
     },
 
+    /// Used to rotate the client player to face the given location or entity (for `/teleport [<targets>] <x> <y> <z> facing`)
+    FacePlayer {
+        /// If set to eyes, aims using the head position; otherwise aims using the feet position
+        aim: players::FaceAim,
+        /// X coordinate of the point to face towards
+        target_x: f64,
+        /// Y coordinate of the point to face towards
+        target_y: f64,
+        /// Z coordinate of the point to face towards
+        target_z: f64,
+        /// Used to reference a targeted entity.
+        /// If the entity target appears invalid, it should be ignored.
+        target: Option<players::FaceTarget>,
+    },
+
     /// Sent by the server when a living entity is spawned
     SpawnLivingEntity {
         id: VarInt,
@@ -760,21 +775,6 @@ pub enum ClientboundPacket<'a> {
         volume: f32,
         /// Float between 0.5 and 2.0 by Notchian clients.
         pitch: f32,
-    },
-
-    /// Used to rotate the client player to face the given location or entity (for `/teleport [<targets>] <x> <y> <z> facing`)
-    FacePlayer {
-        /// If set to eyes, aims using the head position; otherwise aims using the feet position
-        aim: players::FaceAim,
-        /// X coordinate of the point to face towards
-        target_x: f64,
-        /// Y coordinate of the point to face towards
-        target_y: f64,
-        /// Z coordinate of the point to face towards
-        target_z: f64,
-        /// Used to reference a targeted entity.
-        /// If the entity target appears invalid, it should be ignored.
-        target: Option<players::FaceTarget>,
     },
 
     /// Updates the player's position on the server.
