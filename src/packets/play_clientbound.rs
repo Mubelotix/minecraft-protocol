@@ -781,6 +781,15 @@ pub enum ClientboundPacket<'a> {
         data_kept: i8,
     },
 
+    /// Changes the direction an entity's head is facing.
+    ///
+    /// While sending the [ClientboundPacket::EntityLook] packet changes the vertical rotation of the head, sending this packet appears to be necessary to rotate the head horizontally.
+    SetHeadRotation {
+        entity_id: VarInt,
+        /// New angle, not a delta
+        head_yew: Angle,
+    },
+
     /// Sent by the server when a living entity is spawned
     SpawnLivingEntity {
         id: VarInt,
@@ -865,15 +874,6 @@ pub enum ClientboundPacket<'a> {
         volume: f32,
         /// Float between 0.5 and 2.0 by Notchian clients.
         pitch: f32,
-    },
-
-    /// Changes the direction an entity's head is facing.
-    ///
-    /// While sending the [ClientboundPacket::EntityLook] packet changes the vertical rotation of the head, sending this packet appears to be necessary to rotate the head horizontally.
-    EntityHeadLook {
-        entity_id: VarInt,
-        /// New angle, not a delta
-        head_yew: Angle,
     },
 
     /// Fired whenever 2 or more blocks are changed within the same chunk on the same tick.
