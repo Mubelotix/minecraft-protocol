@@ -824,6 +824,11 @@ pub enum ClientboundPacket<'a> {
         enforces_secure_chat: bool,
     },
 
+    /// Displays a message above the hotbar (the same as position 2 in Chat Message (clientbound).
+    SetActionBarText {
+        action_bar_text: Chat<'a>,
+    },
+
     /// Sent by the server when a living entity is spawned
     SpawnLivingEntity {
         id: VarInt,
@@ -908,11 +913,6 @@ pub enum ClientboundPacket<'a> {
         volume: f32,
         /// Float between 0.5 and 2.0 by Notchian clients.
         pitch: f32,
-    },
-
-    /// Displays a message above the hotbar (the same as position 2 in Chat Message (clientbound).
-    ActionBar {
-        action_bar_text: Chat<'a>,
     },
 
     WorldBorderCenter {
