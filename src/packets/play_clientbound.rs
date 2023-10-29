@@ -816,6 +816,14 @@ pub enum ClientboundPacket<'a> {
         identifier: Option<Identifier<'a>>,
     },
 
+    ServerData {
+        motd: Chat<'a>,
+        has_icon: bool,
+        /// Icon bytes in the PNG format
+        icon: Array<'a, u8, VarInt>,
+        enforces_secure_chat: bool,
+    },
+
     /// Sent by the server when a living entity is spawned
     SpawnLivingEntity {
         id: VarInt,
