@@ -790,6 +790,13 @@ pub enum ClientboundPacket<'a> {
         head_yew: Angle,
     },
 
+    /// Fired whenever 2 or more blocks are changed within the same chunk on the same tick.
+    ///
+    /// **Warnin**: Changing blocks in chunks not loaded by the client is unsafe.
+    UpdateSectionBlocks {
+        value: crate::components::blocks::MultiBlockChange<'a>,
+    },
+
     /// Sent by the server when a living entity is spawned
     SpawnLivingEntity {
         id: VarInt,
@@ -874,13 +881,6 @@ pub enum ClientboundPacket<'a> {
         volume: f32,
         /// Float between 0.5 and 2.0 by Notchian clients.
         pitch: f32,
-    },
-
-    /// Fired whenever 2 or more blocks are changed within the same chunk on the same tick.
-    ///
-    /// **Warnin**: Changing blocks in chunks not loaded by the client is unsafe.
-    MultiBlockChange {
-        value: crate::components::blocks::MultiBlockChange<'a>,
     },
 
     /// Sent by the server to indicate that the client should switch advancement tab.

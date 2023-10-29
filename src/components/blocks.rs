@@ -54,8 +54,6 @@ pub struct MultiBlockChange<'a> {
     ///
     /// Use [MultiBlockChange::decode_chunk_section_position] and [MultiBlockChange::encode_chunk_section_position] to work with it.
     pub chunk_section_position: u64,
-    /// Always inverse the preceding [ClientboundPacket::UpdateLight](crate::packets::play_clientbound::ClientboundPacket::UpdateLight) packet's "Trust Edges" bool
-    pub inverse_trust_edges: bool,
     /// Each entry is composed of the block id, shifted right by 12, and the relative block position in the chunk section (4 bits for x, z, and y, from left to right).
     ///
     /// Use [MultiBlockChange::decode_block] and [MultiBlockChange::encode_block] to work with it.
@@ -84,7 +82,7 @@ impl<'a> MultiBlockChange<'a> {
             );
         }
 
-        Ok((x as u64 & 0x3FFFFF) << 42 | (y as u64 & 0xFFFFF) | (z as u64 & 0x3FFFFF) << 20)
+        Ok((x & 0x3FFFFF) << 42 | (y & 0xFFFFF) | (z & 0x3FFFFF) << 20)
     }
 
     /// Returns the position of the chunk (block coordinate divided by 16 and rounded down).
@@ -121,7 +119,7 @@ impl<'a> MultiBlockChange<'a> {
             );
         }
 
-        Ok(((block as u32) as u64) << 12 | ((x as u64) << 8 | (y as u64) << 4 | z as u64))
+        Ok((block as u64) << 12 | ((x as u64) << 8 | (y as u64) << 4 | z as u64))
     }
 
     /// Returns the position of the block in the chunk at coordinates `chunk_section_position` and the state id of the block.
