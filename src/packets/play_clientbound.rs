@@ -8,6 +8,7 @@ use crate::ids::*;
 use crate::nbt::NbtTag;
 
 #[derive(Debug, MinecraftPacketPart)]
+#[allow(clippy::large_enum_variant)] // TODO: fix this
 #[discriminant(VarInt)]
 pub enum ClientboundPacket<'a> {
     /// The delimiter for a bundle of packets. When received, the client should store every subsequent packet it receives, and wait until another delimiter is received. Once that happens, the client is guaranteed to process every packet in the bundle on the same tick.
@@ -621,6 +622,37 @@ pub enum ClientboundPacket<'a> {
         field_of_view_modifier: f32,
     },
 
+    /// Identifying the difference between Chat/System Message is important as it helps respect the user's chat visibility options. See [processing chat](https://wiki.vg/Chat#Processing_chat) for more info about these positions.
+    ///
+    /// **Warning**: Game info accepts json formatting but does not display it, although the deprecated §-based formatting works. This is not an issue when using the [Title] packet, so prefer that packet for displaying information in that slot. See MC-119145 for more information.
+    ///
+    /// *See also [ServerboundPacket::ChatMessage]*
+    ChatMessage {
+        /// Used by the Notchian client for the disableChat launch option. Setting both longs to 0 will always display the message regardless of the setting.
+        sender: UUID,
+        index: VarInt,
+        /// Cryptography, the signature consists of the Sender UUID, Session UUID from the Player Session packet, Index, Salt, Timestamp in epoch seconds, the length of the original chat content, the original content itself, the length of Previous Messages, and all of the Previous message signatures.
+        /// These values are hashed with SHA-256 and signed using the RSA cryptosystem. Modifying any of these values in the packet will cause this signature to fail. This buffer is always 256 bytes long and it is not length-prefixed.
+        message_signature: Option<[u8; 256]>,
+        message: Chat<'a>,
+        /// Represents the time the message was signed as milliseconds since the [epoch](https://en.wikipedia.org/wiki/Unix_time),
+        /// used to check if the message was received within 2 minutes of it being sent.
+        timestamp: i64,
+        /// Cryptography, used for validating the message signature.
+        salt: i64,
+        previous_messages: Array<'a, chat::PreviousMessage<'a>, VarInt>,
+        unsigned_content: Option<Chat<'a>>,
+        /// If the message has been filtered
+        filter: chat::FilterType<'a>,
+        /// The chat type from the [Login (play)](https://wiki.vg/Protocol#Login_.28play.29) packet used for this message
+        chat_type: VarInt,
+        /// The name of the player that sent the message
+        network_name: Chat<'a>,
+        /// The name of the player that receives the message
+        network_target_name: Option<Chat<'a>>,
+    },
+
+
     /// Sent by the server when a living entity is spawned
     SpawnLivingEntity {
         id: VarInt,
@@ -687,18 +719,6 @@ pub enum ClientboundPacket<'a> {
         status: crate::components::blocks::PartialDiggingState,
         /// True if the digging succeeded; false if the client should undo any changes it made locally.
         successful: bool,
-    },
-
-    /// Identifying the difference between Chat/System Message is important as it helps respect the user's chat visibility options. See [processing chat](https://wiki.vg/Chat#Processing_chat) for more info about these positions.
-    ///
-    /// **Warning**: Game info accepts json formatting but does not display it, although the deprecated §-based formatting works. This is not an issue when using the [Title] packet, so prefer that packet for displaying information in that slot. See MC-119145 for more information.
-    ///
-    /// *See also [ServerboundPacket::ChatMessage]*
-    ChatMessage {
-        message: Chat<'a>,
-        position: chat::Position,
-        /// Used by the Notchian client for the disableChat launch option. Setting 0 will always display the message regardless of the setting.
-        sender: UUID,
     },
 
     /// Used to play a sound effect on the client.
