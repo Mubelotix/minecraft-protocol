@@ -876,6 +876,13 @@ pub enum ClientboundPacket<'a> {
         camera_id: VarInt,
     },
 
+    /// Sent to change the player's slot selection
+    SetHeldItem {
+        /// The slot which the player has selected (0–8)
+        slot: u8,
+    },
+
+
     /// Sent by the server when a living entity is spawned
     SpawnLivingEntity {
         id: VarInt,
@@ -960,14 +967,6 @@ pub enum ClientboundPacket<'a> {
         volume: f32,
         /// Float between 0.5 and 2.0 by Notchian clients.
         pitch: f32,
-    },
-
-    /// Sent to change the player's slot selection
-    ///
-    /// *See also [ServerboundPacket::HeldItemChange]*
-    HeldItemChange {
-        /// The slot which the player has selected (0–8)
-        slot: u8,
     },
 
     /// Updates the client's location.
