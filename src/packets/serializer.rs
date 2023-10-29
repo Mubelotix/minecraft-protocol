@@ -883,7 +883,7 @@ impl<'a, T: MinecraftPacketPart<'a>> MinecraftPacketPart<'a> for Option<T> {
     }
 }
 
-pub type BitSet<'a>  = Array<'a, i64, VarInt>;
+pub type BitSet<'a> = Array<'a, i64, VarInt>;
 
 
 #[test]
