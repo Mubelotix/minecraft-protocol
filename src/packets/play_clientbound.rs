@@ -671,6 +671,11 @@ pub enum ClientboundPacket<'a> {
         message: Chat<'a>,
     },
 
+    /// Used by the server to remove players from the player list.
+    RemovePlayerInfo {
+        players_to_remove: Array<'a, UUID, VarInt>,
+    },
+
     /// Sent by the server to update the user list (<tab> in the client).
     UpdatePlayersInfo {
         players_info: players::PlayersInfos<'a>,
