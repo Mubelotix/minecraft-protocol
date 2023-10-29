@@ -652,6 +652,24 @@ pub enum ClientboundPacket<'a> {
         network_target_name: Option<Chat<'a>>,
     },
 
+    /// Unused by the Notchain client.
+    /// This data was once used for twitch.tv metadata circa 1.8.
+    EndCombatEvent {
+        /// Length of the combat in ticks.
+        duration: VarInt,
+    },
+
+    /// Unused by the Notchain client.
+    /// This data was once used for twitch.tv metadata circa 1.8.
+    EnterCombatEvent,
+
+    /// Used to send a respawn screen.
+    DeathCombatEvent {
+        /// Entity ID of the player that died (should match the client's entity ID)
+        player_id: VarInt,
+        /// The death message
+        message: Chat<'a>,
+    },
 
     /// Sent by the server when a living entity is spawned
     SpawnLivingEntity {
@@ -737,31 +755,6 @@ pub enum ClientboundPacket<'a> {
         volume: f32,
         /// Float between 0.5 and 2.0 by Notchian clients.
         pitch: f32,
-    },
-    
-    
-
-    /// Unused by the Notchain client.
-    /// This data was once used for twitch.tv metadata circa 1.8.
-    EndCombatEvent {
-        /// Length of the combat in ticks.
-        duration: VarInt,
-        /// ID of the primary opponent of the ended combat, or -1 if there is no obvious primary opponent.
-        entity_id: i32,
-    },
-
-    /// Unused by the Notchain client.
-    /// This data was once used for twitch.tv metadata circa 1.8.
-    EnterCombatEvent,
-
-    /// Used to send a respawn screen.
-    DeathCombatEvent {
-        /// Entity ID of the player that died (should match the client's entity ID)
-        player_id: VarInt,
-        /// The killing entity's ID, or -1 if there is no obvious killer
-        entity_id: i32,
-        /// The death message
-        message: Chat<'a>,
     },
 
     /// Sent by the server to update the user list (<tab> in the client).
