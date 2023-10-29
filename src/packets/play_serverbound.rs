@@ -427,7 +427,7 @@ pub enum ServerboundPacket<'a> {
         slot: i16,
     },
 
-    UpdateCommandBlock {
+    ProgramCommandBlock {
         location: Position,
         command: &'a str,
         mode: command_block::CommandBlockMode,
