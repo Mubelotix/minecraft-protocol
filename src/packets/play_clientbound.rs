@@ -734,6 +734,18 @@ pub enum ClientboundPacket<'a> {
         effect: effect::Effect,
     },
 
+    SendResourcePack {
+        /// The URL to the resource pack
+        url: &'a str,
+        /// A 40 character hexadecimal and lowercase SHA-1 hash of the resource pack file. (must be lower case in order to work)
+        /// If it's not a 40 character hexadecimal string, the client will not use it for hash verification and likely waste bandwidth — but it will still treat it as a unique id.
+        hash: &'a str,
+        /// The notchian client will be forced to use the resource pack from the server. If they decline they will be kicked from the server.
+        forced: bool,
+        /// This is shown in the prompt making the client accept or decline the resource pack.
+        prompt_message: Option<Chat<'a>>,
+    },
+
     /// Sent by the server when a living entity is spawned
     SpawnLivingEntity {
         id: VarInt,
@@ -820,14 +832,6 @@ pub enum ClientboundPacket<'a> {
         pitch: f32,
     },
 
-    /// *Request for [ServerboundPacket::ResourcePackStatus]*
-    ResourcePackSend {
-        /// The URL to the resource pack
-        url: &'a str,
-        /// A 40 character hexadecimal and lowercase SHA-1 hash of the resource pack file. (must be lower case in order to work)
-        /// If it's not a 40 character hexadecimal string, the client will not use it for hash verification and likely waste bandwidth — but it will still treat it as a unique id.
-        hash: &'a str,
-    },
 
     /// To change the player's dimension (overworld/nether/end), send them a respawn packet with the appropriate dimension, followed by prechunks/chunks for the new dimension, and finally a position and look packet.
     /// You do not need to unload chunks, the client will do it automatically.
