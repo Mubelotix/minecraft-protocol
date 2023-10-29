@@ -792,6 +792,29 @@ impl<
     }
 }
 
+
+impl<
+    'a,
+    const N: usize,
+    > MinecraftPacketPart<'a> for [u8; N] {
+    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        output.extend_from_slice(&self);
+        Ok(())
+    }
+
+    fn deserialize_minecraft_packet_part(input: &'a [u8]) -> Result<(Self, &'a [u8]), &'static str> {
+        if input.len() < N {
+            return Err("Not enough data to deserialize");
+        }
+
+        let (data, rest) = input.split_at(N);
+        // TODO: not copy the data
+        Ok((data.try_into().map_err(|_| "Impossible to copy the slice")?, rest))
+    }
+}
+
+
+
 impl<
         'a,
         K: MinecraftPacketPart<'a> + std::fmt::Debug + std::cmp::Ord,
