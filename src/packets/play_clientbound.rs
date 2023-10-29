@@ -672,7 +672,7 @@ pub enum ClientboundPacket<'a> {
     },
 
     /// Sent by the server to update the user list (<tab> in the client).
-    UpdatePlayerInfo {
+    UpdatePlayersInfo {
         players_info: players::PlayersInfos<'a>,
     },
 
