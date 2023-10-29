@@ -850,6 +850,32 @@ pub enum ClientboundPacket<'a> {
         diameter: f64,
     },
 
+    SetBorderWarningDelay {
+        /// In seconds as set by `/worldborder warning time`
+        warning_time: VarInt,
+    },
+
+    WorldBorderWarningReach {
+        /// In meters
+        warning_blocks: VarInt,
+    },
+
+    /// Sets the entity that the player renders from.
+    /// This is normally used when the player left-clicks an entity while in spectator mode.
+    ///
+    /// The player's camera will move with the entity and look where it is looking.
+    /// The entity is often another player, but can be any type of entity.
+    /// The player is unable to move this entity (move packets will act as if they are coming from the other entity).
+    /// To return control to the player, send this packet with their entity ID.
+    ///
+    /// The Notchian server resets this (sends it back to the default entity) whenever the spectated entity is killed or the player sneaks, but only if they were spectating an entity.
+    /// It also sends this packet whenever the player switches out of spectator mode (even if they weren't spectating an entity).
+    SetCamera {
+        /// ID of the entity to set the client's camera to.
+        /// If the given entity is not loaded by the player, this packet is ignored.
+        camera_id: VarInt,
+    },
+
     /// Sent by the server when a living entity is spawned
     SpawnLivingEntity {
         id: VarInt,
@@ -934,32 +960,6 @@ pub enum ClientboundPacket<'a> {
         volume: f32,
         /// Float between 0.5 and 2.0 by Notchian clients.
         pitch: f32,
-    },
-
-    WorldBorderWarningDelay {
-        /// In seconds as set by `/worldborder warning time`
-        warning_time: VarInt,
-    },
-
-    WorldBorderWarningReach {
-        /// In meters
-        warning_blocks: VarInt,
-    },
-
-    /// Sets the entity that the player renders from.
-    /// This is normally used when the player left-clicks an entity while in spectator mode.
-    ///
-    /// The player's camera will move with the entity and look where it is looking.
-    /// The entity is often another player, but can be any type of entity.
-    /// The player is unable to move this entity (move packets will act as if they are coming from the other entity).
-    /// To return control to the player, send this packet with their entity ID.
-    ///
-    /// The Notchian server resets this (sends it back to the default entity) whenever the spectated entity is killed or the player sneaks, but only if they were spectating an entity.
-    /// It also sends this packet whenever the player switches out of spectator mode (even if they weren't spectating an entity).
-    Camera {
-        /// ID of the entity to set the client's camera to.
-        /// If the given entity is not loaded by the player, this packet is ignored.
-        camera_id: VarInt,
     },
 
     /// Sent to change the player's slot selection
