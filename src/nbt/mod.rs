@@ -22,7 +22,7 @@ pub enum NbtTag {
     String(String),
     List(NbtList),
     Compound(HashMap<String, NbtTag>),
-    RootCompound(String, HashMap<String, NbtTag>),
+    RootCompound(HashMap<String, NbtTag>),
 }
 
 impl NbtTag {
@@ -222,7 +222,7 @@ impl NbtTag {
     pub fn as_compound(&self) -> Option<&HashMap<String, NbtTag>> {
         if let NbtTag::Compound(compound) = self {
             Some(compound)
-        } else if let NbtTag::RootCompound(_name, compound) = self {
+        } else if let NbtTag::RootCompound(compound) = self {
             Some(compound)
         } else {
             None
@@ -232,7 +232,7 @@ impl NbtTag {
     pub fn as_mut_compound(&mut self) -> Option<&mut HashMap<String, NbtTag>> {
         if let NbtTag::Compound(compound) = self {
             Some(compound)
-        } else if let NbtTag::RootCompound(_name, compound) = self {
+        } else if let NbtTag::RootCompound(compound) = self {
             Some(compound)
         } else {
             None
@@ -312,7 +312,7 @@ impl NbtTag {
             NbtTag::String(_) => 8,
             NbtTag::List(_) => 9,
             NbtTag::Compound(_) => 10,
-            NbtTag::RootCompound(_, _) => 10,
+            NbtTag::RootCompound(_) => 10,
         });
     }
 
@@ -371,9 +371,7 @@ impl NbtTag {
                 }
                 output.push(0);
             }
-            NbtTag::RootCompound(name, compound) => {
-                output.extend_from_slice(&(name.len() as u16).to_be_bytes());
-                output.extend_from_slice(name.as_bytes());
+            NbtTag::RootCompound(compound) => {
                 for (name, value) in compound.iter() {
                     value.serialize_type_id(output);
                     output.extend_from_slice(&(name.len() as u16).to_be_bytes());
@@ -394,8 +392,8 @@ impl NbtTag {
 pub fn parse_nbt(input: &[u8]) -> Result<(NbtTag, &[u8]), &'static str> {
     let tag_id = *input.first().ok_or("Empty input, no NBT data.")?;
     if tag_id == 10 {
-        let ((name, content), input) = parse_root_compound(input)?;
-        return Ok((NbtTag::RootCompound(name, content), input));
+        let (content, input) = parse_root_compound(input)?;
+        return Ok((NbtTag::RootCompound(content), input));
     }
     parse_nbt_tag(&input[1..], tag_id)
 }
