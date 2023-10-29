@@ -882,6 +882,15 @@ pub enum ClientboundPacket<'a> {
         slot: u8,
     },
 
+    /// Updates the client's location.
+    /// This is used to determine what chunks should remain loaded and if a chunk load should be ignored; chunks outside of the view distance may be unloaded.
+    /// Sent whenever the player moves across a chunk border horizontally, and also (according to testing) for any integer change in the vertical axis, even if it doesn't go across a chunk section border.
+    SetCenterChunk {
+        /// Chunk X coordinate of the player's position.
+        chunk_x: VarInt,
+        /// Chunk Z coordinate of the player's position.
+        chunk_z: VarInt,
+    },
 
     /// Sent by the server when a living entity is spawned
     SpawnLivingEntity {
@@ -967,14 +976,6 @@ pub enum ClientboundPacket<'a> {
         volume: f32,
         /// Float between 0.5 and 2.0 by Notchian clients.
         pitch: f32,
-    },
-
-    /// Updates the client's location.
-    /// This is used to determine what chunks should remain loaded and if a chunk load should be ignored; chunks outside of the view distance may be unloaded.
-    /// Sent whenever the player moves across a chunk border horizontally, and also (according to testing) for any integer change in the vertical axis, even if it doesn't go across a chunk section border.
-    UpdateViewPosition {
-        chunk_x: VarInt,
-        chunk_z: VarInt,
     },
 
     /// Sent by the integrated singleplayer server when changing render distance.
