@@ -671,6 +671,11 @@ pub enum ClientboundPacket<'a> {
         message: Chat<'a>,
     },
 
+    /// Sent by the server to update the user list (<tab> in the client).
+    UpdatePlayerInfo {
+        players_info: players::PlayersInfos<'a>,
+    },
+
     /// Sent by the server when a living entity is spawned
     SpawnLivingEntity {
         id: VarInt,
@@ -755,11 +760,6 @@ pub enum ClientboundPacket<'a> {
         volume: f32,
         /// Float between 0.5 and 2.0 by Notchian clients.
         pitch: f32,
-    },
-
-    /// Sent by the server to update the user list (<tab> in the client).
-    PlayerInfo {
-        value: players::PlayerInfoAction<'a>,
     },
 
     /// Used to rotate the client player to face the given location or entity (for `/teleport [<targets>] <x> <y> <z> facing`)
