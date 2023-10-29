@@ -1,4 +1,4 @@
-use std::{convert::{TryFrom, TryInto}, ops::Deref};
+use std::convert::{TryFrom, TryInto};
 
 use super::*;
 
@@ -794,33 +794,26 @@ impl<
 
 
 impl<
-        'a,
-        const N: usize,
-        T: MinecraftPacketPart<'a> + std::fmt::Debug + Clone, // TODO: Remove Clone
-    > MinecraftPacketPart<'a> for [T; N] {
-
+    'a,
+    const N: usize,
+    > MinecraftPacketPart<'a> for [u8; N] {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
-        for item in self.iter() {
-            item.clone().serialize_minecraft_packet_part(output)?;
-        }
+        output.extend_from_slice(&self);
         Ok(())
     }
 
-    fn deserialize_minecraft_packet_part(input: &'a [u8])
-        -> Result<(Self, &'a [u8]), &'static str> {
-        
-        // TODO: Maybe transmute it instead of copying it
-        let mut items = Vec::new();
-        let mut input = input;
-        for _ in 0..N {
-            let (item, new_input) = T::deserialize_minecraft_packet_part(input)?;
-            items.push(item);
-            input = new_input;
+    fn deserialize_minecraft_packet_part(input: &'a [u8]) -> Result<(Self, &'a [u8]), &'static str> {
+        if input.len() < N {
+            return Err("Not enough data to deserialize");
         }
 
-        Ok((items.try_into().map_err(|_| "Impossible to copy the slice")?, input))
+        let (data, rest) = input.split_at(N);
+        // TODO: not copy the data
+        Ok((data.try_into().map_err(|_| "Impossible to copy the slice")?, rest))
     }
 }
+
+
 
 impl<
         'a,
