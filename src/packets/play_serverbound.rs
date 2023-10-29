@@ -419,10 +419,10 @@ pub enum ServerboundPacket<'a> {
         secondary_effect: VarInt,
     },
 
-    /// Sent when the player changes the slot selection
+    /// Sent when the player changes the slot selection.
     ///
     /// *See also [ClientboundPacket::HeldItemChange]*
-    HeldItemChange {
+    SetHeldItem {
         /// The slot which the player has selected (0..=8)
         slot: i16,
     },
