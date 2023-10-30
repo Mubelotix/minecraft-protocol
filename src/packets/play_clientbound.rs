@@ -1071,6 +1071,10 @@ pub enum ClientboundPacket<'a> {
         seed: i64,
     },
 
+    /// Sent during gameplay in order to redo the configuration process. The client must respond with [Configuration Acknowledged](https://wiki.vg/Protocol#Configuration_Acknowledged) for the process to start.
+    /// This packet switches the connection state to [configuration](https://wiki.vg/Protocol#Configuration).
+    StartConfiguration,
+
     StopSound {
         value: sound::StopSoundPacket<'a>,
     },
