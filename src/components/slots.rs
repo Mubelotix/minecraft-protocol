@@ -96,7 +96,7 @@ impl<'a> MinecraftPacketPart<'a> for EquipmentSlotArray {
             };
             slots.insert(slot_index_variant, slot);
 
-            if slot_index < 0b1000_0000 {
+            if number < 0b1000_0000 {
                 break;
             }
         }
