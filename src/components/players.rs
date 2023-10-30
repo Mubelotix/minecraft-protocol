@@ -170,7 +170,6 @@ impl<'a> MinecraftPacketPart<'a> for PlayersInfos<'a> {
         -> Result<(Self, &'a [u8]), &'static str> {
         // The first byte is the mask of actions
         let (mut mask, input) = u8::deserialize_minecraft_packet_part(input)?;
-        println!("Mask: {:08b}", mask);
         // The second byte is the number of players
         let (n_players, mut input) = VarInt::deserialize_minecraft_packet_part(input)?;
         // We will deserialize n_players times the player uuid and actions 
