@@ -149,10 +149,6 @@ mod tests {
                 ClientboundPacket::UpdateAdvancements { .. } => {
                     println!("Advancements parsed successfully!")
                 }
-                ClientboundPacket::ChunkData { mut value } => {
-                    value.deserialize_chunks().unwrap();
-                    println!("chunk parsed successfully!")
-                }
                 ClientboundPacket::ChatMessage {
                     message,
                     sender,

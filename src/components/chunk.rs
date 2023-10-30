@@ -71,13 +71,22 @@ impl<'a, const MIN_BITS: u8, const MAX_BITS: u8, const FALLBACK_BITS: u8> Minecr
 
     fn deserialize_minecraft_packet_part(input: &'a [u8]) -> Result<(Self, &'a [u8]), &'static str> {
         let (mut bits_per_entry, new_input) = u8::deserialize_minecraft_packet_part(input)?;
+        println!("  bits per entry: {}", bits_per_entry);
 
         Ok(match bits_per_entry {
             0 => {
                 let (value, new_input) = VarInt::deserialize_minecraft_packet_part(new_input)?;
+                // This should be empty
+                let (longs, new_input) = <Array<u64, VarInt>>::deserialize_minecraft_packet_part(new_input)?;
+                if !longs.items.is_empty() {
+                    return Err("non-empty longs array for 0 bits per entry");
+                }
                 (PalettedData::Single { value: value.0 as u32 }, new_input)
             },
-            _ if bits_per_entry>=MIN_BITS && bits_per_entry<=MAX_BITS => {
+            _ if bits_per_entry<=MAX_BITS => {
+                if bits_per_entry<MIN_BITS {
+                    bits_per_entry = MIN_BITS;
+                }
                 let entries_per_long = 64 / bits_per_entry;
                 let mut base_mask = 0;
                 for _ in 0..bits_per_entry {
@@ -98,6 +107,7 @@ impl<'a, const MIN_BITS: u8, const MAX_BITS: u8, const FALLBACK_BITS: u8> Minecr
                         mask <<= bits_per_entry;
                     }
                 }
+                println!("  {} values", indexed.len());
 
                 (PalettedData::Paletted { palette, indexed }, new_input)
             },
@@ -120,6 +130,7 @@ impl<'a, const MIN_BITS: u8, const MAX_BITS: u8, const FALLBACK_BITS: u8> Minecr
                         mask <<= bits_per_entry;
                     }
                 }
+                println!("  {} values", values.len());
 
                 (PalettedData::Raw { values }, new_input)
             }
@@ -144,20 +155,33 @@ impl Chunk {
 
         let orig_len = input.len();
 
-        let (chunk_count, mut input) = VarInt::deserialize_minecraft_packet_part(input)?;
-        println!("{}", chunk_count.0);
+        let chunk_count = (-64..320).len() / 16;
+        ///let (chunk_count, mut input) = VarInt::deserialize_minecraft_packet_part(input)?;
+        let mut input = input;
+        println!("{}", chunk_count);
 
         let mut chunks = Vec::new();
-        while !input.is_empty() {
+        for _ in 0..chunk_count {
             println!("chunk {}", chunks.len());
+            println!("hex offset in file {:x}", orig_len - input.len());
 
             let (block_count, new_input) = i16::deserialize_minecraft_packet_part(input)?;
             println!("  block count: {}", block_count);
             
-            let (blocks, new_input) = PalettedData::<4, 8, 15>::deserialize_minecraft_packet_part(new_input)?;
+            let (mut blocks, new_input) = PalettedData::<4, 8, 15>::deserialize_minecraft_packet_part(new_input)?;
+            match blocks {
+                PalettedData::Paletted {  ref mut indexed, .. } => indexed.truncate(16*16*16),
+                PalettedData::Raw { ref mut values } => values.truncate(16*16*16),
+                PalettedData::Single { .. } => (),
+            }
             println!("  blocks: {:?}", blocks);
 
-            let (biomes, new_input) = PalettedData::<0, 3, 6>::deserialize_minecraft_packet_part(new_input)?;
+            let (mut biomes, new_input) = PalettedData::<0, 3, 6>::deserialize_minecraft_packet_part(new_input)?;
+            match biomes {
+                PalettedData::Paletted { ref mut indexed, .. } => indexed.truncate(4*4*4),
+                PalettedData::Raw { ref mut values } => values.truncate(4*4*4),
+                PalettedData::Single { .. } => (),
+            }
             println!("  biomes: {:?}", biomes);
 
             chunks.push(Chunk { block_count, blocks, biomes });
@@ -186,15 +210,16 @@ fn test() {
     // let chunks = ChunkData::deserialize_minecraft_packet_part(chunk_data).unwrap();
     // println!("{chunks:?}");
 
-    let packet_data: Vec<u8> = include_str!("../../test_data/chunk_packet1.mc_packet").trim().split(",").map(|v| match v.parse::<u8>() {
+    /*let packet_data: Vec<u8> = include!("../../test_data/chunk2-2.dump").trim().split(",").map(|v| match v.parse::<u8>() {
         Ok(v) => v,
         Err(e) => panic!("invalid {:?}", v)
-    }).skip(1).collect();
-    std::fs::write("test_data/chunk_packet1-2.mc_packet", packet_data.clone());
-    let (packet, rest) = ChunkData::deserialize_minecraft_packet_part(&packet_data).unwrap();
-    assert!(rest.is_empty());
-    let chunk_data = packet.data.items.as_slice();
-    let chunks = Chunk::deserialize_from_data(chunk_data).unwrap();
+    }).collect();
+    std::fs::write("test_data/chunk2-2.dump", packet_data.clone());*/
+    let packet_data = &include_bytes!("../../test_data/chunk2-2.dump")[..];
+    // let (packet, rest) = ChunkData::deserialize_minecraft_packet_part(&packet_data).unwrap();
+    // assert!(rest.is_empty());
+    // let chunk_data = packet.data.items.as_slice();
+    let chunks = Chunk::deserialize_from_data(&packet_data).unwrap();
     
     //println!("{:?}", chunk_data_deserialized);
 }
