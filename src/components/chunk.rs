@@ -1,3 +1,5 @@
+use std::char::MAX;
+
 use crate::{nbt::NbtTag, *, components::blocks::BlockEntity};
 
 /// A complex data structure including block data and optionally entities of a chunk.
@@ -47,106 +49,125 @@ pub struct ChunkData<'a> {
     pub block_light: Array<'a, Array<'a, u8, VarInt>, VarInt>,
 }
 
+
+#[derive(Debug)]
+pub enum PalettedData<const MIN_BITS: u8, const MAX_BITS: u8, const FALLBACK_BITS: u8> {
+    Paletted {
+        palette: Vec<u32>,
+        indexed: Vec<u8>,
+    },
+    Single {
+        value: u32,
+    },
+    Raw {
+        values: Vec<u32>,
+    }
+}
+
+impl<'a, const MIN_BITS: u8, const MAX_BITS: u8, const FALLBACK_BITS: u8> MinecraftPacketPart<'a> for PalettedData<MIN_BITS, MAX_BITS, FALLBACK_BITS> {
+    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        todo!()
+    }
+
+    fn deserialize_minecraft_packet_part(input: &'a [u8]) -> Result<(Self, &'a [u8]), &'static str> {
+        let (mut bits_per_entry, new_input) = u8::deserialize_minecraft_packet_part(input)?;
+
+        Ok(match bits_per_entry {
+            0 => {
+                let (value, new_input) = VarInt::deserialize_minecraft_packet_part(new_input)?;
+                (PalettedData::Single { value: value.0 as u32 }, new_input)
+            },
+            _ if bits_per_entry>=MIN_BITS && bits_per_entry<=MAX_BITS => {
+                let entries_per_long = 64 / bits_per_entry;
+                let mut base_mask = 0;
+                for _ in 0..bits_per_entry {
+                    base_mask <<= 1;
+                    base_mask += 1;
+                }
+
+                let (palette, new_input) = <Array<VarInt, VarInt>>::deserialize_minecraft_packet_part(new_input)?;
+                let palette: Vec<u32> = palette.items.into_iter().map(|id| id.0 as u32).collect();
+
+                let (longs, new_input) = <Array<u64, VarInt>>::deserialize_minecraft_packet_part(new_input)?;
+                let mut indexed = Vec::new();
+                for long in longs.items.into_iter() {
+                    let mut mask = base_mask;
+                    for i in 0..entries_per_long {
+                        let index = ((long & mask) >> (i * bits_per_entry)) as u8;
+                        indexed.push(index);
+                        mask <<= bits_per_entry;
+                    }
+                }
+
+                (PalettedData::Paletted { palette, indexed }, new_input)
+            },
+            _ => {
+                bits_per_entry = FALLBACK_BITS;
+                let entries_per_long = 64 / bits_per_entry;
+                let mut base_mask = 0;
+                for _ in 0..bits_per_entry {
+                    base_mask <<= 1;
+                    base_mask += 1;
+                }
+
+                let (longs, new_input) = <Array<u64, VarInt>>::deserialize_minecraft_packet_part(new_input)?;
+                let mut values = Vec::new();
+                for long in longs.items.into_iter() {
+                    let mut mask = base_mask;
+                    for i in 0..entries_per_long {
+                        let value = ((long & mask) >> (i * bits_per_entry)) as u32;
+                        values.push(value);
+                        mask <<= bits_per_entry;
+                    }
+                }
+
+                (PalettedData::Raw { values }, new_input)
+            }
+        })
+    }
+}
+
 /// A [chunk section](ChunkSection) is a 16×16×16 collection of blocks (chunk sections are cubic).
 /// A [chunk column](ChunkData) is a 16×256×16 collection of blocks, and is what most players think of when they hear the term "chunk".
 /// However, these are not the smallest unit data is stored in in the game; [chunk columns](ChunkData) are actually 16 [chunk sections](ChunkSection) aligned vertically.
 #[derive(Debug)]
-pub enum Chunk {
-    Paletted {
-        /// Number of non-air blocks present in the chunk section, for lighting purposes.
-        /// "Non-air" is defined as any block other than air, cave air, and void air (in particular, note that fluids such as water are still counted).
-        block_count: i16,
-        /// Chunk sections often contains a palette (for compression).
-        /// This is a great way to find if a particular block is present in the section without iterating trought all blocks.
-        /// Use [Block::from_state_id](crate::ids::blocks::Block::from_state_id) to get the corresponding [Block](crate::ids::blocks::Block).
-        palette: Vec<u32>,
-        /// Blocks stored as indexes in the palette.
-        /// Blocks with increasing x coordinates, within rows of increasing z coordinates, within layers of increasing y coordinates.
-        block_indexes: Vec<u8>,
-    },
-    SingleBlock {
-        /// A single block filling the whole chunk
-        block: u32,
-    },
-    Raw {
-        /// Number of non-air blocks present in the chunk section, for lighting purposes.
-        /// "Non-air" is defined as any block other than air, cave air, and void air (in particular, note that fluids such as water are still counted).
-        block_count: i16,
-        /// Blocks stored as `block state IDs`.
-        /// Blocks with increasing x coordinates, within rows of increasing z coordinates, within layers of increasing y coordinates.
-        /// Use [Block::from_state_id](crate::ids::blocks::Block::from_state_id) to get the corresponding [Block](crate::ids::blocks::Block).
-        blocks: Vec<u32>,
-    }
+pub struct Chunk {
+    block_count: i16,
+    blocks: PalettedData<4, 8, 15>,
+    biomes: PalettedData<0, 3, 6>,
 }
 
-impl<'a> ChunkData<'a> {
-    /// Deserialize chunk sections from a chunk data packet.
-    #[allow(clippy::needless_range_loop)]
-    pub fn deserialize_chunks(&self) -> Result<Vec<Chunk>, &'static str> {
-        let input = self.data.items.as_slice();
+impl Chunk {
+    /// Deserialize chunk sections from data in a chunk packet
+    pub fn deserialize_from_data(input: &[u8]) -> Result<Vec<Chunk>, &'static str> {
+        std::fs::write("test_data/chunk_packet1-3.mc_packet", input);
 
-        let (chunk_count, input) = VarInt::deserialize_minecraft_packet_part(input)?;
+        let orig_len = input.len();
+
+        let (chunk_count, mut input) = VarInt::deserialize_minecraft_packet_part(input)?;
+        println!("{}", chunk_count.0);
 
         let mut chunks = Vec::new();
-        for chunk in 0..chunk_count.0 {
-            let (block_count, input) = i16::deserialize_minecraft_packet_part(input)?;
-            let (mut bits_per_entry, input) = u8::deserialize_minecraft_packet_part(input)?;
+        while !input.is_empty() {
+            println!("chunk {}", chunks.len());
 
-            let chunk = match bits_per_entry {
-                0 => {
-                    let (block, input) = VarInt::deserialize_minecraft_packet_part(input)?;
-                    Chunk::SingleBlock { block: block.0 as u32 }
-                },
-                1..=8 => {
-                    bits_per_entry = bits_per_entry.clamp(4, 8);
-                    let (palette, input) = <Array<VarInt, VarInt>>::deserialize_minecraft_packet_part(input)?;
-                    let palette: Vec<u32> = palette.items.into_iter().map(|id| id.0 as u32).collect();
-                    
-                    let (longs, input) = <Array<u64, VarInt>>::deserialize_minecraft_packet_part(input)?;
-                    let (entries_per_long, base_mask) = match bits_per_entry {
-                        4 => (16, 0xF),
-                        5 => (12, 0b11111),
-                        6 => (10, 0b111111),
-                        7 => (9, 0b1111111),
-                        8 => (8, 0xFF),
-                        _ => unreachable!(),
-                    };
+            let (block_count, new_input) = i16::deserialize_minecraft_packet_part(input)?;
+            println!("  block count: {}", block_count);
+            
+            let (blocks, new_input) = PalettedData::<4, 8, 15>::deserialize_minecraft_packet_part(new_input)?;
+            println!("  blocks: {:?}", blocks);
 
-                    let mut block_indexes = Vec::new();
-                    for long in longs.items {
-                        let mut mask = base_mask;
-                        for i in 0..entries_per_long {
-                            let block_index = ((long & mask) >> (i * bits_per_entry)) as u8;
-                            block_indexes.push(block_index);
-                            mask <<= bits_per_entry;
-                        }
-                    }
+            let (biomes, new_input) = PalettedData::<0, 3, 6>::deserialize_minecraft_packet_part(new_input)?;
+            println!("  biomes: {:?}", biomes);
 
-                    Chunk::Paletted { block_count, palette, block_indexes }
-                },
-                9.. => {
-                    let (longs, input) = <Array<u64, VarInt>>::deserialize_minecraft_packet_part(input)?;
-                    let blocks_per_long = (64.0 / bits_per_entry as f32).floor() as u8;
-                    let mut base_mask = 0;
-                    for _ in 0..bits_per_entry {
-                        base_mask <<= 1;
-                        base_mask += 1;
-                    }
+            chunks.push(Chunk { block_count, blocks, biomes });
+            input = new_input;
+        }
 
-                    let mut blocks = Vec::new();
-                    for long in longs.items {
-                        let mut mask = base_mask;
-                        for i in 0..blocks_per_long {
-                            let block = ((long & mask) >> (i * bits_per_entry)) as u32;
-                            blocks.push(block);
-                            mask <<= bits_per_entry;
-                        }
-                    }
-
-                    Chunk::Raw { block_count, blocks }
-                }
-            };
-            chunks.push(chunk);
+        if !input.is_empty() {
+            let handled_bytes = orig_len - input.len();
+            println!("handled {} bytes over {}", handled_bytes, input.len());
+            return Err("trailing data not parsed");
         }
 
         Ok(chunks)
@@ -156,10 +177,24 @@ impl<'a> ChunkData<'a> {
 #[cfg(test)]
 #[test]
 fn test() {
-    let chunk_data = &include_bytes!("../../test_data/chunk.mc_packet")[1..];
+    //let chunk_data = &include_bytes!("../../test_data/chunk_-10_-1.dump")[..];
 
-    let mut chunk_data_deserialized = ChunkData::deserialize_uncompressed_minecraft_packet(chunk_data).unwrap();
-    let _blocks = chunk_data_deserialized.deserialize_chunks().unwrap();
+    //let chunks = Chunk::deserialize_from_data(chunk_data).unwrap();
+    //println!("{chunks:?}");
+
+    // let chunk_data = &include_bytes!("../../test_data/chunk_-10_-1.dump")[2..];
+    // let chunks = ChunkData::deserialize_minecraft_packet_part(chunk_data).unwrap();
+    // println!("{chunks:?}");
+
+    let packet_data: Vec<u8> = include_str!("../../test_data/chunk_packet1.mc_packet").trim().split(",").map(|v| match v.parse::<u8>() {
+        Ok(v) => v,
+        Err(e) => panic!("invalid {:?}", v)
+    }).skip(1).collect();
+    std::fs::write("test_data/chunk_packet1-2.mc_packet", packet_data.clone());
+    let (packet, rest) = ChunkData::deserialize_minecraft_packet_part(&packet_data).unwrap();
+    assert!(rest.is_empty());
+    let chunk_data = packet.data.items.as_slice();
+    let chunks = Chunk::deserialize_from_data(chunk_data).unwrap();
     
     //println!("{:?}", chunk_data_deserialized);
 }
