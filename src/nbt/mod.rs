@@ -17,11 +17,11 @@ pub enum NbtTag {
     Float(f32),
     Double(f64),
     ByteArray(Vec<i8>),
-    IntArray(Vec<i32>),
-    LongArray(Vec<i64>),
     String(String),
     List(NbtList),
     Compound(HashMap<String, NbtTag>),
+    IntArray(Vec<i32>),
+    LongArray(Vec<i64>),
     RootCompound(HashMap<String, NbtTag>),
 }
 
