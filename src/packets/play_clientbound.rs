@@ -731,7 +731,7 @@ pub enum ClientboundPacket<'a> {
 
     /// Sent by the server when a list of entities is to be destroyed on the client
     RemoveEntities {
-        entity_ids: Array<'a, effect::Effect, VarInt>,
+        entity_ids: Array<'a, VarInt, VarInt>,
     },
 
     RemoveEntityEffect {
@@ -1043,6 +1043,8 @@ pub enum ClientboundPacket<'a> {
         volume: f32,
         /// Float between 0.5 and 2.0 by Notchian clients
         pitch: f32,
+        /// Seed used to pick sound variant.
+        seed: i64,
     },
 
     /// This packet is used to play sound events with hardcoded IDs.
