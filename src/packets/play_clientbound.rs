@@ -817,9 +817,8 @@ pub enum ClientboundPacket<'a> {
 
     ServerData {
         motd: Chat<'a>,
-        has_icon: bool,
         /// Icon bytes in the PNG format
-        icon: Array<'a, u8, VarInt>,
+        icon: Option<Array<'a, u8, VarInt>>,
         enforces_secure_chat: bool,
     },
 
