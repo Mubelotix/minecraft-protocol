@@ -1135,7 +1135,7 @@ pub enum ClientboundPacket<'a> {
         on_ground: bool,
     },
 
-    Advancements {
+    UpdateAdvancements {
         /// Whether to reset/clear the current advancements
         reset: bool,
         advancement_mapping: Map<'a, Identifier<'a>, advancements::Advancement<'a>, VarInt>,

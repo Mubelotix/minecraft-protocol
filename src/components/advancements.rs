@@ -8,6 +8,9 @@ pub struct Advancement<'a> {
     pub criteria: Array<'a, Identifier<'a>, VarInt>,
     /// Array of arrays of required criteria
     pub requirements: Array<'a, Array<'a, &'a str, VarInt>, VarInt>,
+    /// Whether the client should include this achievement in the telemetry data when it's completed.
+    /// The Notchian client only sends data for advancements on the `minecraft` namespace.
+    pub sends_telemetry_data: bool,
 }
 
 #[derive(Debug)]
