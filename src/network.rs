@@ -146,7 +146,7 @@ mod tests {
                     .unwrap();
                     println!("pong!");
                 }
-                ClientboundPacket::Advancements { .. } => {
+                ClientboundPacket::UpdateAdvancements { .. } => {
                     println!("Advancements parsed successfully!")
                 }
                 ClientboundPacket::ChunkData { mut value } => {
