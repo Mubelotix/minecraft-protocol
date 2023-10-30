@@ -1096,7 +1096,6 @@ pub enum ClientboundPacket<'a> {
         footer: Chat<'a>,
     },
 
-    // Todo add doc links
     /// Sent in response to [Query Block Entity Tag](https://wiki.vg/Protocol#Query_Block_Entity_Tag) or [Query Entity Tag](https://wiki.vg/Protocol#Query_Entity_Tag).
     ///
     /// *Response to [ServerboundPacket::QueryBlockNbt] and [ServerboundPacket::QueryEntityNbt]*
@@ -1113,10 +1112,10 @@ pub enum ClientboundPacket<'a> {
     /// Sent by the server when someone picks up an item lying on the ground.
     /// **Its sole purpose** appears to be the animation of the item flying towards you.
     /// **It doesn't destroy the entity in the client memory, and it doesn't add it to your inventory.**
-    /// The server only checks for items to be picked up after each Player Position (and Player Position And Look) packet sent by the client.
+    /// The server only checks for items to be picked up after each [ServerboundPacket::SetPlayerPosition] (and [ServerboundPacket::SetPlayerPositionAndRotation]) packet sent by the client.
     /// The collector entity can be any entity; it does not have to be a player.
     /// The collected entity also can be any entity, but the Notchian server only uses this for items, experience orbs, and the different varieties of arrows.
-    CollectItem {
+    PickupItem {
         collected_entity_id: VarInt,
         collector_entity_id: VarInt,
         /// Seems to be 1 for XP orbs, otherwise the number of items in the stack
