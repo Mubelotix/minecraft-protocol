@@ -720,8 +720,6 @@ pub enum ClientboundPacket<'a> {
         /// Look at to the [flag table](https://wiki.vg/Protocol#Synchronize_Player_Position)
         flags: u8,
         teleport_id: VarInt,
-        /// True if the player should dismount their vehicle
-        dismount_vehicle: bool,
     },
 
     UnlockRecipes {
