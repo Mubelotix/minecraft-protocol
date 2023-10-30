@@ -622,11 +622,10 @@ pub enum ClientboundPacket<'a> {
         field_of_view_modifier: f32,
     },
 
-    /// Identifying the difference between Chat/System Message is important as it helps respect the user's chat visibility options. See [processing chat](https://wiki.vg/Chat#Processing_chat) for more info about these positions.
+    /// Used to send a chat message to the server. The message may not be longer than 256 characters or else the server will kick the client.
     ///
-    /// **Warning**: Game info accepts json formatting but does not display it, although the deprecated §-based formatting works. This is not an issue when using the [Title] packet, so prefer that packet for displaying information in that slot. See MC-119145 for more information.
-    ///
-    /// *See also [ServerboundPacket::ChatMessage]*
+    /// The server will broadcast the same chat message to all players on the server (including the player that sent the message), prepended with player's name. Specifically, it will respond with a translate chat component, "`chat.type.text`" with the first parameter set to the display name of the player (including some chat component logic to support clicking the name to send a PM) and the second parameter set to the message.
+    /// *See [processing](https://wiki.vg/Chat#Processing_chat) chat for more information.
     ChatMessage {
         /// Used by the Notchian client for the disableChat launch option. Setting both longs to 0 will always display the message regardless of the setting.
         sender: UUID,
@@ -1079,9 +1078,18 @@ pub enum ClientboundPacket<'a> {
         value: sound::StopSoundPacket<'a>,
     },
 
+    /// Identifying the difference between Chat/System Message is important as it helps respect the user's chat visibility options. 
+    /// See [processing chat](https://wiki.vg/Chat#Processing_chat) for more info about these positions.
+    SystemChatMessage {
+        /// Limited to 262144 bytes.
+        content: Chat<'a>,
+        /// Whether the message is an actionbar or chat message.
+        overlay: bool,
+    },
+
     /// This packet may be used by custom servers to display additional information above/below the player list.
     /// It is never sent by the Notchian server.
-    PlayerListHeaderAndFooter {
+    SetTabListHeaderAndFooter {
         /// To remove the header, send a empty text component: `{"text":""}`
         header: Chat<'a>,
         /// To remove the footer, send a empty text component: `{"text":""}`
@@ -1089,10 +1097,10 @@ pub enum ClientboundPacket<'a> {
     },
 
     // Todo add doc links
-    /// Sent in response to Query Block NBT or Query Entity NBT.
+    /// Sent in response to [Query Block Entity Tag](https://wiki.vg/Protocol#Query_Block_Entity_Tag) or [Query Entity Tag](https://wiki.vg/Protocol#Query_Entity_Tag).
     ///
     /// *Response to [ServerboundPacket::QueryBlockNbt] and [ServerboundPacket::QueryEntityNbt]*
-    NbtQueryResponse {
+    TagQueryResponse {
         // Todo add doc link
         /// Can be compared to the one sent in the original query packet.
         query_id: VarInt,
