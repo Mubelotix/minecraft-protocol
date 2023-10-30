@@ -1034,9 +1034,10 @@ pub enum ClientboundPacket<'a> {
 
     /// Plays a sound effect from an entity
     EntitySoundEffect {
-        /// ID of hardcoded sound event ([events](https://pokechu22.github.io/Burger/1.16.5.html#sounds) as of 1.16.5).
+        /// ID of hardcoded sound event ([events](https://pokechu22.github.io/Burger/1.20.2.html#sounds) as of 1.20.2).
         /// TODO: generate an enum
         sound_id: VarInt,
+        /// The category that this sound will be played from ([current categories](https://gist.github.com/konwboj/7c0c380d3923443e9d55)).
         sound_category: sound::SoundCategory,
         entity_id: VarInt,
         /// 1.0 is 100%, capped between 0.0 and 1.0 by Notchian clients
@@ -1066,6 +1067,8 @@ pub enum ClientboundPacket<'a> {
         volume: f32,
         /// Float between 0.5 and 2.0 by Notchian clients
         pitch: f32,
+        /// Seed used to pick sound variant.
+        seed: i64,
     },
 
     StopSound {
