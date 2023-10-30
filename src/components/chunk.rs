@@ -150,23 +150,12 @@ pub struct Chunk {
 
 impl Chunk {
     /// Deserialize chunk sections from data in a chunk packet
-    pub fn deserialize_from_data(input: &[u8]) -> Result<Vec<Chunk>, &'static str> {
-        std::fs::write("test_data/chunk_packet1-3.mc_packet", input);
-
-        let orig_len = input.len();
-
+    pub fn deserialize_from_data(mut input: &[u8]) -> Result<Vec<Chunk>, &'static str> {
         let chunk_count = (-64..320).len() / 16;
-        ///let (chunk_count, mut input) = VarInt::deserialize_minecraft_packet_part(input)?;
-        let mut input = input;
-        println!("{}", chunk_count);
 
         let mut chunks = Vec::new();
         for _ in 0..chunk_count {
-            println!("chunk {}", chunks.len());
-            println!("hex offset in file {:x}", orig_len - input.len());
-
             let (block_count, new_input) = i16::deserialize_minecraft_packet_part(input)?;
-            println!("  block count: {}", block_count);
             
             let (mut blocks, new_input) = PalettedData::<4, 8, 15>::deserialize_minecraft_packet_part(new_input)?;
             match blocks {
@@ -174,7 +163,6 @@ impl Chunk {
                 PalettedData::Raw { ref mut values } => values.truncate(16*16*16),
                 PalettedData::Single { .. } => (),
             }
-            println!("  blocks: {:?}", blocks);
 
             let (mut biomes, new_input) = PalettedData::<0, 3, 6>::deserialize_minecraft_packet_part(new_input)?;
             match biomes {
@@ -182,15 +170,12 @@ impl Chunk {
                 PalettedData::Raw { ref mut values } => values.truncate(4*4*4),
                 PalettedData::Single { .. } => (),
             }
-            println!("  biomes: {:?}", biomes);
 
             chunks.push(Chunk { block_count, blocks, biomes });
             input = new_input;
         }
 
         if !input.is_empty() {
-            let handled_bytes = orig_len - input.len();
-            println!("handled {} bytes over {}", handled_bytes, input.len());
             return Err("trailing data not parsed");
         }
 
