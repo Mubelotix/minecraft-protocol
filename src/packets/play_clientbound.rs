@@ -998,6 +998,11 @@ pub enum ClientboundPacket<'a> {
         score_action: teams::ScoreboardScoreAction<'a>,
     },
 
+    SetSimulationDistance {
+        /// The distance that the client will process specific things, such as entities.
+        simulation_distance: VarInt,
+    },
+
     SetTitleSubTitle {
         subtitle_text: Chat<'a>,
     },
