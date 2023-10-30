@@ -37,40 +37,34 @@ impl<'a> PlayerActions<'a> {
 
 #[derive(Debug, MinecraftPacketPart)]
 pub struct AddPlayersAction<'a> {
-    player_uuid: UUID,
     name: &'a str,
     properties: Array<'a, Property<'a>, VarInt>,
 }
 
 #[derive(Debug, MinecraftPacketPart)]
 pub struct InitializeChatAction<'a> {
-    player_uuid: UUID,
     initialize_chat: Option<InitializeChat<'a>>,
 }
 
 #[derive(Debug, MinecraftPacketPart)]
 pub struct UpdateGamemodesAction {
-    player_uuid: UUID,
     gamemode: VarInt,
 }
 
 #[derive(Debug, MinecraftPacketPart)]
 pub struct UpdateListedAction {
-    player_uuid: UUID,
     /// Whether the player should be listed on the player list.
     listed: bool,
 }
 
 #[derive(Debug, MinecraftPacketPart)]
 pub struct PingAction {
-    player_uuid: UUID,
     /// Measured in milliseconds
     ping: VarInt,
 }
 
 #[derive(Debug, MinecraftPacketPart)]
 pub struct UpdateDisplayNameAction<'a> {
-    player_uuid: UUID,
     display_name: Option<Chat<'a>>,
 }
 
@@ -174,8 +168,9 @@ impl<'a> MinecraftPacketPart<'a> for PlayersInfos<'a> {
     /// Look at this [wiki page](https://wiki.vg/Protocol#Player_Info_Update) for more information about this packet.
     fn deserialize_minecraft_packet_part(input: &'a [u8])
         -> Result<(Self, &'a [u8]), &'static str> {
-        // The first byte is the mask
+        // The first byte is the mask of actions
         let (mut mask, input) = u8::deserialize_minecraft_packet_part(input)?;
+        println!("Mask: {:08b}", mask);
         // The second byte is the number of players
         let (n_players, mut input) = VarInt::deserialize_minecraft_packet_part(input)?;
         // We will deserialize n_players times the player uuid and actions 
@@ -193,7 +188,7 @@ impl<'a> MinecraftPacketPart<'a> for PlayersInfos<'a> {
             let mut current_bit = 0;
             while mask > 0 {
                 // If the bit is 1, the action is present
-                if mask & (1 << current_bit) != 0 {
+                if (mask & 1) > 0 {
                     // We need to deserialize the action
                     let (action, new_input) = match current_bit {
                         0 => {
