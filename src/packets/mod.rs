@@ -22,7 +22,7 @@ impl From<usize> for VarInt {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct VarLong(pub i64);
 impl TryFrom<VarLong> for usize {
     type Error = std::num::TryFromIntError;
@@ -45,7 +45,7 @@ pub struct Position {
     pub z: i32,
 }
 
-#[minecraft_enum(u8)]
+#[minecraft_enum(VarInt)]
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Direction {
     South = 1,

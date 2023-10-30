@@ -69,8 +69,27 @@ pub enum Pose {
     Swimming,
     SpinAttack,
     Sneaking,
-    Dying,
     LongJumping,
+    Dying,
+    Croaking,
+    UsingTongue,
+    Sitting,
+    Roaring,
+    Sniffing,
+    Emerging,
+    Digging,
+}
+
+#[minecraft_enum(VarInt)]
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum SnifferState {
+    Idling,
+    FeelingHappy,
+    Scienting,
+    Sniffing,
+    Searching,
+    Digging,
+    Rising,
 }
 
 #[derive(Debug, Clone)]
@@ -117,6 +136,9 @@ pub enum EntityMetadataValue {
     VarInt {
         value: VarInt,
     },
+    VarLong {
+        value: VarLong,
+    },
     Float {
         value: f32,
     },
@@ -152,8 +174,12 @@ pub enum EntityMetadataValue {
     OptionUUID {
         uuid: Option<UUID>,
     },
+    BlockId {
+        block_id: VarInt,
+    },
     /// Use [Block::from_state_id](crate::ids::blocks::Block::from_state_id) to get the block.
     OptionBlockStateID {
+        /// 0 for absent (implies air); otherwise, a block state ID as per the global palette
         block_state_id: VarInt,
     },
     Nbt {
@@ -173,6 +199,35 @@ pub enum EntityMetadataValue {
     },
     Pose {
         pose: Pose,
+    },
+    CatVariant {
+        /// A VarInt that points towards the CAT_VARIANT registry.
+        cat_variant: VarInt,
+    },
+    FrogVariant {
+        /// A VarInt that points towards the FROG_VARIANT registry.
+        frog_variant: VarInt,
+    },
+    OptionalGlobalPos {
+        optional_global_pos: Option<Position>,
+    },
+    PaintingVariant {
+        /// A VarInt that points towards the PAINTING_VARIANT registry.
+        painting_variant: VarInt,
+    },
+    SnifferState {
+        sniffer_state_variant: SnifferState,
+    },
+    Vector3 {
+        x: f32,
+        y: f32,
+        z: f32,
+    },
+    Quaternion {
+        x: f32,
+        y: f32,
+        z: f32,
+        w: f32,
     },
 }
 
