@@ -1168,12 +1168,12 @@ pub enum ClientboundPacket<'a> {
         factor_codec: Option<NbtTag>,
     },
 
-    DeclareRecipes {
+    UpdateRecipes {
         /// TODO
         data: RawBytes<'a>,
     },
 
-    Tags {
+    UpdateTags {
         /// More information on tags is available at: https://minecraft.gamepedia.com/Tag
         /// And a list of all tags is here: https://minecraft.gamepedia.com/Tag#List_of_tags
         tags: Map<'a, Identifier<'a>, Array<'a, tags::Tag<'a>, VarInt>, VarInt>,
