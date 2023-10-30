@@ -1165,7 +1165,7 @@ pub enum ClientboundPacket<'a> {
         /// Bit field, see [the wiki](https://wiki.vg/Protocol#Entity_Properties).
         /// (should not be particularly useful)
         flags: u8,
-        factorCodec: Option<NbtTag>,
+        factor_codec: Option<NbtTag>,
     },
 
     DeclareRecipes {
