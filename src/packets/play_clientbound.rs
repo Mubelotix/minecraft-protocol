@@ -1023,7 +1023,7 @@ pub enum ClientboundPacket<'a> {
         title_text: Chat<'a>,
     },
 
-    SetTitleTimes {
+    SetTitleAnimationTimes {
         /// Ticks to spend fading in
         fade_in: i32,
         /// Ticks to keep the title displayed
