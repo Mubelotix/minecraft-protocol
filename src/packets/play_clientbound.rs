@@ -971,6 +971,13 @@ pub enum ClientboundPacket<'a> {
         food_saturation: f32,
     },
 
+    /// This is sent to the client when it should update a scoreboard item
+    UpdateObjectives {
+        /// The entity whose score this is. For players, this is their username; for other entities, it is their UUID.
+        entity_name: &'a str,
+        score_action: teams::ScoreboardScoreAction<'a>,
+    },
+
     /// This is sent to the client when it should create a new scoreboard objective or remove one
     ScoreboardObjective {
         /// A unique name for the objective
@@ -989,13 +996,6 @@ pub enum ClientboundPacket<'a> {
         /// A unique name for the team (Shared with scoreboard)
         team_name: &'a str,
         action: teams::TeamAction<'a>,
-    },
-
-    /// This is sent to the client when it should update a scoreboard item
-    UpdateScore {
-        /// The entity whose score this is. For players, this is their username; for other entities, it is their UUID.
-        entity_name: &'a str,
-        score_action: teams::ScoreboardScoreAction<'a>,
     },
 
     SetTitleSubTitle {
