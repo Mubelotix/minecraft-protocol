@@ -5,7 +5,6 @@ pub struct Advancement<'a> {
     /// The identifier of the parent advancement
     pub parent_id: Option<Identifier<'a>>,
     pub display_data: Option<AdvancementDisplay<'a>>,
-    pub criteria: Array<'a, Identifier<'a>, VarInt>,
     /// Array of arrays of required criteria
     pub requirements: Array<'a, Array<'a, &'a str, VarInt>, VarInt>,
     /// Whether the client should include this achievement in the telemetry data when it's completed.
