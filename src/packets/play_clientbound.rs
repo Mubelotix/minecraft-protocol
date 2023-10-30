@@ -977,6 +977,12 @@ pub enum ClientboundPacket<'a> {
         entity_name: &'a str,
         score_action: teams::ScoreboardScoreAction<'a>,
     },
+    
+    SetPassagers {
+        vehicle_entity_id: VarInt,
+        /// The IDs of entity's passengers
+        passagers: Array<'a, VarInt, VarInt>,
+    },
 
     /// This is sent to the client when it should create a new scoreboard objective or remove one
     ScoreboardObjective {
@@ -985,11 +991,7 @@ pub enum ClientboundPacket<'a> {
         action: teams::ScoreboardAction<'a>,
     },
 
-    SetPassagers {
-        vehicle_entity_id: VarInt,
-        /// The IDs of entity's passengers
-        passagers: Array<'a, VarInt, VarInt>,
-    },
+    
 
     /// Creates and updates teams
     Teams {
