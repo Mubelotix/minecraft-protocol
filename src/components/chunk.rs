@@ -51,7 +51,7 @@ pub struct ChunkData<'a> {
 
 
 #[derive(Debug)]
-pub enum PalettedData<const MIN_BITS: u8, const MAX_BITS: u8, const FALLBACK_BITS: u8> {
+pub enum PalettedData<const LBITS: u8, const HBITS: u8, const DBITS: u8, const TRUNC: usize> {
     Paletted {
         palette: Vec<u32>,
         indexed: Vec<u8>,
@@ -64,28 +64,26 @@ pub enum PalettedData<const MIN_BITS: u8, const MAX_BITS: u8, const FALLBACK_BIT
     }
 }
 
-impl<'a, const MIN_BITS: u8, const MAX_BITS: u8, const FALLBACK_BITS: u8> MinecraftPacketPart<'a> for PalettedData<MIN_BITS, MAX_BITS, FALLBACK_BITS> {
+impl<'a, const LBITS: u8, const HBITS: u8, const DBITS: u8, const TRUNC: usize> MinecraftPacketPart<'a> for PalettedData<LBITS, HBITS, DBITS, TRUNC> {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
         todo!()
     }
 
     fn deserialize_minecraft_packet_part(input: &'a [u8]) -> Result<(Self, &'a [u8]), &'static str> {
         let (mut bits_per_entry, new_input) = u8::deserialize_minecraft_packet_part(input)?;
-        println!("  bits per entry: {}", bits_per_entry);
 
         Ok(match bits_per_entry {
             0 => {
                 let (value, new_input) = VarInt::deserialize_minecraft_packet_part(new_input)?;
-                // This should be empty
                 let (longs, new_input) = <Array<u64, VarInt>>::deserialize_minecraft_packet_part(new_input)?;
                 if !longs.items.is_empty() {
                     return Err("non-empty longs array for 0 bits per entry");
                 }
                 (PalettedData::Single { value: value.0 as u32 }, new_input)
             },
-            _ if bits_per_entry<=MAX_BITS => {
-                if bits_per_entry<MIN_BITS {
-                    bits_per_entry = MIN_BITS;
+            _ if bits_per_entry<=HBITS => {
+                if bits_per_entry<LBITS {
+                    bits_per_entry = LBITS;
                 }
                 let entries_per_long = 64 / bits_per_entry;
                 let mut base_mask = 0;
@@ -107,12 +105,12 @@ impl<'a, const MIN_BITS: u8, const MAX_BITS: u8, const FALLBACK_BITS: u8> Minecr
                         mask <<= bits_per_entry;
                     }
                 }
-                println!("  {} values", indexed.len());
+                indexed.truncate(TRUNC);
 
                 (PalettedData::Paletted { palette, indexed }, new_input)
             },
             _ => {
-                bits_per_entry = FALLBACK_BITS;
+                bits_per_entry = DBITS;
                 let entries_per_long = 64 / bits_per_entry;
                 let mut base_mask = 0;
                 for _ in 0..bits_per_entry {
@@ -130,7 +128,7 @@ impl<'a, const MIN_BITS: u8, const MAX_BITS: u8, const FALLBACK_BITS: u8> Minecr
                         mask <<= bits_per_entry;
                     }
                 }
-                println!("  {} values", values.len());
+                values.truncate(TRUNC);
 
                 (PalettedData::Raw { values }, new_input)
             }
@@ -144,8 +142,8 @@ impl<'a, const MIN_BITS: u8, const MAX_BITS: u8, const FALLBACK_BITS: u8> Minecr
 #[derive(Debug)]
 pub struct Chunk {
     block_count: i16,
-    blocks: PalettedData<4, 8, 15>,
-    biomes: PalettedData<0, 3, 6>,
+    blocks: PalettedData<4, 8, 15, {16*16*16}>,
+    biomes: PalettedData<0, 3, 6, {4*4*4}>,
 }
 
 impl Chunk {
@@ -157,14 +155,14 @@ impl Chunk {
         for _ in 0..chunk_count {
             let (block_count, new_input) = i16::deserialize_minecraft_packet_part(input)?;
             
-            let (mut blocks, new_input) = PalettedData::<4, 8, 15>::deserialize_minecraft_packet_part(new_input)?;
+            let (mut blocks, new_input) = <PalettedData<4, 8, 15, {16*16*16}>>::deserialize_minecraft_packet_part(new_input)?;
             match blocks {
                 PalettedData::Paletted {  ref mut indexed, .. } => indexed.truncate(16*16*16),
                 PalettedData::Raw { ref mut values } => values.truncate(16*16*16),
                 PalettedData::Single { .. } => (),
             }
 
-            let (mut biomes, new_input) = PalettedData::<0, 3, 6>::deserialize_minecraft_packet_part(new_input)?;
+            let (mut biomes, new_input) = <PalettedData<0, 3, 6, {4*4*4}>>::deserialize_minecraft_packet_part(new_input)?;
             match biomes {
                 PalettedData::Paletted { ref mut indexed, .. } => indexed.truncate(4*4*4),
                 PalettedData::Raw { ref mut values } => values.truncate(4*4*4),

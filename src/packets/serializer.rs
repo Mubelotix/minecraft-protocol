@@ -822,6 +822,32 @@ impl<
     }
 }
 
+pub struct FixedSizeArray<'a, V: MinecraftPacketPart<'a>, const N: usize> {
+    pub items: Vec<V>,
+    _phantom: std::marker::PhantomData<&'a ()>,
+}
+
+impl<'a, V: MinecraftPacketPart<'a>, const N: usize> MinecraftPacketPart<'a> for FixedSizeArray<'a, V, N> {
+    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        if self.items.len() != N {
+            return Err("The vector length is not the expected one");
+        }
+        for item in self.items {
+            item.serialize_minecraft_packet_part(output)?;
+        }
+        Ok(())
+    }
+
+    fn deserialize_minecraft_packet_part(mut input: &'a [u8]) -> Result<(Self, &'a [u8]), &'static str> {
+        let mut items = Vec::new();
+        for _ in 0..N {
+            let (item, new_input) = V::deserialize_minecraft_packet_part(input)?;
+            items.push(item);
+            input = new_input;
+        }
+        Ok((FixedSizeArray { items, _phantom: std::marker::PhantomData }, input))
+    }
+}
 
 
 impl<
