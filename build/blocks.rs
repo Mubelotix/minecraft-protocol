@@ -788,7 +788,7 @@ impl From<super::blocks::Block> for BlockWithState {{
 impl<'a> MinecraftPacketPart<'a> for BlockWithState {{
     #[inline]
     fn serialize_minecraft_packet_part(self, _output: &mut Vec<u8>) -> Result<(), &'static str> {{
-        self.block_state_id().unwrap_or(0).serialize_minecraft_packet_part(_output)
+        VarInt::from(self.block_state_id().unwrap_or(0)).serialize_minecraft_packet_part(_output)
     }}
 
     #[inline]
