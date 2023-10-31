@@ -9,6 +9,13 @@ use minecraft_protocol::{MinecraftPacketPart, packets::play_clientbound::Clientb
 
 #[test]
 fn auto_play_clientbound_52() {
-    let input = &[82, 255, 255, 188, 0, 0, 27, 0, 66, 0, 0, 0, 0];
-    ClientboundPacket::deserialize_uncompressed_minecraft_packet(input).unwrap();
+    let input = &[82, 0, 0, 28, 0, 0, 27, 0, 65, 0, 0, 0, 0];
+    let packet = ClientboundPacket::deserialize_uncompressed_minecraft_packet(input).unwrap();
+
+    match packet.serialize_minecraft_packet() {
+        Ok(packet) => {
+            assert_eq!(packet, input)
+        }
+        Err(e) => panic!("Failed to serialize packet: {:?}", e),
+    };
 }

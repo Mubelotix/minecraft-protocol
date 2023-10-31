@@ -25,7 +25,14 @@ use minecraft_protocol::{MinecraftPacketPart, packets::play_[DEST_LOWER]::[DEST]
 #[test]
 fn auto_play_[DEST_LOWER]_[ID]() {
     let input = &[DATA];
-    [DEST]Packet::deserialize_uncompressed_minecraft_packet(input).unwrap();
+    let packet = [DEST]Packet::deserialize_uncompressed_minecraft_packet(input).unwrap();
+
+    match packet.serialize_minecraft_packet() {
+        Ok(packet) => {
+            assert_eq!(packet, input)
+        }
+        Err(e) => panic!("Failed to serialize packet: {:?}", e),
+    };
 }
 "#;
 

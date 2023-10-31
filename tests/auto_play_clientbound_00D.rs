@@ -10,5 +10,12 @@ use minecraft_protocol::{MinecraftPacketPart, packets::play_clientbound::Clientb
 #[test]
 fn auto_play_clientbound_d() {
     let input = &[13];
-    ClientboundPacket::deserialize_uncompressed_minecraft_packet(input).unwrap();
+    let packet = ClientboundPacket::deserialize_uncompressed_minecraft_packet(input).unwrap();
+
+    match packet.serialize_minecraft_packet() {
+        Ok(packet) => {
+            assert_eq!(packet, input)
+        }
+        Err(e) => panic!("Failed to serialize packet: {:?}", e),
+    };
 }
