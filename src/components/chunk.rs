@@ -200,7 +200,7 @@ fn test() {
         Err(e) => panic!("invalid {:?}", v)
     }).collect();
     std::fs::write("test_data/chunk2-2.dump", packet_data.clone());*/
-    let packet_data = &include_bytes!("../../test_data/chunk2-2.dump")[..];
+    let packet_data = &include_bytes!("../../test_data/chunk2.dump")[..];
     // let (packet, rest) = ChunkData::deserialize_minecraft_packet_part(&packet_data).unwrap();
     // assert!(rest.is_empty());
     // let chunk_data = packet.data.items.as_slice();
