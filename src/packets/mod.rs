@@ -78,34 +78,20 @@ pub struct TestPacket {
     data: u8,
 }
 
+#[derive(Debug)]
 pub struct Array<'a, T: MinecraftPacketPart<'a> + std::fmt::Debug, U: MinecraftPacketPart<'a>> {
     _len_prefix: std::marker::PhantomData<&'a U>,
     pub items: Vec<T>,
 }
 
-impl<'a, T: MinecraftPacketPart<'a> + std::fmt::Debug, U: MinecraftPacketPart<'a>> std::fmt::Debug for Array<'a, T, U> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.items.fmt(f)
-    }
-}
-
-impl<'a, T: std::fmt::Debug + MinecraftPacketPart<'a>, U: MinecraftPacketPart<'a>> From<Vec<T>> for Array<'a, T, U> {
+impl<'a, T: std::fmt::Debug + MinecraftPacketPart<'a>, U: MinecraftPacketPart<'a>> From<Vec<T>>
+    for Array<'a, T, U>
+{
     fn from(value: Vec<T>) -> Self {
         Array {
             _len_prefix: std::marker::PhantomData,
             items: value,
         }
-    }
-}
-
-pub struct FixedSizeArray<'a, V: MinecraftPacketPart<'a> + std::fmt::Debug, const N: usize> {
-    pub items: Vec<V>,
-    _phantom: std::marker::PhantomData<&'a ()>,
-}
-
-impl<'a, V: MinecraftPacketPart<'a> + std::fmt::Debug, const N: usize> std::fmt::Debug for FixedSizeArray<'a, V, N> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.items.fmt(f)
     }
 }
 

@@ -822,7 +822,12 @@ impl<
     }
 }
 
-impl<'a, V: MinecraftPacketPart<'a> + std::fmt::Debug, const N: usize> MinecraftPacketPart<'a> for FixedSizeArray<'a, V, N> {
+pub struct FixedSizeArray<'a, V: MinecraftPacketPart<'a>, const N: usize> {
+    pub items: Vec<V>,
+    _phantom: std::marker::PhantomData<&'a ()>,
+}
+
+impl<'a, V: MinecraftPacketPart<'a>, const N: usize> MinecraftPacketPart<'a> for FixedSizeArray<'a, V, N> {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
         if self.items.len() != N {
             return Err("The vector length is not the expected one");
