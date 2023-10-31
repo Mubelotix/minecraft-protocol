@@ -137,7 +137,7 @@ impl<'a, const LBITS: u8, const HBITS: u8, const DBITS: u8, const TRUNC: usize> 
 /// A [chunk section](ChunkSection) is a 16×16×16 collection of blocks (chunk sections are cubic).
 /// A [chunk column](ChunkData) is a 16×256×16 collection of blocks, and is what most players think of when they hear the term "chunk".
 /// However, these are not the smallest unit data is stored in in the game; [chunk columns](ChunkData) are actually 16 [chunk sections](ChunkSection) aligned vertically.
-#[derive(Debug)]
+#[derive(Debug, MinecraftPacketPart)]
 pub struct Chunk {
     block_count: i16,
     blocks: PalettedData<4, 8, 15, {16*16*16}>,
@@ -149,27 +149,7 @@ impl Chunk {
     pub fn deserialize_from_data(mut input: &[u8]) -> Result<Vec<Chunk>, &'static str> {
         let chunk_count = (-64..320).len() / 16;
 
-        let mut chunks = Vec::new();
-        for _ in 0..chunk_count {
-            let (block_count, new_input) = i16::deserialize_minecraft_packet_part(input)?;
-            
-            let (mut blocks, new_input) = <PalettedData<4, 8, 15, {16*16*16}>>::deserialize_minecraft_packet_part(new_input)?;
-            match blocks {
-                PalettedData::Paletted {  ref mut indexed, .. } => indexed.truncate(16*16*16),
-                PalettedData::Raw { ref mut values } => values.truncate(16*16*16),
-                PalettedData::Single { .. } => (),
-            }
-
-            let (mut biomes, new_input) = <PalettedData<0, 3, 6, {4*4*4}>>::deserialize_minecraft_packet_part(new_input)?;
-            match biomes {
-                PalettedData::Paletted { ref mut indexed, .. } => indexed.truncate(4*4*4),
-                PalettedData::Raw { ref mut values } => values.truncate(4*4*4),
-                PalettedData::Single { .. } => (),
-            }
-
-            chunks.push(Chunk { block_count, blocks, biomes });
-            input = new_input;
-        }
+        let (chunks, input) = Chunk::deserialize_n(input, chunk_count)?;
 
         if !input.is_empty() {
             return Err("trailing data not parsed");
