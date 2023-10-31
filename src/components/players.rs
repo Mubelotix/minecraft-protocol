@@ -23,7 +23,7 @@ pub enum PlayerActions<'a> {
 }
 
 impl<'a> PlayerActions<'a> {
-    pub fn get_descriminent(&self) -> u8 {
+    pub fn get_discriminant(&self) -> u8 {
         match self {
             PlayerActions::AddPlayer(_) => 0x01,
             PlayerActions::InitializeChat(_) => 0x02,
@@ -103,7 +103,6 @@ pub struct PlayerAdditionInfo<'a> {
     pub display_name: Option<Chat<'a>>,
 }
 
-
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum FaceAim {
@@ -141,7 +140,7 @@ impl<'a> MinecraftPacketPart<'a> for PlayersInfos<'a> {
                 // The mask is the sum of all the player actions. The variants of the player actions are the same for all players.
                 // So we can just take the first player and sum all the variants.
                 let first_player = &self.players_infos[0];
-                first_player.actions.iter().fold(0, |acc, action| acc + action.get_descriminent())
+                first_player.actions.iter().fold(0, |acc, action| acc + action.get_discriminant())
             }
         };
         let n_players = self.players_infos.len();
