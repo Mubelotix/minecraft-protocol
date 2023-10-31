@@ -6,7 +6,7 @@ edition = "2018"
 build = "build/build.rs"
 
 [dependencies]
-minecraft-packet-derive = {path="../minecraft-packet-derive"}
+minecraft-protocol-derive = {path="../minecraft-protocol-derive"}
 
 [build-dependencies]
 minreq = {version="2.3", features=["https"]}

@@ -1,4 +1,5 @@
 [workspace]
 members = [
     "minecraft-protocol",
+    "minecraft-protocol-derive",
 ]

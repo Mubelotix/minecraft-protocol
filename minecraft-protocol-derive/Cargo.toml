@@ -1,0 +1,12 @@
+[package]
+name = "minecraft-protocol-derive"
+version = "0.1.0"
+authors = ["Mubelotix <mubelotix@gmail.com>"]
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = {version="1.0", features=["extra-traits", "full"]}
+quote = "1.0"
