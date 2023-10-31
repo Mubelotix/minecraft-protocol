@@ -6,7 +6,7 @@ use minecraft_protocol::{
     packets::login::ServerboundPacket as LoginServerbound,
     packets::login::ClientboundPacket as LoginClientbound,
     packets::config::ClientboundPacket as ConfigClientbound,
-    *,
+    *, components::chunk::Chunk,
 };
 
 use std::net::{TcpListener, TcpStream};
@@ -45,6 +45,32 @@ fn proxy_clientbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
         if let Ok(packet) = PlayClientbound::deserialize_uncompressed_minecraft_packet(&packet) {
             #[cfg(feature = "all-packets")]
             println!("\u{001b}[33mserver\u{001b}[0m: {packet:?}");
+            if let PlayClientbound::ChunkData { mut value } = packet {
+                let chunks = match Chunk::deserialize_from_data(&value.data.items) {
+                    Ok(chunks) => chunks,
+                    Err(e) => {
+                        println!("Failed to deserialize chunks: {:?}", e);
+                        continue;
+                    }
+                };
+                let reserialized = match Chunk::serialize_chunks(chunks) {
+                    Ok(reserialized) => reserialized,
+                    Err(e) => {
+                        println!("Failed to reserialize chunks: {:?}", e);
+                        continue;
+                    }
+                };
+                value.data.items = reserialized;
+                let packet = match PlayClientbound::ChunkData { value }.serialize_minecraft_packet() {
+                    Ok(packet) => packet,
+                    Err(e) => {
+                        println!("Failed to reserialize chunk packet: {:?}", e);
+                        continue;
+                    }
+                };
+                send_packet(&client_stream, packet, None, None)?;
+                continue;
+            }
         } else if let Ok(packet) = LoginClientbound::deserialize_uncompressed_minecraft_packet(&packet) {
             #[cfg(feature = "all-packets")]
             println!("\u{001b}[33mserver\u{001b}[0m: {packet:?}\u{001b}[0m");
