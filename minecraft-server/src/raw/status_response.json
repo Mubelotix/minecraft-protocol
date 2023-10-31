@@ -1,0 +1,18 @@
+{
+    "version": {
+        "name": "1.20.2",
+        "protocol": 764
+    },
+    "players": {
+        "max": 1000,
+        "online": 0,
+        "sample": [
+        ]
+    },
+    "description": {
+        "text": "Minecraft rust server"
+    },
+    "favicon": "data:image/png;base64,<data>",
+    "enforcesSecureChat": false,
+    "previewsChat": true
+}
