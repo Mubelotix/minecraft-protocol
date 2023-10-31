@@ -166,8 +166,7 @@ fn proxy_clientbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
     }
 }
 
-#[test]
-fn proxy() {
+fn main() {
     let listener = TcpListener::bind("127.0.0.1:25566").unwrap();
 
     loop {
