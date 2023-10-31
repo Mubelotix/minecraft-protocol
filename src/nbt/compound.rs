@@ -16,7 +16,7 @@ pub fn parse_compound(mut input: &[u8]) -> Result<(HashMap<String, NbtTag>, &[u8
         let (tag_id, len): (u8, u16) = unsafe {
             (
                 *input.get_unchecked(0),
-                u16::from_be_bytes([*input.get_unchecked(1), *input.get_unchecked(2)]),
+                u16::from_be_bytes(*(input.as_ptr().add(1) as *mut [u8; 2])),
             )
         };
 
@@ -33,22 +33,33 @@ pub fn parse_compound(mut input: &[u8]) -> Result<(HashMap<String, NbtTag>, &[u8
     Ok((content, input))
 }
 
+#[allow(clippy::type_complexity)]
 pub fn parse_root_compound(
     mut input: &[u8],
-) -> Result<(HashMap<String, NbtTag>, &[u8]), &'static str> {
+) -> Result<((String, HashMap<String, NbtTag>), &[u8]), &'static str> {
     if input.first() != Some(&10) {
         return Err("The root compound tag should start with the compound ID (10).");
     }
     input = &input[1..];
+    if input.len() < 2 {
+        return Err("A root compound tag should contain two bytes.");
+    }
+    let len: u16 = unsafe { u16::from_be_bytes(*(input.as_ptr() as *mut [u8; 2])) };
+    let len = len as usize;
+    input = &input[2..];
+    let (bytes, new_input) = input.split_at(len);
+    let name = String::from_utf8(bytes.to_vec())
+        .map_err(|_| "A compound tag name should contain valid utf8 characters.")?;
+    input = new_input;
 
     let (content, input) = parse_compound(input)?;
 
-    Ok((content, input))
+    Ok(((name, content), input))
 }
 
 pub fn parse_root_compound_complete(
     input: &[u8],
-) -> Result<HashMap<String, NbtTag>, &'static str> {
+) -> Result<(String, HashMap<String, NbtTag>), &'static str> {
     let (value, input) = parse_root_compound(input)?;
 
     if !input.is_empty() {
