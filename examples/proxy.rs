@@ -105,7 +105,7 @@ fn proxy_serverbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
                     .replace("[DEST]", "Serverbound")
                     .replace("[DEST_LOWER]", "serverbound")
                     .replace("[DATA]", &format!("{:?}", packet));
-                let _ = std::fs::write(format!("tests/auto_play_serverbound_{packet_id:x}.rs"), test);
+                let _ = std::fs::write(format!("tests/auto_play_serverbound_{packet_id:03X}.rs"), test);
             }
         }
 
@@ -205,7 +205,7 @@ fn proxy_clientbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
                     .replace("[DEST]", "Clientbound")
                     .replace("[DEST_LOWER]", "clientbound")
                     .replace("[DATA]", &format!("{:?}", packet));
-                let _ = std::fs::write(format!("tests/auto_play_clientbound_{packet_id:x}.rs"), test);
+                let _ = std::fs::write(format!("tests/auto_play_clientbound_{packet_id:03X}.rs"), test);
             }
         }
 
