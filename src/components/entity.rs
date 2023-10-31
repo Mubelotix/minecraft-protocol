@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::{nbt::NbtTag, *};
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct EntityAttribute<'a> {
     pub value: f64,
@@ -9,6 +10,7 @@ pub struct EntityAttribute<'a> {
 }
 
 /// To make the sum of modifiers, apply all modifiers with `operation` [EntityAttributeModifierOperation::Add], then all with [EntityAttributeModifierOperation::AddProportion], and finally all with [EntityAttributeModifierOperation::Multiply].
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct EntityAttributeModifier {
     pub uuid: UUID,
@@ -18,6 +20,7 @@ pub struct EntityAttributeModifier {
     pub operation: EntityAttributeModifierOperation,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(u8)]
 #[derive(Debug)]
 pub enum EntityAttributeModifierOperation {
@@ -29,6 +32,7 @@ pub enum EntityAttributeModifierOperation {
     Multiply,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum EntityInteraction {
@@ -43,6 +47,7 @@ pub enum EntityInteraction {
         hand: super::slots::Hand,
     },
 }
+
 
 #[minecraft_enum(VarInt)]
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -69,22 +74,42 @@ pub enum Pose {
     Swimming,
     SpinAttack,
     Sneaking,
-    Dying,
     LongJumping,
+    Dying,
+    Croaking,
+    UsingTongue,
+    Sitting,
+    Roaring,
+    Sniffing,
+    Emerging,
+    Digging,
 }
 
+#[minecraft_enum(VarInt)]
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum SnifferState {
+    Idling,
+    FeelingHappy,
+    Scienting,
+    Sniffing,
+    Searching,
+    Digging,
+    Rising,
+}
+
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone)]
-pub struct EntityMetadata {
-    pub items: BTreeMap<u8, EntityMetadataValue>,
+pub struct EntityMetadata<'a> {
+    pub items: BTreeMap<u8, EntityMetadataValue<'a>>,
 }
 
-impl<'a> MinecraftPacketPart<'a> for EntityMetadata {
+impl<'a> MinecraftPacketPart<'a> for EntityMetadata<'a> {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
         for (key, value) in self.items.into_iter() {
             key.serialize_minecraft_packet_part(output)?;
             value.serialize_minecraft_packet_part(output)?;
         }
-        0xff.serialize_minecraft_packet_part(output)?;
+        (0xffu8).serialize_minecraft_packet_part(output)?;
         Ok(())
     }
 
@@ -108,26 +133,30 @@ impl<'a> MinecraftPacketPart<'a> for EntityMetadata {
     }
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone, MinecraftPacketPart)]
 #[discriminant(u8)]
-pub enum EntityMetadataValue {
+pub enum EntityMetadataValue<'a> {
     Byte {
-        value: u8,
+        value: i8,
     },
     VarInt {
         value: VarInt,
+    },
+    VarLong {
+        value: VarLong,
     },
     Float {
         value: f32,
     },
     String {
-        value: String,
+        value: &'a str,
     },
     Chat {
-        chat: String,
+        chat: &'a str,
     },
     OptionChat {
-        chat: Option<String>,
+        chat: Option<&'a str>,
     },
     Slot {
         slot: super::slots::Slot,
@@ -152,8 +181,12 @@ pub enum EntityMetadataValue {
     OptionUUID {
         uuid: Option<UUID>,
     },
+    BlockId {
+        block_id: VarInt,
+    },
     /// Use [Block::from_state_id](crate::ids::blocks::Block::from_state_id) to get the block.
     OptionBlockStateID {
+        /// 0 for absent (implies air); otherwise, a block state ID as per the global palette
         block_state_id: VarInt,
     },
     Nbt {
@@ -174,22 +207,33 @@ pub enum EntityMetadataValue {
     Pose {
         pose: Pose,
     },
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_entity_metadata() {
-        let t1 = [
-            /*68, 160, 129, 2, */ 0, 0, 0, 2, 5, 0, 6, 18, 0, 4, 7, 0, 15, 13, 10, 14, 0, 0,
-            12, 1, 0, 13, 10, 0, 8, 2, 66, 32, 0, 0, 9, 1, 0, 11, 1, 0, 10, 7, 0, 1, 1, 172, 2, 3,
-            7, 0, 7, 0, 0, 5, 7, 0, 16, 7, 0, 17, 7, 0, 255,
-        ];
-        let t2 = [/*68, 219, 242, 1, */ 15, 13, 68, 255];
-
-        EntityMetadata::deserialize_uncompressed_minecraft_packet(&t1).unwrap();
-        EntityMetadata::deserialize_uncompressed_minecraft_packet(&t2).unwrap();
-    }
+    CatVariant {
+        /// A VarInt that points towards the CAT_VARIANT registry.
+        cat_variant: VarInt,
+    },
+    FrogVariant {
+        /// A VarInt that points towards the FROG_VARIANT registry.
+        frog_variant: VarInt,
+    },
+    OptionalGlobalPos {
+        optional_global_pos: Option<GlobalPosition<'a>>,
+    },
+    PaintingVariant {
+        /// A VarInt that points towards the PAINTING_VARIANT registry.
+        painting_variant: VarInt,
+    },
+    SnifferState {
+        sniffer_state_variant: SnifferState,
+    },
+    Vector3 {
+        x: f32,
+        y: f32,
+        z: f32,
+    },
+    Quaternion {
+        x: f32,
+        y: f32,
+        z: f32,
+        w: f32,
+    },
 }

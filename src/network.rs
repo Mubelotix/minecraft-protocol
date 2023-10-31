@@ -19,6 +19,7 @@ impl From<&'static str> for NetworkError {
     }
 }
 
+#[allow(clippy::uninit_vec)]
 pub fn read_packet(
     mut reader: impl Read,
     _compression: Option<u32>,
@@ -46,12 +47,6 @@ pub fn read_packet(
     let mut data: Vec<u8> = Vec::with_capacity(len);
     unsafe { data.set_len(len) }
     reader.read_exact(&mut data)?;
-
-    if data.starts_with(&[25]) {
-        if let Ok(message) = std::str::from_utf8(data.get(3..).unwrap()) {
-            println!("{}", message);
-        }
-    }
 
     Ok(data)
 }
@@ -89,7 +84,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test() {
+    #[ignore]
+    fn old_test() {
         use std::net::TcpStream;
 
         let mut stream = TcpStream::connect("127.0.0.1:25565").unwrap();
@@ -111,7 +107,7 @@ mod tests {
 
         send_packet(
             &mut stream,
-            crate::packets::login::ServerboundPacket::LoginStart { username: "bot2" }
+            crate::packets::login::ServerboundPacket::LoginStart { username: "bot2", player_uuid: 0 }
                 .serialize_minecraft_packet()
                 .unwrap(),
             None,
@@ -152,20 +148,17 @@ mod tests {
                     .unwrap();
                     println!("pong!");
                 }
-                ClientboundPacket::Advancements { .. } => {
+                ClientboundPacket::UpdateAdvancements { .. } => {
                     println!("Advancements parsed successfully!")
-                }
-                ClientboundPacket::ChunkData { mut value } => {
-                    value.deserialize_chunk_sections().unwrap();
-                    println!("chunk parsed successfully!")
                 }
                 ClientboundPacket::ChatMessage {
                     message,
-                    position: _,
                     sender,
+                    ..
                 } => {
                     println!("{}: {}", sender, message);
                 }
+
                 _ => (),
             }
         }

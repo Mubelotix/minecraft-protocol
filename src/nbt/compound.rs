@@ -16,7 +16,7 @@ pub fn parse_compound(mut input: &[u8]) -> Result<(HashMap<String, NbtTag>, &[u8
         let (tag_id, len): (u8, u16) = unsafe {
             (
                 *input.get_unchecked(0),
-                u16::from_be(*(input.as_ptr().add(1) as *mut u16)),
+                u16::from_be_bytes(*(input.as_ptr().add(1) as *mut [u8; 2])),
             )
         };
 
@@ -44,7 +44,7 @@ pub fn parse_root_compound(
     if input.len() < 2 {
         return Err("A root compound tag should contain two bytes.");
     }
-    let len: u16 = unsafe { u16::from_be(*(input.as_ptr() as *mut u16)) };
+    let len: u16 = unsafe { u16::from_be_bytes(*(input.as_ptr() as *mut [u8; 2])) };
     let len = len as usize;
     input = &input[2..];
     let (bytes, new_input) = input.split_at(len);

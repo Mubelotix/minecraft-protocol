@@ -1,221 +1,248 @@
-use crate::{nbt::NbtTag, *};
+use crate::{nbt::NbtTag, *, components::blocks::BlockEntity};
 
 /// A complex data structure including block data and optionally entities of a chunk.
 ///
 /// Note that the Notchian client requires an [ClientboundPacket::UpdateViewPosition](crate::packets::play_clientbound::ClientboundPacket::UpdateViewPosition) packet when it crosses a chunk border, otherwise it'll only display `render distance + 2` chunks around the chunk it spawned in.
-#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+#[derive(MinecraftPacketPart, Debug)]
 pub struct ChunkData<'a> {
     /// Chunk coordinate (block coordinate divided by 16, rounded down).
     pub chunk_x: i32,
     /// Chunk coordinate (block coordinate divided by 16, rounded down).
     pub chunk_z: i32,
-    /// BitSet with bits (world height in blocks / 16) set to 1 for every 16×16×16 chunk section whose data is included in Data.
-    /// The least significant bit represents the chunk section at the bottom of the chunk column (from the lowest y to 15 blocks above).
-    pub primary_bit_mask: Array<'a, u64, VarInt>,
     /// Compound containing one long array named `MOTION_BLOCKING`, which is a heightmap for the highest solid block at each position in the chunk (as a compacted long array with 256 entries at 9 bits per entry totaling 36 longs).
     /// The Notchian server also adds a `WORLD_SURFACE` long array, the purpose of which is unknown, but it's not required for the chunk to be accepted.
     pub heightmaps: NbtTag,
-    /// 1024 biome IDs, ordered by x then z then y, in 4×4×4 blocks.
-    /// Biomes cannot be changed unless a chunk is re-sent.
-    /// The structure is an array of 1024 integers, each representing a [Biome ID](http://minecraft.gamepedia.com/Biome/ID) (it is recommended that "Void" is used if there is no set biome - its default id is 127). The array is ordered by x then z then y, in 4×4×4 blocks. The array is indexed by `((y >> 2) & 63) << 4 | ((z >> 2) & 3) << 2 | ((x >> 2) & 3)`.
-    pub biomes: Array<'a, VarInt, VarInt>,
     /// The data section of the packet contains most of the useful data for the chunk.
     /// The number of elements in the array is equal to the number of bits set in [ChunkData::primary_bit_mask].
     /// Sections are sent bottom-to-top, i.e. the first section, if sent, extends from Y=0 to Y=15.
     ///
-    /// **Use [ChunkData::deserialize_chunk_sections] to get ready to use [ChunkSection]s.**
-    pub data: &'a [u8],
-    /// All block entities in the chunk.
-    /// Use the x, y, and z tags in the NBT to determine their positions.
-    /// Sending entities is not required; it is still legal to send them with [ClientboundPacket::UpdateBlockEntity] later.
-    pub entities: Array<'a, NbtTag, VarInt>,
+    /// **Use [ChunkData::from_data] to get ready to use [Chunk]s.**
+    /// **Use [ChunkData::into_data] to generate from [Chunk]s.**
+    pub data: Array<'a, u8, VarInt>,
+    pub block_entities: Array<'a, BlockEntity, VarInt>,
+    /// BitSet containing bits for each section in the world + 2.
+    /// Each set bit indicates that the corresponding 16×16×16 chunk section has data in the Sky Light array below.
+    /// The least significant bit is for blocks 16 blocks to 1 block below the min world height (one section below the world), while the most significant bit covers blocks 1 to 16 blocks above the max world height (one section above the world).
+    pub sky_light_mask: Array<'a, u64, VarInt>,
+    /// BitSet containing bits for each section in the world + 2.
+    /// Each set bit indicates that the corresponding 16×16×16 chunk section has data in the Block Light array below.
+    /// The order of bits is the same as in Sky Light Mask.
+    pub block_light_mask: Array<'a, u64, VarInt>,
+    /// BitSet containing bits for each section in the world + 2.
+    /// Each set bit indicates that the corresponding 16×16×16 chunk section has data in the Block Light array below.
+    /// The order of bits is the same as in Sky Light Mask.
+    pub empty_sky_light_mask: Array<'a, u64, VarInt>,
+    /// BitSet containing bits for each section in the world + 2.
+    /// Each set bit indicates that the corresponding 16×16×16 chunk section has data in the Block Light array below.
+    /// The order of bits is the same as in Sky Light Mask.
+    pub empty_block_light_mask: Array<'a, u64, VarInt>,
+    /// Length should match the number of bits set in Sky Light Mask.
+    /// Each entry is an array of 2048 bytes.
+    /// There is 1 array for each bit set to true in the sky light mask, starting with the lowest value. Half a byte per light value. Indexed ((y<<8) | (z<<4) | x) / 2
+    /// If there's a remainder, masked 0xF0 else 0x0F.
+    pub sky_light: Array<'a, Array<'a, u8, VarInt>, VarInt>,
+    /// Length should match the number of bits set in Block Light Mask.
+    /// Each entry is an array of 2048 bytes.
+    /// There is 1 array for each bit set to true in the block light mask, starting with the lowest value. Half a byte per light value. Indexed ((y<<8) | (z<<4) | x) / 2
+    /// If there's a remainder, masked 0xF0 else 0x0F.
+    pub block_light: Array<'a, Array<'a, u8, VarInt>, VarInt>,
 }
 
-impl<'a> MinecraftPacketPart<'a> for ChunkData<'a> {
-    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
-        self.chunk_x.serialize_minecraft_packet_part(output)?;
-        self.chunk_z.serialize_minecraft_packet_part(output)?;
-        self.primary_bit_mask
-            .serialize_minecraft_packet_part(output)?;
-        self.heightmaps.serialize_minecraft_packet_part(output)?;
-        self.biomes.serialize_minecraft_packet_part(output)?;
-        VarInt(self.data.len() as i32).serialize_minecraft_packet_part(output)?;
-        output.extend_from_slice(self.data);
-        self.entities.serialize_minecraft_packet_part(output)?;
-        Ok(())
+#[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug, Clone)]
+pub enum PalettedData<const LBITS: u8, const HBITS: u8, const DBITS: u8, const TRUNC: usize> {
+    Paletted {
+        palette: Vec<u32>,
+        indexed: Vec<u8>,
+    },
+    Single {
+        value: u32,
+    },
+    Raw {
+        values: Vec<u32>,
     }
+}
 
-    fn deserialize_minecraft_packet_part(
-        input: &'a [u8],
-    ) -> Result<(Self, &'a [u8]), &'static str> {
-        let (chunk_x, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
-        let (chunk_z, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
-        let (primary_bit_mask, input) =
-            MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
-        let (heightmaps, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
-        let (biomes, input) =
-                    <Array<'a, VarInt, VarInt>>::deserialize_minecraft_packet_part(input)?;
-        let (data_len, input) = VarInt::deserialize_minecraft_packet_part(input)?;
-        let data_len = std::cmp::max(data_len.0, 0) as usize;
-        let (data, input) = input.split_at(data_len);
-        let (entities, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
-        Ok((
-            ChunkData {
-                chunk_x,
-                chunk_z,
-                primary_bit_mask,
-                heightmaps,
-                biomes,
-                data,
-                entities,
+impl<'a, const LBITS: u8, const HBITS: u8, const DBITS: u8, const TRUNC: usize> MinecraftPacketPart<'a> for PalettedData<LBITS, HBITS, DBITS, TRUNC> {
+    fn deserialize_minecraft_packet_part(input: &'a [u8]) -> Result<(Self, &'a [u8]), &'static str> {
+        let (mut bits_per_entry, new_input) = u8::deserialize_minecraft_packet_part(input)?;
+
+        Ok(match bits_per_entry {
+            0 => {
+                let (value, new_input) = VarInt::deserialize_minecraft_packet_part(new_input)?;
+                let (longs, new_input) = <Array<u64, VarInt>>::deserialize_minecraft_packet_part(new_input)?;
+                if !longs.items.is_empty() {
+                    return Err("non-empty longs array for 0 bits per entry");
+                }
+                (PalettedData::Single { value: value.0 as u32 }, new_input)
             },
-            input,
-        ))
+            _ if bits_per_entry<=HBITS => {
+                if bits_per_entry<LBITS {
+                    bits_per_entry = LBITS;
+                }
+                let entries_per_long = 64 / bits_per_entry;
+                let mut base_mask = 0;
+                for _ in 0..bits_per_entry {
+                    base_mask <<= 1;
+                    base_mask += 1;
+                }
+
+                let (palette, new_input) = <Array<VarInt, VarInt>>::deserialize_minecraft_packet_part(new_input)?;
+                let palette: Vec<u32> = palette.items.into_iter().map(|id| id.0 as u32).collect();
+
+                let (longs, new_input) = <Array<u64, VarInt>>::deserialize_minecraft_packet_part(new_input)?;
+                let mut indexed = Vec::new();
+                for long in longs.items.into_iter() {
+                    let mut mask = base_mask;
+                    for i in 0..entries_per_long {
+                        let index = ((long & mask) >> (i * bits_per_entry)) as u8;
+                        indexed.push(index);
+                        mask <<= bits_per_entry;
+                    }
+                }
+                indexed.truncate(TRUNC);
+
+                (PalettedData::Paletted { palette, indexed }, new_input)
+            },
+            _ => {
+                bits_per_entry = DBITS;
+                let entries_per_long = 64 / bits_per_entry;
+                let mut base_mask = 0;
+                for _ in 0..bits_per_entry {
+                    base_mask <<= 1;
+                    base_mask += 1;
+                }
+
+                let (longs, new_input) = <Array<u64, VarInt>>::deserialize_minecraft_packet_part(new_input)?;
+                let mut values = Vec::new();
+                for long in longs.items.into_iter() {
+                    let mut mask = base_mask;
+                    for i in 0..entries_per_long {
+                        let value = ((long & mask) >> (i * bits_per_entry)) as u32;
+                        values.push(value);
+                        mask <<= bits_per_entry;
+                    }
+                }
+                values.truncate(TRUNC);
+
+                (PalettedData::Raw { values }, new_input)
+            }
+        })
+    }
+
+    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        match self {
+            PalettedData::Single { value } => {
+                0u8.serialize_minecraft_packet_part(output)?;
+                VarInt::from(value as usize).serialize_minecraft_packet_part(output)?;
+                VarInt::from(0).serialize_minecraft_packet_part(output)?;
+                Ok(())
+            },
+            PalettedData::Paletted { palette, indexed } => {
+                let mut bits_per_entry = 64 - (palette.len()-1).leading_zeros();
+
+                // If the palette is too big, drop it and use raw data
+                if bits_per_entry > HBITS as u32 {
+                    let mut values = Vec::new();
+                    for index in indexed.iter() {
+                        values.push(palette[*index as usize]);
+                    }
+                    return PalettedData::<LBITS, HBITS, DBITS, TRUNC>::Raw{values}.serialize_minecraft_packet_part(output);
+                }
+
+                (bits_per_entry as u8).serialize_minecraft_packet_part(output)?;
+                if bits_per_entry < LBITS as u32 {
+                    bits_per_entry = LBITS as u32;
+                }
+                let entries_per_long = 64 / bits_per_entry;
+
+                let palette: Vec<VarInt> = palette.into_iter().map(|id| VarInt::from(id as usize)).collect::<Vec<VarInt>>();
+                let palette: Array<VarInt, VarInt> = Array::from(palette);
+                palette.serialize_minecraft_packet_part(output)?;
+
+                let mut longs: Vec<u64> = Vec::new();
+                for entries in indexed.chunks(entries_per_long as usize) {
+                    let mut long = 0;
+                    for entry in entries.iter().rev() {
+                        long <<= bits_per_entry;
+                        long += *entry as u64;
+                    }
+                    longs.push(long);
+                }
+                let longs: Array<u64, VarInt> = Array::from(longs);
+                longs.serialize_minecraft_packet_part(output)?;
+
+                Ok(())
+            },
+            PalettedData::Raw { values } => {
+                DBITS.serialize_minecraft_packet_part(output)?;
+                let bits_per_entry = DBITS;
+                let entries_per_long = 64 / bits_per_entry;
+
+                let mut longs: Vec<u64> = Vec::new();
+                for entries in values.chunks(entries_per_long as usize) {
+                    let mut long = 0;
+                    for entry in entries.iter().rev() {
+                        long <<= bits_per_entry;
+                        long += *entry as u64;
+                    }
+                    longs.push(long);
+                }
+                let longs: Array<u64, VarInt> = Array::from(longs);
+                longs.serialize_minecraft_packet_part(output)?;
+
+                Ok(())
+            },
+        }
     }
 }
 
-/// A [chunk section](ChunkSection) is a 16×16×16 collection of blocks (chunk sections are cubic).
-/// A [chunk column](ChunkData) is a 16×256×16 collection of blocks, and is what most players think of when they hear the term "chunk".
+/// A [chunk section](ChunkSection) is a 16×24×16 collection of blocks (chunk sections are cubic).
+/// A [chunk column](ChunkData) is a 16×384×16 collection of blocks, and is what most players think of when they hear the term "chunk".
 /// However, these are not the smallest unit data is stored in in the game; [chunk columns](ChunkData) are actually 16 [chunk sections](ChunkSection) aligned vertically.
-#[derive(Debug)]
-pub struct ChunkSection {
-    /// Number of non-air blocks present in the chunk section, for lighting purposes.
-    /// "Non-air" is defined as any block other than air, cave air, and void air (in particular, note that fluids such as water are still counted).
+#[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug, MinecraftPacketPart, Clone)]
+pub struct Chunk {
     pub block_count: i16,
-    /// Chunk sections often contains a palette (for compression).
-    /// This is a great way to find if a particular block is present in the section without iterating trought all blocks.
-    pub palette: Option<Vec<u32>>,
-    /// Blocks stored as `block state IDs`.
-    /// Blocks with increasing x coordinates, within rows of increasing z coordinates, within layers of increasing y coordinates.
-    /// Use [Block::from_state_id](crate::ids::blocks::Block::from_state_id) to get the corresponding [Block](crate::ids::blocks::Block).
-    pub blocks: Vec<u32>,
+    pub blocks: PalettedData<4, 8, 15, {16*16*16}>,
+    pub biomes: PalettedData<0, 3, 6, {4*4*4}>,
 }
 
-impl<'a> ChunkData<'a> {
-    /// Deserialize chunk sections from a chunk data packet.
-    #[allow(clippy::needless_range_loop)]
-    pub fn deserialize_chunk_sections(
-        &mut self,
-    ) -> Result<[Option<ChunkSection>; 16], &'static str> {
-        let mut input = self.data;
-        if self.primary_bit_mask.items.len() != 1 {
-            return Err("ChunkData::deserialize_chunk_sections: primary_bit_mask.items.len() != 1");
-        }
-        let primary_bit_mask: u64 = unsafe {
-            // We don't care the type since we only want to check the bits
-            *self.primary_bit_mask.items.get_unchecked(0)
-        };
+impl Chunk {
+    pub fn from_data(input: &[u8]) -> Result<Vec<Chunk>, &'static str> {
+        let chunk_count = (-64..320).len() / 16;
+        let (chunks, input) = Chunk::deserialize_n(input, chunk_count)?;
 
-        let mut chunk_sections: [Option<ChunkSection>; 16] = [
-            None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-            None, None,
-        ];
-        let mut mask = 0b1;
-        for y in 0..16 {
-            chunk_sections[y] = if primary_bit_mask & mask != 0 {                
-                let (block_count, new_input) = i16::deserialize_minecraft_packet_part(input)?;
-                let (mut bits_per_block, new_input) =
-                    u8::deserialize_minecraft_packet_part(new_input)?;
-                if bits_per_block < 4 {
-                    bits_per_block = 4;
-                }
-                let mut blocks = Vec::new();
-
-                if bits_per_block <= 8 {
-                    let (palette_lenght, mut new_input) =
-                        VarInt::deserialize_minecraft_packet_part(new_input)?;
-                    let palette_lenght = if palette_lenght.0 < 0 {
-                        0usize
-                    } else {
-                        palette_lenght.0 as usize
-                    };
-                    let mut palette = Vec::with_capacity(10);
-                    for _ in 0..palette_lenght {
-                        let (palette_item, new_new_input) =
-                            VarInt::deserialize_minecraft_packet_part(new_input)?;
-                        palette.push(std::cmp::max(palette_item.0, 0) as u32);
-                        new_input = new_new_input;
-                    }
-                    let (longs, new_input) =
-                        <Array<u64, VarInt>>::deserialize_minecraft_packet_part(new_input)?;
-                    let blocks_per_long = match bits_per_block {
-                        4 => 16,
-                        5 => 12,
-                        6 => 10,
-                        7 => 9,
-                        8 => 8,
-                        _ => unreachable!(),
-                    };
-
-                    for long in longs.items {
-                        let mut mask = match bits_per_block {
-                            4 => 0xF,
-                            5 => 0b11111,
-                            6 => 0b111111,
-                            7 => 0b1111111,
-                            8 => 0xFF,
-                            _ => unreachable!(),
-                        };
-                        for i in 0..blocks_per_long {
-                            let block_index = ((long & mask) >> (i * bits_per_block)) as usize;
-                            let block = *palette.get(block_index).unwrap_or(&0);
-                            blocks.push(block);
-                            mask <<= bits_per_block;
-                        }
-                    }
-
-                    input = new_input;
-                    Some(ChunkSection {
-                        block_count,
-                        palette: Some(palette),
-                        blocks,
-                    })
-                } else {
-                    let (longs, new_input) =
-                        <Array<u64, VarInt>>::deserialize_minecraft_packet_part(new_input)?;
-                    let blocks_per_long = (64.0 / bits_per_block as f32).floor() as u8;
-
-                    for long in longs.items {
-                        let mut mask = match bits_per_block {
-                            9 => 0b1_1111_1111,
-                            10 => 0b11_1111_1111,
-                            11 => 0b111_1111_1111,
-                            12 => 0xFFF,
-                            13 => 0b1_1111_1111_1111,
-                            14 => 0b11_1111_1111_1111,
-                            _ => return Err("Unsupported bits_per_block"),
-                        };
-                        for i in 0..blocks_per_long {
-                            let block = ((long & mask) >> (i * bits_per_block)) as u32;
-                            blocks.push(block);
-                            mask <<= bits_per_block;
-                        }
-                    }
-
-                    input = new_input;
-                    Some(ChunkSection {
-                        block_count,
-                        palette: None,
-                        blocks,
-                    })
-                }
-            } else {
-                None
-            };
-            mask <<= 1;
+        if !input.is_empty() {
+            return Err("trailing data not parsed");
         }
 
-        Ok(chunk_sections)
+        Ok(chunks)
+    }
+
+    pub fn into_data(chunks: Vec<Chunk>) -> Result<Vec<u8>, &'static str> {
+        let mut output = Vec::new();
+
+        let chunk_count = (-64..320).len() / 16;
+        if chunks.len() != chunk_count {
+            return Err("invalid chunk count");
+        }
+        for chunk in chunks {
+            chunk.serialize_minecraft_packet_part(&mut output)?;
+        }
+
+        Ok(output)
     }
 }
 
 #[cfg(test)]
 #[test]
 fn test() {
-    let chunk_data = &include_bytes!("../../test_data/chunk.mc_packet")[1..];
+    let packet_data = &include_bytes!("../../tests/chunk2.dump")[..];
 
-    let mut chunk_data_deserialized = ChunkData::deserialize_uncompressed_minecraft_packet(chunk_data).unwrap();
-    let _blocks = chunk_data_deserialized.deserialize_chunk_sections().unwrap();
-    
-    //println!("{:?}", chunk_data_deserialized);
+    let from_minecraft = Chunk::from_data(packet_data).unwrap();
+    let reserialized = Chunk::into_data(from_minecraft.clone()).unwrap();
+    let redeserialized = Chunk::from_data(&reserialized).unwrap();
+    assert_eq!(format!("{from_minecraft:?}"), format!("{redeserialized:?}"));
 }

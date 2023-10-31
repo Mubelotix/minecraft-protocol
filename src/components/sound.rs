@@ -1,5 +1,6 @@
 use crate::*;
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum SoundCategory {
@@ -15,6 +16,7 @@ pub enum SoundCategory {
     Voice,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct StopSoundPacket<'a> {
     /// If not present, then sounds from all sources are cleared

@@ -1,22 +1,25 @@
 use crate::{nbt::NbtTag, *};
 
 /// The [Slot] data structure is how Minecraft represents an item and its associated data in the [Minecraft Protocol](https://wiki.vg/Protocol).
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone, MinecraftPacketPart)]
 pub struct Slot {
     /// `Some(item)` if there is an item in this slot; `None` if it is empty.
     pub item: Option<SlotItem>,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone, MinecraftPacketPart)]
 pub struct SlotItem {
     /// The [item](crate::ids::items::Item).
     /// Item IDs are distinct from [block IDs](crate::ids::blocks::Block); see [crate::ids] for more information.
     pub item_id: crate::ids::items::Item,
-    pub item_count: VarInt,
+    pub item_count: i8,
     /// Things like enchantements and durability are encoded in this field.
     pub nbt_data: NbtTag,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum Hand {
@@ -24,6 +27,7 @@ pub enum Hand {
     OffHand,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum MainHand {
@@ -60,10 +64,12 @@ impl std::cmp::Ord for EquipmentSlot {
 }
 
 use std::collections::BTreeMap;
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct EquipmentSlotArray {
     pub slots: BTreeMap<EquipmentSlot, Slot>,
 }
+
 
 impl<'a> MinecraftPacketPart<'a> for EquipmentSlotArray {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
@@ -96,7 +102,7 @@ impl<'a> MinecraftPacketPart<'a> for EquipmentSlotArray {
             };
             slots.insert(slot_index_variant, slot);
 
-            if slot_index < 0b1000_0000 {
+            if number < 0b1000_0000 {
                 break;
             }
         }
@@ -104,6 +110,7 @@ impl<'a> MinecraftPacketPart<'a> for EquipmentSlotArray {
     }
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum WindowType {
@@ -138,28 +145,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_equipment_slot_array() {
-        let data = [
-            0, 1, 190, 4, 1, 10, 0, 0, 3, 0, 6, 68, 97, 109, 97, 103, 101, 0, 0, 0, 0, 0,
-        ];
-        let slot_array =
-            EquipmentSlotArray::deserialize_uncompressed_minecraft_packet(&data).unwrap();
-        assert_eq!(slot_array.slots.len(), 1);
-        assert_eq!(
-            slot_array
-                .slots
-                .get(&EquipmentSlot::MainHand)
-                .unwrap()
-                .item
-                .as_ref()
-                .unwrap()
-                .item_count
-                .0,
-            1
-        )
-    }
-
-    #[test]
     fn test_slot() {
         let serialized = &mut [0x01, 0x01, 0x01, 0x00];
         let deserialized = Slot::deserialize_uncompressed_minecraft_packet(serialized)
@@ -167,7 +152,7 @@ mod tests {
             .item
             .unwrap();
         assert_eq!(deserialized.item_id, crate::ids::items::Item::Stone);
-        assert_eq!(deserialized.item_count.0, 1);
+        assert_eq!(deserialized.item_count, 1);
         assert!(matches!(deserialized.nbt_data, NbtTag::Null));
     }
 }

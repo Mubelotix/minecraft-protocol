@@ -92,6 +92,7 @@ impl BlockState {
         format!(
             r#"#[derive(Debug, Clone, Copy)]
 #[repr(u8)]
+#[cfg_attr(test, derive(PartialEq))]
 pub enum {} {{{}
 }}"#,
             self.ty(block_name, competing_definitions),
@@ -101,6 +102,7 @@ pub enum {} {{{}
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(test, derive(PartialEq))]
 #[serde(rename_all = "camelCase")]
 struct Block {
     id: u32,
@@ -747,6 +749,7 @@ use crate::*;
 {enum_definitions}
 
 /// Can be converted for free to [super::blocks::Block] which implements [useful methods](super::blocks::Block#implementations).
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone)]
 #[repr(u32)]
 pub enum BlockWithState {{
@@ -788,7 +791,7 @@ impl From<super::blocks::Block> for BlockWithState {{
 impl<'a> MinecraftPacketPart<'a> for BlockWithState {{
     #[inline]
     fn serialize_minecraft_packet_part(self, _output: &mut Vec<u8>) -> Result<(), &'static str> {{
-        unimplemented!("Cannot serialize BlockWithState yet");
+        VarInt::from(self.block_state_id().unwrap_or(0)).serialize_minecraft_packet_part(_output)
     }}
 
     #[inline]

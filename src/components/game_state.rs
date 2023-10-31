@@ -1,23 +1,26 @@
 use crate::*;
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(u8)]
 #[derive(Debug)]
 pub enum GameState {
     /// Sends "You have no home bed or charged respawn anchor, or it was obstructed" to the client
     NoRespawn,
-    EndRaining,
     BeginRaining,
+    EndRaining,
     ChangeGamemode,
     Win,
     DemoEvent,
-    ArrowHit,
+    ArrowHitPlayer,
     RainLevelChange,
     ThunderLevelChange,
     PlayPufferfishStingSound,
     ElderGuardianMob,
-    EnableRespawn,
+    EnableRespawnScreen,
+    LimitedCrafting
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum ClientStatus {

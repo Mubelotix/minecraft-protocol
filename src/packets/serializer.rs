@@ -2,10 +2,12 @@ use std::convert::{TryFrom, TryInto};
 
 use super::*;
 
-pub trait MinecraftPacketPart<'a>: Sized {
+/// Update the test trait too
+#[cfg(not(test))]
+pub trait MinecraftPacketPart<'a>: Sized 
+{
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str>;
-    fn deserialize_minecraft_packet_part(input: &'a [u8])
-        -> Result<(Self, &'a [u8]), &'static str>;
+    fn deserialize_minecraft_packet_part(input: &'a [u8]) -> Result<(Self, &'a [u8]), &'static str>;
 
     fn serialize_minecraft_packet(self) -> Result<Vec<u8>, &'static str> {
         let mut buffer = Vec::new();
@@ -19,6 +21,48 @@ pub trait MinecraftPacketPart<'a>: Sized {
             return Err("There are still unparsed bytes after parsing.");
         }
         Ok(result)
+    }
+
+    fn deserialize_n(mut input: &'a [u8], n: usize) -> Result<(Vec<Self>, &'a [u8]), &'static str> {
+        let mut result = Vec::with_capacity(n);
+        for _ in 0..n {
+            let (item, new_input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
+            input = new_input;
+            result.push(item);
+        }
+        Ok((result, input))
+    }
+}
+
+/// Update the not test trait too
+#[cfg(test)]
+pub trait MinecraftPacketPart<'a>: Sized + PartialEq
+{
+    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str>;
+    fn deserialize_minecraft_packet_part(input: &'a [u8]) -> Result<(Self, &'a [u8]), &'static str>;
+
+    fn serialize_minecraft_packet(self) -> Result<Vec<u8>, &'static str> {
+        let mut buffer = Vec::new();
+        self.serialize_minecraft_packet_part(&mut buffer)?;
+        Ok(buffer)
+    }
+
+    fn deserialize_uncompressed_minecraft_packet(input: &'a [u8]) -> Result<Self, &'static str> {
+        let (result, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
+        if !input.is_empty() {
+            return Err("There are still unparsed bytes after parsing.");
+        }
+        Ok(result)
+    }
+
+    fn deserialize_n(mut input: &'a [u8], n: usize) -> Result<(Vec<Self>, &'a [u8]), &'static str> {
+        let mut result = Vec::with_capacity(n);
+        for _ in 0..n {
+            let (item, new_input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
+            input = new_input;
+            result.push(item);
+        }
+        Ok((result, input))
     }
 }
 
@@ -110,7 +154,7 @@ mod integers {
             }
             Ok(unsafe {
                 (
-                    i16::from_be(*(input.as_ptr() as *mut i16)),
+                    i16::from_be_bytes(*(input.as_ptr() as *mut [u8; 2])),
                     input.get_unchecked(2..),
                 )
             })
@@ -131,7 +175,7 @@ mod integers {
             }
             Ok(unsafe {
                 (
-                    u16::from_be(*(input.as_ptr() as *mut u16)),
+                    u16::from_be_bytes(*(input.as_ptr() as *mut [u8; 2])),
                     input.get_unchecked(2..),
                 )
             })
@@ -154,7 +198,30 @@ mod integers {
             }
             Ok(unsafe {
                 (
-                    i32::from_be(*(input.as_ptr() as *mut i32)),
+                    i32::from_be_bytes(*(input.as_ptr() as *mut [u8; 4])),
+                    input.get_unchecked(4..),
+                )
+            })
+        }
+    }
+
+    impl<'a> MinecraftPacketPart<'a> for u32 {
+        fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+            let bytes = self.to_le_bytes();
+            output.push(bytes[3]);
+            output.push(bytes[2]);
+            output.push(bytes[1]);
+            output.push(bytes[0]);
+            Ok(())
+        }
+
+        fn deserialize_minecraft_packet_part(input: &[u8]) -> Result<(Self, &[u8]), &'static str> {
+            if input.len() < 4 {
+                return Err("Missing byte while parsing u32.");
+            }
+            Ok(unsafe {
+                (
+                    u32::from_be_bytes(*(input.as_ptr() as *mut [u8; 4])),
                     input.get_unchecked(4..),
                 )
             })
@@ -181,7 +248,7 @@ mod integers {
             }
             Ok(unsafe {
                 (
-                    i64::from_be(*(input.as_ptr() as *mut i64)),
+                    i64::from_be_bytes(*(input.as_ptr() as *mut [u8; 8])),
                     input.get_unchecked(8..),
                 )
             })
@@ -208,7 +275,7 @@ mod integers {
             }
             Ok(unsafe {
                 (
-                    u64::from_be(*(input.as_ptr() as *mut u64)),
+                    u64::from_be_bytes(*(input.as_ptr() as *mut [u8; 8])),
                     input.get_unchecked(8..),
                 )
             })
@@ -243,7 +310,7 @@ mod integers {
             }
             Ok(unsafe {
                 (
-                    u128::from_be(*(input.as_ptr() as *mut u128)),
+                    u128::from_be_bytes(*(input.as_ptr() as *mut [u8; 16])),
                     input.get_unchecked(16..),
                 )
             })
@@ -345,8 +412,13 @@ mod integers {
                     input.split_first().ok_or("Not enough bytes for varint!")?;
                 let read = *read;
                 input = new_input;
-                let value: u32 = (read & 0b01111111) as u32;
-                result |= value << (7 * num_read);
+                let mut value: u32 = (read & 0b01111111) as u32;
+                if num_read == 5 {
+                    value &= 0b1111;
+                    result |= value << (4 * num_read);
+                } else {
+                    result |= value << (7 * num_read);
+                }
 
                 num_read += 1;
                 if num_read > 5 {
@@ -764,6 +836,56 @@ impl<
     }
 }
 
+
+impl<
+    'a,
+    const N: usize,
+    > MinecraftPacketPart<'a> for [u8; N] {
+    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        output.extend_from_slice(&self);
+        Ok(())
+    }
+
+    fn deserialize_minecraft_packet_part(input: &'a [u8]) -> Result<(Self, &'a [u8]), &'static str> {
+        if input.len() < N {
+            return Err("Not enough data to deserialize");
+        }
+
+        let (data, rest) = input.split_at(N);
+        // TODO: not copy the data
+        Ok((data.try_into().map_err(|_| "Impossible to copy the slice")?, rest))
+    }
+}
+
+#[cfg_attr(test, derive(PartialEq))]
+pub struct FixedSizeArray<'a, V: MinecraftPacketPart<'a>, const N: usize> {
+    pub items: Vec<V>,
+    _phantom: std::marker::PhantomData<&'a ()>,
+}
+
+impl<'a, V: MinecraftPacketPart<'a>, const N: usize> MinecraftPacketPart<'a> for FixedSizeArray<'a, V, N> {
+    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        if self.items.len() != N {
+            return Err("The vector length is not the expected one");
+        }
+        for item in self.items {
+            item.serialize_minecraft_packet_part(output)?;
+        }
+        Ok(())
+    }
+
+    fn deserialize_minecraft_packet_part(mut input: &'a [u8]) -> Result<(Self, &'a [u8]), &'static str> {
+        let mut items = Vec::new();
+        for _ in 0..N {
+            let (item, new_input) = V::deserialize_minecraft_packet_part(input)?;
+            items.push(item);
+            input = new_input;
+        }
+        Ok((FixedSizeArray { items, _phantom: std::marker::PhantomData }, input))
+    }
+}
+
+
 impl<
         'a,
         K: MinecraftPacketPart<'a> + std::fmt::Debug + std::cmp::Ord,
@@ -830,4 +952,16 @@ impl<'a, T: MinecraftPacketPart<'a>> MinecraftPacketPart<'a> for Option<T> {
             Ok((None, input))
         }
     }
+}
+
+pub type BitSet<'a> = Array<'a, i64, VarInt>;
+
+
+#[test]
+fn print_varint() {
+    let value = 0x25;
+    let varint = VarInt::from(value);
+    let mut data = Vec::new();
+    varint.serialize_minecraft_packet_part(&mut data).unwrap();
+    println!("{:?}", data);
 }

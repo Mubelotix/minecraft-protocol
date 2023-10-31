@@ -1,13 +1,15 @@
 pub mod play_clientbound;
 pub mod play_serverbound;
 pub mod serializer;
+pub mod config;
 pub use minecraft_packet_derive::*;
 use serializer::*;
-use std::convert::TryFrom;
+use std::{convert::TryFrom, collections::BTreeMap};
 pub mod handshake;
 pub mod login;
 pub mod status;
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone)]
 pub struct VarInt(pub i32);
 impl TryFrom<VarInt> for usize {
@@ -16,13 +18,27 @@ impl TryFrom<VarInt> for usize {
         TryFrom::try_from(value.0)
     }
 }
+
 impl From<usize> for VarInt {
     fn from(value: usize) -> Self {
         VarInt(value as i32)
     }
 }
 
-#[derive(Debug)]
+impl From<u32> for VarInt {
+    fn from(value: u32) -> Self {
+        VarInt(value as i32)
+    }
+}
+
+impl From<i32> for VarInt {
+    fn from(value: i32) -> Self {
+        VarInt(value)
+    }
+}
+
+#[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug, Clone)]
 pub struct VarLong(pub i64);
 impl TryFrom<VarLong> for usize {
     type Error = std::num::TryFromIntError;
@@ -45,7 +61,15 @@ pub struct Position {
     pub z: i32,
 }
 
-#[minecraft_enum(u8)]
+
+#[derive(Debug, PartialEq, Clone, MinecraftPacketPart)] 
+pub struct GlobalPosition<'a> {
+    dimension: Identifier<'a>,
+    position: Position,
+}
+
+
+#[minecraft_enum(VarInt)]
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Direction {
     South = 1,
@@ -58,7 +82,7 @@ pub type UUID = u128;
 pub type Angle = u8;
 /// Json encoded data, stored in a String.
 /// See [the wiki](https://wiki.vg/Chat).
-pub type Chat<'a> = &'a str;
+pub type Chat<'a> = &'a str; /// TODO: Check is 
 /// Identifiers are a namespaced location, in the form of `minecraft:thing`.
 /// If the namespace is not provided, it defaults to `minecraft` (i.e. thing is `minecraft:thing`).
 /// Custom content should always be in its own namespace, not the default one.
@@ -68,25 +92,37 @@ pub type Identifier<'a> = &'a str;
 
 /// This is used to replace an unsupported structure by taking all the remaining bytes of a packet.
 /// Feel free to make PRs.
-#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug, Default)]
 pub struct RawBytes<'a> {
-    data: &'a [u8],
+    pub data: &'a [u8],
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct TestPacket {
     data: u8,
 }
 
-#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct Array<'a, T: MinecraftPacketPart<'a> + std::fmt::Debug, U: MinecraftPacketPart<'a>> {
     _len_prefix: std::marker::PhantomData<&'a U>,
     pub items: Vec<T>,
 }
 
-impl<'a, T: std::fmt::Debug + MinecraftPacketPart<'a>, U: MinecraftPacketPart<'a>> From<Vec<T>>
-    for Array<'a, T, U>
-{
+impl<'a, T: MinecraftPacketPart<'a> + std::fmt::Debug, U: MinecraftPacketPart<'a>> std::fmt::Debug for Array<'a, T, U> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.items.fmt(f)
+    }
+}
+
+impl<'a, T: MinecraftPacketPart<'a> + std::fmt::Debug, U: MinecraftPacketPart<'a>> std::default::Default for Array<'a, T, U> {
+    fn default() -> Self {
+        Self { _len_prefix: std::marker::PhantomData, items: Vec::default() }
+    }
+}
+
+impl<'a, T: std::fmt::Debug + MinecraftPacketPart<'a>, U: MinecraftPacketPart<'a>> From<Vec<T>> for Array<'a, T, U> {
     fn from(value: Vec<T>) -> Self {
         Array {
             _len_prefix: std::marker::PhantomData,
@@ -95,7 +131,7 @@ impl<'a, T: std::fmt::Debug + MinecraftPacketPart<'a>, U: MinecraftPacketPart<'a
     }
 }
 
-#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct Map<
     'a,
     K: MinecraftPacketPart<'a> + std::fmt::Debug,
@@ -103,17 +139,23 @@ pub struct Map<
     U: MinecraftPacketPart<'a>,
 > {
     _len_prefix: std::marker::PhantomData<&'a U>,
-    pub items: std::collections::BTreeMap<K, V>,
+    pub items: BTreeMap<K, V>,
 }
 
-impl<
-        'a,
-        K: std::fmt::Debug + MinecraftPacketPart<'a>,
-        V: std::fmt::Debug + MinecraftPacketPart<'a>,
-        U: MinecraftPacketPart<'a>,
-    > From<std::collections::BTreeMap<K, V>> for Map<'a, K, V, U>
-{
-    fn from(value: std::collections::BTreeMap<K, V>) -> Self {
+impl<'a, K: std::fmt::Debug + MinecraftPacketPart<'a>, V: std::fmt::Debug + MinecraftPacketPart<'a>, U: MinecraftPacketPart<'a>> std::fmt::Debug for Map<'a, K, V, U> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.items.fmt(f)
+    }
+}
+
+impl<'a, K: std::fmt::Debug + MinecraftPacketPart<'a>, V: std::fmt::Debug + MinecraftPacketPart<'a>, U: MinecraftPacketPart<'a>> std::default::Default for Map<'a, K, V, U> {
+    fn default() -> Self {
+        Self { _len_prefix: std::marker::PhantomData, items: BTreeMap::default() }
+    }
+}
+
+impl<'a, K: std::fmt::Debug + MinecraftPacketPart<'a>, V: std::fmt::Debug + MinecraftPacketPart<'a>, U: MinecraftPacketPart<'a>> From<BTreeMap<K, V>> for Map<'a, K, V, U> {
+    fn from(value: BTreeMap<K, V>) -> Self {
         Map {
             _len_prefix: std::marker::PhantomData,
             items: value,
@@ -122,6 +164,7 @@ impl<
 }
 
 /// The possible packets are different for each state.
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum ConnectionState {

@@ -1,6 +1,7 @@
 use crate::*;
 
 /// One eligible value to insert
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct Match<'a> {
     /// The value. Note that for instance this doesn't include a leading / on commands.

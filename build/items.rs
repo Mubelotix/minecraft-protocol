@@ -99,7 +99,7 @@ impl Item {{
 impl<'a> MinecraftPacketPart<'a> for Item {{
     #[inline]
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {{
-        VarInt((self as u32) as i32).serialize_minecraft_packet_part(output)
+        VarInt(self as i32).serialize_minecraft_packet_part(output)
     }}
 
     #[inline]

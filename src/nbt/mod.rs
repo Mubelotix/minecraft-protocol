@@ -17,11 +17,11 @@ pub enum NbtTag {
     Float(f32),
     Double(f64),
     ByteArray(Vec<i8>),
-    IntArray(Vec<i32>),
-    LongArray(Vec<i64>),
     String(String),
     List(NbtList),
     Compound(HashMap<String, NbtTag>),
+    IntArray(Vec<i32>),
+    LongArray(Vec<i64>),
     RootCompound(String, HashMap<String, NbtTag>),
 }
 
@@ -389,6 +389,12 @@ impl NbtTag {
         self.serialize_type_id(output);
         self.serialize_value(output);
     }
+}
+
+/// NBT on the network doesn't use root compounds
+pub fn parse_network_nbt(input: &[u8]) -> Result<(NbtTag, &[u8]), &'static str> {
+    let tag_id = *input.first().ok_or("Empty input, no NBT data.")?;
+    parse_nbt_tag(&input[1..], tag_id)
 }
 
 pub fn parse_nbt(input: &[u8]) -> Result<(NbtTag, &[u8]), &'static str> {

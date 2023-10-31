@@ -2,6 +2,7 @@
 
 use crate::*;
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum ClientboundPacket<'a> {
@@ -28,6 +29,7 @@ pub enum ClientboundPacket<'a> {
     LoginSuccess {
         uuid: UUID,
         username: &'a str,
+        properties: Array<'a, components::players::Property<'a>, VarInt>,
     },
 
     /// Enables compression.
@@ -53,12 +55,15 @@ pub enum ClientboundPacket<'a> {
     },
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum ServerboundPacket<'a> {
     LoginStart {
         /// Player's Username
         username: &'a str,
+        /// The UUID of the player logging in. Unused by the Notchian server.
+        player_uuid: UUID,
     },
 
     /// See [Protocol Encryption](https://wiki.vg/Protocol_Encryption) for details.
@@ -78,4 +83,6 @@ pub enum ServerboundPacket<'a> {
         /// `Some(data)` if the client understands the [request](ClientboundPacket::LoginPluginRequest), `None` otherwise
         data: Option<RawBytes<'a>>,
     },
+
+    LoginAcknowledged,
 }

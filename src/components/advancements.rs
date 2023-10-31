@@ -1,15 +1,19 @@
 use crate::*;
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct Advancement<'a> {
     /// The identifier of the parent advancement
     pub parent_id: Option<Identifier<'a>>,
     pub display_data: Option<AdvancementDisplay<'a>>,
-    pub criteria: Array<'a, Identifier<'a>, VarInt>,
     /// Array of arrays of required criteria
     pub requirements: Array<'a, Array<'a, &'a str, VarInt>, VarInt>,
+    /// Whether the client should include this achievement in the telemetry data when it's completed.
+    /// The Notchian client only sends data for advancements on the `minecraft` namespace.
+    pub sends_telemetry_data: bool,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct AdvancementDisplay<'a> {
     pub title: Chat<'a>,
@@ -84,6 +88,7 @@ impl<'a> MinecraftPacketPart<'a> for AdvancementDisplay<'a> {
     }
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum AdvancementFrameType {
@@ -92,6 +97,7 @@ pub enum AdvancementFrameType {
     Goal,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum StatisticCategory {
@@ -106,16 +112,97 @@ pub enum StatisticCategory {
     Custom,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
+#[minecraft_enum(VarInt)]
+#[derive(Debug)]
+pub enum StatisticId {
+    LeaveGame = 0,
+    PlayOneMinute,
+    TimeSinceDeath,
+    TimeSinceRest,
+    SneakTime,
+    WalkOneCm,
+    CrouchOneCm,
+    SprintOneCm,
+    WalkOnWaterOneCm,
+    FallOneCm,
+    ClimbOneCm,
+    FlyOneCm,
+    WalkUnderWaterOneCm,
+    MinecartOneCm,
+    BoatOneCm,
+    PigOneCm,
+    HorseOneCm,
+    AviateOneCm,
+    SwimOneCm,
+    StriderOneCm,
+    Jump,
+    Drop,
+    DamageDealt,
+    DamageDealtAbsorbed,
+    DamageDealtResisted,
+    DamageTaken,
+    DamageBlockedByShield,
+    DamageAbsorbed,
+    DamageResisted,
+    Deaths,
+    MobKills,
+    AnimalsBred,
+    PlayerKills,
+    FishCaught,
+    TalkedToVillager,
+    TradedWithVillager,
+    EatCakeSlice,
+    FillCauldron,
+    CleanArmor,
+    CleanBanner,
+    CleanShulkerBox,
+    InteractWithBrewingstand,
+    InteractWithBeacon,
+    InspectDropper,
+    InspectHopper,
+    InspectDispenser,
+    PlayNoteblock,
+    TuneNoteblock,
+    PotFlower,
+    TriggerTrappedChest,
+    OpenEnderchest,
+    EnchantItem,
+    PlayRecord,
+    InteractWithFurnace,
+    InteractWithCraftingTable,
+    OpenChest,
+    SleepInBed,
+    OpenShulkerBox,
+    OpenBarrel,
+    InteractWithBlastFurnace,
+    InteractWithSmoker,
+    InteractWithLectern,
+    InteractWithCampfire,
+    InteractWithCartographyTable,
+    InteractWithLoom,
+    InteractWithStonecutter,
+    BellRing,
+    RaidTrigger,
+    RaidWin,
+    InteractWithAnvil,
+    InteractWithGrindstone,
+    TargetHit,
+    InteractWithSmithingTable,
+}
+
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct Statistic {
     pub category: StatisticCategory,
     /// Used when `category` is [StatisticCategory::Custom].
     /// See [the wiki](https://wiki.vg/Protocol#Statistics) for meaning
-    pub statistic_id: VarInt,
+    pub statistic_id: StatisticId,
     /// Units depends on previous fields.
     pub value: VarInt,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct AdvancementTabPacket<'a> {
     tab_id: Option<Identifier<'a>>,
@@ -143,22 +230,5 @@ impl<'a> MinecraftPacketPart<'a> for AdvancementTabPacket<'a> {
         };
 
         Ok((AdvancementTabPacket { tab_id }, input))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::packets::play_clientbound::ClientboundPacket;
-    use crate::*;
-
-    #[test]
-    fn test() {
-        use std::io::Read;
-        let mut data = Vec::new();
-        std::fs::File::open("test_data/advancements.mc_packet")
-            .unwrap()
-            .read_to_end(&mut data)
-            .unwrap();
-        ClientboundPacket::deserialize_minecraft_packet_part(data.as_mut_slice()).unwrap();
     }
 }

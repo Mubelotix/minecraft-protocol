@@ -1,5 +1,23 @@
-use crate::*;
+use crate::{*, nbt::NbtTag};
 
+#[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug, MinecraftPacketPart)]
+pub struct BlockEntity {
+    /// The packed section coordinates are relative to the chunk they are in values 0-15 are valid.
+    /// ```python
+    /// packed_xz = ((blockX & 15) << 4) | (blockZ & 15) # encode
+    /// x = packed_xz >> 4, z = packed_xz & 15 # decode
+    /// ```
+    packed_xz: u8,
+    /// The height relative to the world
+    y: i16,
+    /// The type of block entity
+    ty: VarInt,
+    /// The block entity's data, without the X, Y, and Z values
+    data: NbtTag,
+}
+
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum PartialDiggingState {
@@ -9,6 +27,7 @@ pub enum PartialDiggingState {
 }
 
 /// See [the wiki](https://wiki.vg/Protocol#Player_Digging)
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum DiggingState {
@@ -21,6 +40,7 @@ pub enum DiggingState {
     SwapItemInHand,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(u8)]
 #[derive(Debug)]
 pub enum BlockFace {
@@ -32,47 +52,13 @@ pub enum BlockFace {
     East,
 }
 
-/// The type of update to perform used in [crate::packets::play_clientbound::BlockEntityData] packets.
-#[minecraft_enum(u8)]
-#[derive(Debug)]
-pub enum BlockEntityDataAction {
-    /// Set data of a mob spawner (everything except for SpawnPotentials: current delay, min/max delay, mob to be spawned, spawn count, spawn range, etc.)
-    MobSpawner = 1,
-    /// Set command block text (command and last execution status)
-    CommandBlock,
-    /// Set the level, primary, and secondary powers of a beacon
-    Beacon,
-    /// Set rotation and skin of mob head
-    MobHead,
-    /// Declare a conduit
-    Conduit,
-    /// Set base color and patterns on a banner
-    Banner,
-    /// Set the data for a Structure tile entity
-    Structure,
-    /// Set the destination for a end gateway
-    EndGateway,
-    /// Set the text on a sign
-    Sign,
-
-    /// Declare a bed
-    Bed = 11,
-    /// Set data of a jigsaw block
-    Jigsaw,
-    /// Set items in a campfire
-    Campfire,
-    /// Beehive information
-    Beehive,
-}
-
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct MultiBlockChange<'a> {
     /// Chunk section coordinate (encoded chunk x and z with each 22 bits, and section y with 20 bits, from left to right).
     ///
     /// Use [MultiBlockChange::decode_chunk_section_position] and [MultiBlockChange::encode_chunk_section_position] to work with it.
     pub chunk_section_position: u64,
-    /// Always inverse the preceding [ClientboundPacket::UpdateLight](crate::packets::play_clientbound::ClientboundPacket::UpdateLight) packet's "Trust Edges" bool
-    pub inverse_trust_edges: bool,
     /// Each entry is composed of the block id, shifted right by 12, and the relative block position in the chunk section (4 bits for x, z, and y, from left to right).
     ///
     /// Use [MultiBlockChange::decode_block] and [MultiBlockChange::encode_block] to work with it.
@@ -101,7 +87,7 @@ impl<'a> MultiBlockChange<'a> {
             );
         }
 
-        Ok((x as u64 & 0x3FFFFF) << 42 | (y as u64 & 0xFFFFF) | (z as u64 & 0x3FFFFF) << 20)
+        Ok((x & 0x3FFFFF) << 42 | (y & 0xFFFFF) | (z & 0x3FFFFF) << 20)
     }
 
     /// Returns the position of the chunk (block coordinate divided by 16 and rounded down).
@@ -138,7 +124,7 @@ impl<'a> MultiBlockChange<'a> {
             );
         }
 
-        Ok(((block as u32) as u64) << 12 | ((x as u64) << 8 | (y as u64) << 4 | z as u64))
+        Ok((block as u64) << 12 | ((x as u64) << 8 | (y as u64) << 4 | z as u64))
     }
 
     /// Returns the position of the block in the chunk at coordinates `chunk_section_position` and the state id of the block.

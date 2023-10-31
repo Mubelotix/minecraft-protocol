@@ -1,7 +1,7 @@
 /// A single signed byte
 #[inline]
 pub fn parse_byte(input: &[u8]) -> Result<(i8, &[u8]), &'static str> {
-    let byte = *input.get(0).ok_or("A byte tag should contain a byte.")?;
+    let byte = *input.first().ok_or("A byte tag should contain a byte.")?;
     let byte = i8::from_be_bytes([byte]);
     Ok((byte, &input[1..]))
 }
@@ -14,7 +14,7 @@ pub fn parse_short(input: &[u8]) -> Result<(i16, &[u8]), &'static str> {
     }
     Ok(unsafe {
         (
-            i16::from_be(*(input.as_ptr() as *mut i16)),
+            i16::from_be_bytes(*(input.as_ptr() as *mut [u8; 2])),
             input.get_unchecked(2..),
         )
     })
@@ -28,7 +28,7 @@ pub fn parse_int(input: &[u8]) -> Result<(i32, &[u8]), &'static str> {
     }
     Ok(unsafe {
         (
-            i32::from_be(*(input.as_ptr() as *mut i32)),
+            i32::from_be_bytes(*(input.as_ptr() as *mut [u8; 4])),
             input.get_unchecked(4..),
         )
     })
@@ -42,7 +42,7 @@ pub fn parse_long(input: &[u8]) -> Result<(i64, &[u8]), &'static str> {
     }
     Ok(unsafe {
         (
-            i64::from_be(*(input.as_ptr() as *mut i64)),
+            i64::from_be_bytes(*(input.as_ptr() as *mut [u8; 8])),
             input.get_unchecked(8..),
         )
     })

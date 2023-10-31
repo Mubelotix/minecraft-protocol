@@ -136,7 +136,7 @@ pub fn parse_string(mut input: &[u8]) -> Result<(String, &[u8]), &'static str> {
     if input.len() < 2 {
         return Err("A string tag should contain two bytes.");
     }
-    let len: u16 = unsafe { u16::from_be(*(input.as_ptr() as *mut u16)) };
+    let len: u16 = unsafe { u16::from_be_bytes(*(input.as_ptr() as *mut [u8; 2])) };
     let len = len as usize;
     input = &input[2..];
     if input.len() < len {
@@ -157,7 +157,7 @@ pub fn parse_list(input: &[u8]) -> Result<(NbtList, &[u8]), &'static str> {
     let (tag_type, len): (u8, i32) = unsafe {
         (
             *input.get_unchecked(0),
-            i32::from_be(*(input.as_ptr().add(1) as *mut i32)),
+            i32::from_be_bytes(*(input.as_ptr().add(1) as *mut [u8; 4])),
         )
     };
     if len <= 0 {
@@ -184,7 +184,7 @@ pub fn parse_list(input: &[u8]) -> Result<(NbtList, &[u8]), &'static str> {
             }
             let mut array = Vec::with_capacity(len);
             for i in 0..len {
-                let element = unsafe { i16::from_be(*(input.as_ptr().add(5 + 2 * i) as *mut i16)) };
+                let element = unsafe { i16::from_be_bytes(*(input.as_ptr().add(5 + 2 * i) as *mut [u8; 2])) };
                 array.push(element);
             }
             Ok((NbtList::Short(array), &input[5 + len * 2..]))
@@ -197,7 +197,7 @@ pub fn parse_list(input: &[u8]) -> Result<(NbtList, &[u8]), &'static str> {
             }
             let mut array = Vec::with_capacity(len);
             for i in 0..len {
-                let element = unsafe { i32::from_be(*(input.as_ptr().add(5 + 4 * i) as *mut i32)) };
+                let element = unsafe { i32::from_be_bytes(*(input.as_ptr().add(5 + 4 * i) as *mut [u8; 4])) };
                 array.push(element);
             }
             Ok((NbtList::Int(array), &input[5 + len * 4..]))
@@ -210,7 +210,7 @@ pub fn parse_list(input: &[u8]) -> Result<(NbtList, &[u8]), &'static str> {
             }
             let mut array = Vec::with_capacity(len);
             for i in 0..len {
-                let element = unsafe { i64::from_be(*(input.as_ptr().add(5 + 8 * i) as *mut i64)) };
+                let element = unsafe { i64::from_be_bytes(*(input.as_ptr().add(5 + 8 * i) as *mut [u8; 8])) };
                 array.push(element);
             }
             Ok((NbtList::Long(array), &input[5 + len * 8..]))
@@ -340,7 +340,7 @@ pub fn parse_byte_array(input: &[u8]) -> Result<(Vec<i8>, &[u8]), &'static str> 
     if input.len() < 4 {
         return Err("A byte array tag should contain four bytes.");
     }
-    let len: i32 = unsafe { i32::from_be(*(input.as_ptr() as *mut i32)) };
+    let len: i32 = unsafe { i32::from_be_bytes(*(input.as_ptr() as *mut [u8; 4])) };
     if len <= 0 {
         return Ok((Vec::new(), &input[4..]));
     }
@@ -366,7 +366,7 @@ pub fn parse_int_array(input: &[u8]) -> Result<(Vec<i32>, &[u8]), &'static str> 
     if input.len() < 4 {
         return Err("A int array tag should contain four bytes.");
     }
-    let len: i32 = unsafe { i32::from_be(*(input.as_ptr() as *mut i32)) };
+    let len: i32 = unsafe { i32::from_be_bytes(*(input.as_ptr() as *mut [u8; 4])) };
     if len <= 0 {
         return Ok((Vec::new(), &input[4..]));
     }
@@ -377,7 +377,7 @@ pub fn parse_int_array(input: &[u8]) -> Result<(Vec<i32>, &[u8]), &'static str> 
     let mut array = Vec::with_capacity(len);
     for i in 0..len {
         unsafe {
-            let element = i32::from_be(*(input.as_ptr().add(4 + 4 * i) as *mut i32));
+            let element = i32::from_be_bytes(*(input.as_ptr().add(4 + 4 * i) as *mut [u8; 4]));
             array.push(element);
         }
     }
@@ -390,7 +390,7 @@ pub fn parse_long_array(input: &[u8]) -> Result<(Vec<i64>, &[u8]), &'static str>
     if input.len() < 4 {
         return Err("A long array tag should contain four bytes.");
     }
-    let len: i32 = unsafe { i32::from_be(*(input.as_ptr() as *mut i32)) };
+    let len: i32 = unsafe { i32::from_be_bytes(*(input.as_ptr() as *mut [u8; 4])) };
     if len <= 0 {
         return Ok((Vec::new(), &input[4..]));
     }
@@ -403,7 +403,7 @@ pub fn parse_long_array(input: &[u8]) -> Result<(Vec<i64>, &[u8]), &'static str>
     let mut array = Vec::with_capacity(len);
     for i in 0..len {
         unsafe {
-            let element = i64::from_be(*(input.as_ptr().add(4 + 8 * i) as *mut i64));
+            let element = i64::from_be_bytes(*(input.as_ptr().add(4 + 8 * i) as *mut [u8; 8]));
             array.push(element);
         }
     }
