@@ -39,5 +39,28 @@ pub enum ClientboundPacket<'a> {
     /// Represents certain registries that are sent from the server and are applied on the client.
     RegistryData {
         registry_codec: NbtTag,
+    },
+
+    RessourcePakck {
+        /// The URL to the resource pack.
+        url: &'a str,
+        /// A 40 character hexadecimal and lowercase SHA-1 hash of the resource pack file.
+        /// If it's not a 40 character hexadecimal string, the client will not use it for hash verification and likely waste bandwidth — but it will still treat it as a unique id
+        hash: &'a str,
+        /// The notchian client will be forced to use the resource pack from the server. If they decline they will be kicked from the server.
+        forced: bool,
+        /// This is shown in the prompt making the client accept or decline the resource pack.
+        prompt_message: Option<Chat<'a>>
+    },
+
+    /// Used to enable and disable features, generally experimental ones, on the client.
+    FeatureFlags {
+        features: Array<'a, Identifier<'a>, VarInt>
+    },
+
+    UpdateTags {
+        tags: Map<'a, Identifier<'a>, Map<'a, Identifier<'a>, Array<'a, VarInt, VarInt>, VarInt>, VarInt>
     }
+
+
 }
