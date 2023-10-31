@@ -93,11 +93,11 @@ pub enum SnifferState {
 }
 
 #[derive(Debug, Clone)]
-pub struct EntityMetadata {
-    pub items: BTreeMap<u8, EntityMetadataValue>,
+pub struct EntityMetadata<'a> {
+    pub items: BTreeMap<u8, EntityMetadataValue<'a>>,
 }
 
-impl<'a> MinecraftPacketPart<'a> for EntityMetadata {
+impl<'a> MinecraftPacketPart<'a> for EntityMetadata<'a> {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
         for (key, value) in self.items.into_iter() {
             key.serialize_minecraft_packet_part(output)?;
@@ -129,9 +129,9 @@ impl<'a> MinecraftPacketPart<'a> for EntityMetadata {
 
 #[derive(Debug, Clone, MinecraftPacketPart)]
 #[discriminant(u8)]
-pub enum EntityMetadataValue {
+pub enum EntityMetadataValue<'a> {
     Byte {
-        value: u8,
+        value: i8,
     },
     VarInt {
         value: VarInt,
@@ -143,13 +143,13 @@ pub enum EntityMetadataValue {
         value: f32,
     },
     String {
-        value: String,
+        value: &'a str,
     },
     Chat {
-        chat: String,
+        chat: &'a str,
     },
     OptionChat {
-        chat: Option<String>,
+        chat: Option<&'a str>,
     },
     Slot {
         slot: super::slots::Slot,
@@ -209,7 +209,7 @@ pub enum EntityMetadataValue {
         frog_variant: VarInt,
     },
     OptionalGlobalPos {
-        optional_global_pos: Option<Position>,
+        optional_global_pos: Option<GlobalPosition<'a>>,
     },
     PaintingVariant {
         /// A VarInt that points towards the PAINTING_VARIANT registry.

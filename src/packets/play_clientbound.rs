@@ -915,7 +915,7 @@ pub enum ClientboundPacket<'a> {
     /// Any properties not included in the Metadata field are left unchanged.
     SetEntityMetadata {
         entity_id: VarInt,
-        metadata: entity::EntityMetadata,
+        metadata: entity::EntityMetadata<'a>,
     },
 
     /// This packet is sent when an entity has been leashed to another entity.

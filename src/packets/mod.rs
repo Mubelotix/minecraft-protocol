@@ -58,6 +58,12 @@ pub struct Position {
     pub z: i32,
 }
 
+#[derive(Debug, PartialEq, Clone, MinecraftPacketPart)] 
+pub struct GlobalPosition<'a> {
+    dimension: Identifier<'a>,
+    position: Position,
+}
+
 #[minecraft_enum(VarInt)]
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Direction {
