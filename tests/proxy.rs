@@ -5,6 +5,7 @@ use minecraft_protocol::{
     packets::handshake::ServerboundPacket as HandshakeServerbound,
     packets::login::ServerboundPacket as LoginServerbound,
     packets::login::ClientboundPacket as LoginClientbound,
+    packets::config::ClientboundPacket as ConfigClientbound,
     *,
 };
 
@@ -45,6 +46,9 @@ fn proxy_clientbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
             #[cfg(feature = "all-packets")]
             println!("\u{001b}[33mserver\u{001b}[0m: {packet:?}");
         } else if let Ok(packet) = LoginClientbound::deserialize_uncompressed_minecraft_packet(&packet) {
+            #[cfg(feature = "all-packets")]
+            println!("\u{001b}[33mserver\u{001b}[0m: {packet:?}\u{001b}[0m");
+        } else if let Ok(packet) = ConfigClientbound::deserialize_minecraft_packet_part(&packet) {
             #[cfg(feature = "all-packets")]
             println!("\u{001b}[33mserver\u{001b}[0m: {packet:?}\u{001b}[0m");
         } else {
