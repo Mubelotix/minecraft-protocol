@@ -12,7 +12,7 @@ minecraft-packet-derive = {path="../minecraft-packet-derive"}
 minreq = {version="2.3", features=["https"]}
 serde_json = "1.0"
 serde = {version="1.0", features=["derive"]}
-convert_case = "0.4"
+convert_case = "0.6"
 
 [features]
 all-packets = []
