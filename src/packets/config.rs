@@ -18,6 +18,7 @@ pub enum ClientboundPacket<'a> {
 
     /// Sent by the server to notify the client that the configuration process has finished. The client answers with its own Finish Configuration whenever it is ready to continue.
     FinishConfiguration,
+    
     /// The server will frequently send out a keep-alive, each containing a random ID. 
     /// The client must respond with the same payload ([see Serverbound Keep Alive](https://wiki.vg/Protocol#Serverbound_Keep_Alive_.28configuration.29)).
     ///  If the client does not respond to them for over 30 seconds, the server kicks the client. Vice versa, if the server does not send any keep-alives for 20 seconds, the client will disconnect and yields a "Timed out" exception.
