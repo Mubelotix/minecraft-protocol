@@ -1,5 +1,3 @@
-use std::char::MAX;
-
 use crate::{nbt::NbtTag, *, components::blocks::BlockEntity};
 
 /// A complex data structure including block data and optionally entities of a chunk.
