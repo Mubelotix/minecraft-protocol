@@ -9,7 +9,7 @@ use minecraft_protocol::{MinecraftPacketPart, packets::play_serverbound::Serverb
 
 #[test]
 fn auto_play_serverbound_7() {
-    let input = &[7, 64, 31, 118, 206];
+    let input = &[7, 63, 224, 0, 0];
     let packet_deserialized = ServerboundPacket::deserialize_uncompressed_minecraft_packet(input).unwrap();
 
     match packet_deserialized.serialize_minecraft_packet() {

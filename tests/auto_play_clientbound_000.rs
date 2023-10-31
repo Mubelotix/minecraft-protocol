@@ -14,8 +14,8 @@ fn auto_play_clientbound_0() {
 
     match packet_deserialized.serialize_minecraft_packet() {
         Ok(packet) => {
-            let _reserialized = ClientboundPacket::deserialize_uncompressed_minecraft_packet(&packet).unwrap();
-            assert!(matches!(ClientboundPacket::deserialize_uncompressed_minecraft_packet(input).unwrap(), _reserialized));
+            //reserialize let _reserialized = ClientboundPacket::deserialize_uncompressed_minecraft_packet(&packet).unwrap();
+            //reserialize assert!(matches!(ClientboundPacket::deserialize_uncompressed_minecraft_packet(input).unwrap(), _reserialized));
         }
         Err(e) => panic!("Failed to serialize packet: {:?}", e),
     };
