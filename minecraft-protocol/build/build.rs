@@ -64,8 +64,10 @@ fn get_data(url: &str, cache: &str) -> serde_json::Value {
 }
 
 fn main() {
+    let target = std::env::var("OUT_DIR").expect("Set CARGO_TARGET_DIR to the target directory");
+
     println!(
-        "cargo:rerun-if-changed=target/cache-file-location-{}.json",
+        "cargo:rerun-if-changed={target}/cache-file-location-{}.json",
         VERSION
     );
     println!(
@@ -74,7 +76,7 @@ fn main() {
 
     let mut file_locations = get_data(
         "https://raw.githubusercontent.com/PrismarineJS/minecraft-data/master/data/dataPaths.json",
-        &format!("target/cache-file-location-{}.json", VERSION),
+        &format!("{target}/cache-file-location-{}.json", VERSION),
     );
     let file_locations = file_locations.get_mut("pc").unwrap().take();
     let file_locations: HashMap<String, HashMap<String, String>> =
@@ -89,7 +91,7 @@ fn main() {
     );
     let block_data = get_data(
         &blocks_url,
-        &format!("target/cache-blocks-{}.json", VERSION),
+        &format!("{target}/cache-blocks-{}.json", VERSION),
     );
     blocks::generate_block_enum(block_data.clone());
     blocks::generate_block_with_state_enum(block_data);
@@ -98,7 +100,7 @@ fn main() {
         "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}/items.json",
         file_locations.get("items").unwrap()
     );
-    let items_data = get_data(&items_url, &format!("target/cache-items-{}.json", VERSION));
+    let items_data = get_data(&items_url, &format!("{target}/cache-items-{}.json", VERSION));
     let items = items::generate_item_enum(items_data);
 
     let entities_url = format!(
@@ -107,7 +109,7 @@ fn main() {
     );
     let entities_data = get_data(
         &entities_url,
-        &format!("target/cache-entities-{}.json", VERSION),
+        &format!("{target}/cache-entities-{}.json", VERSION),
     );
     entities::generate_entity_enum(entities_data);
 
@@ -117,7 +119,7 @@ fn main() {
     );
     let recipes_data = get_data(
         &recipes_url,
-        &format!("target/cache-recipes-{}.json", VERSION),
+        &format!("{target}/cache-recipes-{}.json", VERSION),
     );
     recipes::generate_recipes(recipes_data, items);
 }

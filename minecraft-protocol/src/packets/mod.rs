@@ -2,7 +2,7 @@ pub mod play_clientbound;
 pub mod play_serverbound;
 pub mod serializer;
 pub mod config;
-pub use minecraft_packet_derive::*;
+pub use minecraft_protocol_derive::*;
 use serializer::*;
 use std::{convert::TryFrom, collections::BTreeMap};
 pub mod handshake;

@@ -2,7 +2,7 @@ extern crate proc_macro;
 use proc_macro::{Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::{
-    parse_macro_input, punctuated::Punctuated, Data, DeriveInput, Expr, Fields, Lit, LitInt, ExprUnary, UnOp, token::Sub
+    parse_macro_input, punctuated::Punctuated, Data, DeriveInput, Expr, Fields, Lit, LitInt, ExprUnary, UnOp
 };
 
 #[proc_macro_derive(MinecraftPacketPart, attributes(discriminant, value))]
