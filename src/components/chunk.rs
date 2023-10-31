@@ -134,8 +134,8 @@ impl<'a, const LBITS: u8, const HBITS: u8, const DBITS: u8, const TRUNC: usize> 
     }
 }
 
-/// A [chunk section](ChunkSection) is a 16×16×16 collection of blocks (chunk sections are cubic).
-/// A [chunk column](ChunkData) is a 16×256×16 collection of blocks, and is what most players think of when they hear the term "chunk".
+/// A [chunk section](ChunkSection) is a 16×24×16 collection of blocks (chunk sections are cubic).
+/// A [chunk column](ChunkData) is a 16×384×16 collection of blocks, and is what most players think of when they hear the term "chunk".
 /// However, these are not the smallest unit data is stored in in the game; [chunk columns](ChunkData) are actually 16 [chunk sections](ChunkSection) aligned vertically.
 #[derive(Debug, MinecraftPacketPart)]
 pub struct Chunk {
@@ -146,7 +146,7 @@ pub struct Chunk {
 
 impl Chunk {
     /// Deserialize chunk sections from data in a chunk packet
-    pub fn deserialize_from_data(mut input: &[u8]) -> Result<Vec<Chunk>, &'static str> {
+    pub fn deserialize_from_data(input: &[u8]) -> Result<Vec<Chunk>, &'static str> {
         let chunk_count = (-64..320).len() / 16;
 
         let (chunks, input) = Chunk::deserialize_n(input, chunk_count)?;
