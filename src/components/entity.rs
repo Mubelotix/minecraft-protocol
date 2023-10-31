@@ -103,7 +103,7 @@ impl<'a> MinecraftPacketPart<'a> for EntityMetadata<'a> {
             key.serialize_minecraft_packet_part(output)?;
             value.serialize_minecraft_packet_part(output)?;
         }
-        0xff.serialize_minecraft_packet_part(output)?;
+        (0xffu8).serialize_minecraft_packet_part(output)?;
         Ok(())
     }
 
