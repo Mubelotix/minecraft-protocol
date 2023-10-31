@@ -12,7 +12,7 @@ pub struct SlotItem {
     /// The [item](crate::ids::items::Item).
     /// Item IDs are distinct from [block IDs](crate::ids::blocks::Block); see [crate::ids] for more information.
     pub item_id: crate::ids::items::Item,
-    pub item_count: VarInt,
+    pub item_count: i8,
     /// Things like enchantements and durability are encoded in this field.
     pub nbt_data: NbtTag,
 }
@@ -145,7 +145,7 @@ mod tests {
             .item
             .unwrap();
         assert_eq!(deserialized.item_id, crate::ids::items::Item::Stone);
-        assert_eq!(deserialized.item_count.0, 1);
+        assert_eq!(deserialized.item_count, 1);
         assert!(matches!(deserialized.nbt_data, NbtTag::Null));
     }
 }
