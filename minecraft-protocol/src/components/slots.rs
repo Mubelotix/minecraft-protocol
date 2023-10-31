@@ -54,7 +54,7 @@ impl std::cmp::PartialEq for EquipmentSlot {
 impl std::cmp::Eq for EquipmentSlot {}
 impl std::cmp::PartialOrd for EquipmentSlot {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        (*self as u8).partial_cmp(&(*other as u8))
+        Some(self.cmp(other))
     }
 }
 impl std::cmp::Ord for EquipmentSlot {
