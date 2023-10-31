@@ -83,7 +83,7 @@ pub type Identifier<'a> = &'a str;
 /// Feel free to make PRs.
 #[derive(Debug)]
 pub struct RawBytes<'a> {
-    data: &'a [u8],
+    pub data: &'a [u8],
 }
 
 #[derive(Debug, MinecraftPacketPart)]
