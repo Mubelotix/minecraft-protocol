@@ -99,7 +99,6 @@ impl<'a, T: std::fmt::Debug + MinecraftPacketPart<'a>, U: MinecraftPacketPart<'a
     }
 }
 
-#[derive(Debug)]
 pub struct Map<
     'a,
     K: MinecraftPacketPart<'a> + std::fmt::Debug,
@@ -108,6 +107,12 @@ pub struct Map<
 > {
     _len_prefix: std::marker::PhantomData<&'a U>,
     pub items: std::collections::BTreeMap<K, V>,
+}
+
+impl<'a, K: std::fmt::Debug + MinecraftPacketPart<'a>, V: std::fmt::Debug + MinecraftPacketPart<'a>, U: MinecraftPacketPart<'a>> std::fmt::Debug for Map<'a, K, V, U> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.items.fmt(f)
+    }
 }
 
 impl<
