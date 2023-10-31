@@ -23,6 +23,18 @@ impl From<usize> for VarInt {
     }
 }
 
+impl From<u32> for VarInt {
+    fn from(value: u32) -> Self {
+        VarInt(value as i32)
+    }
+}
+
+impl From<i32> for VarInt {
+    fn from(value: i32) -> Self {
+        VarInt(value)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct VarLong(pub i64);
 impl TryFrom<VarLong> for usize {
