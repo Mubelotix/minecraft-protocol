@@ -62,7 +62,7 @@ fn proxy_clientbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
                         continue;
                     }
                 };
-                let reserialized = match Chunk::to_data(chunks) {
+                let reserialized = match Chunk::into_data(chunks) {
                     Ok(reserialized) => reserialized,
                     Err(e) => {
                         println!("Failed to reserialize chunks: {:?}", e);
