@@ -1,5 +1,3 @@
-use std::char::MAX;
-
 use crate::{nbt::NbtTag, *, components::blocks::BlockEntity};
 
 /// A complex data structure including block data and optionally entities of a chunk.
@@ -19,7 +17,8 @@ pub struct ChunkData<'a> {
     /// Sections are sent bottom-to-top, i.e. the first section, if sent, extends from Y=0 to Y=15.
     ///
     /// **Use [ChunkData::deserialize_chunk_sections] to get ready to use [ChunkSection]s.**
-    pub data: Array<'a, u8, VarInt>,
+    pub data_len: VarInt,
+    pub data: FixedSizeArray<'a, Chunk, 24>,
     pub block_entities: Array<'a, BlockEntity, VarInt>,
     /// BitSet containing bits for each section in the world + 2.
     /// Each set bit indicates that the corresponding 16×16×16 chunk section has data in the Sky Light array below.
@@ -139,7 +138,7 @@ impl<'a, const LBITS: u8, const HBITS: u8, const DBITS: u8, const TRUNC: usize> 
 /// A [chunk section](ChunkSection) is a 16×16×16 collection of blocks (chunk sections are cubic).
 /// A [chunk column](ChunkData) is a 16×256×16 collection of blocks, and is what most players think of when they hear the term "chunk".
 /// However, these are not the smallest unit data is stored in in the game; [chunk columns](ChunkData) are actually 16 [chunk sections](ChunkSection) aligned vertically.
-#[derive(Debug)]
+#[derive(Debug, MinecraftPacketPart)]
 pub struct Chunk {
     block_count: i16,
     blocks: PalettedData<4, 8, 15, {16*16*16}>,
