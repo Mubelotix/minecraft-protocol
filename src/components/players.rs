@@ -123,6 +123,13 @@ pub struct DeathLocation<'a> {
     pub position: Position,
 }
 
+#[derive(Debug)]
+#[minecraft_enum(VarInt)]
+pub enum MainHand {
+    Left,
+    Right
+}
+
 impl<'a> MinecraftPacketPart<'a> for PlayersInfos<'a> {
     /// Look at this [wiki page](https://wiki.vg/Protocol#Player_Info_Update) for more information about this packet.
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {

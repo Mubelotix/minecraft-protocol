@@ -1,4 +1,4 @@
-use crate::nbt::NbtTag;
+use crate::{nbt::NbtTag, components::{chat, players, resource_pack}};
 
 use super::*;
 
@@ -57,6 +57,51 @@ pub enum ClientboundPacket<'a> {
     UpdateTags {
         tags: Map<'a, Identifier<'a>, Map<'a, Identifier<'a>, Array<'a, VarInt, VarInt>, VarInt>, VarInt>
     }
+}
 
+#[derive(Debug, MinecraftPacketPart)]
+#[discriminant(VarInt)]
+pub enum ServerboundPacket<'a> {
+    /// Sent when the player connects, or when settings are changed.
+    ClientInformations {
+        /// e.g. "en_US"
+        locale: &'a str,
+        /// Client-side render distance, in chunks.
+        render_distance: i8,
+        chat_mode: chat::ChatMode,
+        /// “Colors” multiplayer setting. Can the chat be colored?
+        chat_colors: bool,
+        /// Bit mask see [here](https://wiki.vg/Protocol#Client_Information_.28configuration.29)
+        displayed_skin_parts: u8,
+        main_hand: players::MainHand,
+        /// Enables filtering of text on signs and written book titles. Currently always false (i.e. the filtering is disabled)
+        enable_text_filtering: bool,
+        /// Servers usually list online players, this option should let you not show up in that list.
+        allow_server_listing: bool,
+    },
 
+    /// Mods and plugins can use this to send their data. Minecraft itself uses some plugin channels. These internal channels are in the `minecraft` namespace.
+    PluginMessage {
+        /// Name of the [plugin channel](https://wiki.vg/Plugin_channel) used to send the data.
+        channel: &'a str,
+        /// Any data, depending on the channel. `minecraft:` channels are documented [here](https://wiki.vg/Plugin_channel). The length of this array must be inferred from the packet length.
+        data: RawBytes<'a>,
+    },
+
+    /// Sent by the client to notify the client that the configuration process has finished. It is sent in response to the server's [Finish Configuration](https://wiki.vg/Protocol#Finish_Configuration).
+    FinishConfiguration,
+
+    /// The server will frequently send out a keep-alive (see [Clientbound Keep Alive](https://wiki.vg/Protocol#Clientbound_Keep_Alive_.28configuration.29)), each containing a random ID. The client must respond with the same packet.
+    KeepAlive {
+        id: i64,
+    },
+
+    /// Response to the clientbound packet (Ping) with the same id.
+    Pong {
+        id: i32,
+    },
+    
+    ResourcePackResponse {
+        result: resource_pack::ResourcePackStatus,
+    },
 }
