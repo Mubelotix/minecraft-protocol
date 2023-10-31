@@ -202,9 +202,9 @@ impl<'a, const LBITS: u8, const HBITS: u8, const DBITS: u8, const TRUNC: usize> 
 /// However, these are not the smallest unit data is stored in in the game; [chunk columns](ChunkData) are actually 16 [chunk sections](ChunkSection) aligned vertically.
 #[derive(Debug, MinecraftPacketPart, Clone)]
 pub struct Chunk {
-    block_count: i16,
-    blocks: PalettedData<4, 8, 15, {16*16*16}>,
-    biomes: PalettedData<0, 3, 6, {4*4*4}>,
+    pub block_count: i16,
+    pub blocks: PalettedData<4, 8, 15, {16*16*16}>,
+    pub biomes: PalettedData<0, 3, 6, {4*4*4}>,
 }
 
 impl Chunk {
