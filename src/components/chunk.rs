@@ -16,7 +16,8 @@ pub struct ChunkData<'a> {
     /// The number of elements in the array is equal to the number of bits set in [ChunkData::primary_bit_mask].
     /// Sections are sent bottom-to-top, i.e. the first section, if sent, extends from Y=0 to Y=15.
     ///
-    /// **Use [ChunkData::deserialize_chunk_sections] to get ready to use [ChunkSection]s.**
+    /// **Use [ChunkData::from_data] to get ready to use [Chunk]s.**
+    /// **Use [ChunkData::into_data] to generate from [Chunk]s.**
     pub data: Array<'a, u8, VarInt>,
     pub block_entities: Array<'a, BlockEntity, VarInt>,
     /// BitSet containing bits for each section in the world + 2.
@@ -48,7 +49,7 @@ pub struct ChunkData<'a> {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum PalettedData<const LBITS: u8, const HBITS: u8, const DBITS: u8, const TRUNC: usize> {
     Paletted {
         palette: Vec<u32>,
@@ -199,7 +200,7 @@ impl<'a, const LBITS: u8, const HBITS: u8, const DBITS: u8, const TRUNC: usize> 
 /// A [chunk section](ChunkSection) is a 16×24×16 collection of blocks (chunk sections are cubic).
 /// A [chunk column](ChunkData) is a 16×384×16 collection of blocks, and is what most players think of when they hear the term "chunk".
 /// However, these are not the smallest unit data is stored in in the game; [chunk columns](ChunkData) are actually 16 [chunk sections](ChunkSection) aligned vertically.
-#[derive(Debug, MinecraftPacketPart)]
+#[derive(Debug, MinecraftPacketPart, Clone)]
 pub struct Chunk {
     block_count: i16,
     blocks: PalettedData<4, 8, 15, {16*16*16}>,
@@ -207,8 +208,7 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    /// Deserialize chunk sections from data in a chunk packet
-    pub fn deserialize_from_data(input: &[u8]) -> Result<Vec<Chunk>, &'static str> {
+    pub fn from_data(input: &[u8]) -> Result<Vec<Chunk>, &'static str> {
         let chunk_count = (-64..320).len() / 16;
         let (chunks, input) = Chunk::deserialize_n(input, chunk_count)?;
 
@@ -219,7 +219,7 @@ impl Chunk {
         Ok(chunks)
     }
 
-    pub fn serialize_chunks(chunks: Vec<Chunk>) -> Result<Vec<u8>, &'static str> {
+    pub fn into_data(chunks: Vec<Chunk>) -> Result<Vec<u8>, &'static str> {
         let mut output = Vec::new();
 
         let chunk_count = (-64..320).len() / 16;
@@ -237,28 +237,10 @@ impl Chunk {
 #[cfg(test)]
 #[test]
 fn test() {
-    //let chunk_data = &include_bytes!("../../test_data/chunk_-10_-1.dump")[..];
-
-    //let chunks = Chunk::deserialize_from_data(chunk_data).unwrap();
-    //println!("{chunks:?}");
-
-    // let chunk_data = &include_bytes!("../../test_data/chunk_-10_-1.dump")[2..];
-    // let chunks = ChunkData::deserialize_minecraft_packet_part(chunk_data).unwrap();
-    // println!("{chunks:?}");
-
-    /*let packet_data: Vec<u8> = include!("../../test_data/chunk2-2.dump").trim().split(",").map(|v| match v.parse::<u8>() {
-        Ok(v) => v,
-        Err(e) => panic!("invalid {:?}", v)
-    }).collect();
-    std::fs::write("test_data/chunk2-2.dump", packet_data.clone());*/
     let packet_data = &include_bytes!("../../test_data/chunk2.dump")[..];
-    // let (packet, rest) = ChunkData::deserialize_minecraft_packet_part(&packet_data).unwrap();
-    // assert!(rest.is_empty());
-    // let chunk_data = packet.data.items.as_slice();
-    let chunks = Chunk::deserialize_from_data(packet_data).unwrap();
-    let data2 = Chunk::serialize_chunks(chunks).unwrap();
-    std::fs::write("test_data/chunk3.dump", data2.clone());
-    assert_eq!(packet_data, data2.as_slice());
-    
-    //println!("{:?}", chunk_data_deserialized);
+
+    let from_minecraft = Chunk::from_data(packet_data).unwrap();
+    let reserialized = Chunk::into_data(from_minecraft.clone()).unwrap();
+    let redeserialized = Chunk::from_data(&reserialized).unwrap();
+    assert_eq!(format!("{from_minecraft:?}"), format!("{redeserialized:?}"));
 }

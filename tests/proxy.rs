@@ -55,14 +55,14 @@ fn proxy_clientbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
             #[cfg(feature = "all-packets")]
             println!("\u{001b}[33mserver\u{001b}[0m: {packet:?}");
             if let PlayClientbound::ChunkData { mut value } = packet {
-                let chunks = match Chunk::deserialize_from_data(&value.data.items) {
+                let chunks = match Chunk::from_data(&value.data.items) {
                     Ok(chunks) => chunks,
                     Err(e) => {
                         println!("Failed to deserialize chunks: {:?}", e);
                         continue;
                     }
                 };
-                let reserialized = match Chunk::serialize_chunks(chunks) {
+                let reserialized = match Chunk::to_data(chunks) {
                     Ok(reserialized) => reserialized,
                     Err(e) => {
                         println!("Failed to reserialize chunks: {:?}", e);
