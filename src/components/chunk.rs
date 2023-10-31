@@ -237,7 +237,7 @@ impl Chunk {
 #[cfg(test)]
 #[test]
 fn test() {
-    let packet_data = &include_bytes!("../../test_data/chunk2.dump")[..];
+    let packet_data = &include_bytes!("../../tests/chunk2.dump")[..];
 
     let from_minecraft = Chunk::from_data(packet_data).unwrap();
     let reserialized = Chunk::into_data(from_minecraft.clone()).unwrap();
