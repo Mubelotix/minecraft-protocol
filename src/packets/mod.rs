@@ -81,7 +81,7 @@ pub type Identifier<'a> = &'a str;
 
 /// This is used to replace an unsupported structure by taking all the remaining bytes of a packet.
 /// Feel free to make PRs.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct RawBytes<'a> {
     pub data: &'a [u8],
 }
