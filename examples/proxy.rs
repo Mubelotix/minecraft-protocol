@@ -4,20 +4,40 @@ use minecraft_protocol::{
     packets::play_clientbound::ClientboundPacket as PlayClientbound,
     packets::handshake::ServerboundPacket as HandshakeServerbound,
     packets::login::ServerboundPacket as LoginServerbound,
-    packets::login::ClientboundPacket as LoginClientbound,
+    packets::{login::ClientboundPacket as LoginClientbound, VarInt},
     packets::config::ClientboundPacket as ConfigClientbound,
     packets::config::ServerboundPacket as ConfigServerbound,
     packets::status::ServerboundPacket as StatusServerbound,
     packets::status::ClientboundPacket as StatusClientbound,
     *, components::chunk::Chunk,
 };
+use std::{net::{TcpListener, TcpStream}, collections::HashSet};
 
-use std::net::{TcpListener, TcpStream};
+const TEST_PATTERN: &str = r#"
+//! This test was automatically generated. Please run the proxy example to regenerate it.
+//! 
+//! ```
+//! cargo run --example proxy
+//! ```
+
+use minecraft_protocol::{MinecraftPacketPart, packets::play_[DEST_LOWER]::[DEST]Packet};
+
+#[test]
+fn auto_play_[DEST_LOWER]_[ID]() {
+    let input = &[DATA];
+    [DEST]Packet::deserialize_uncompressed_minecraft_packet(input).unwrap();
+}
+"#;
 
 fn proxy_serverbound(client_stream: TcpStream, server_stream: TcpStream) -> Result<(), NetworkError> {
+    let mut play = false;
+    let mut saved_packets = HashSet::new();
+
     loop {
         let packet = read_packet(&client_stream, None, None)?;
+
         if let Ok(packet) = PlayServerbound::deserialize_uncompressed_minecraft_packet(&packet) {
+            play = true;
             #[cfg(feature = "all-packets")]
             {
                 let mut fpacket = format!("{:?}", packet);
@@ -77,16 +97,31 @@ fn proxy_serverbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
             println!("\u{001b}[35mclient\u{001b}[0m: \u{001b}[31m{fpacket:?}\nwith {err}\u{001b}[0m");
         }
 
-      
+        if play {
+            let packet_id = VarInt::deserialize_minecraft_packet_part(&packet)?.0.0;
+            if saved_packets.insert(packet_id) {
+                let test = TEST_PATTERN
+                    .replace("[ID]", &format!("{:x}", packet_id))
+                    .replace("[DEST]", "Serverbound")
+                    .replace("[DEST_LOWER]", "serverbound")
+                    .replace("[DATA]", &format!("{:?}", packet));
+                let _ = std::fs::write(format!("tests/auto_play_serverbound_{packet_id:x}.rs"), test);
+            }
+        }
 
         send_packet(&server_stream, packet, None, None)?;
     }
 }
 
 fn proxy_clientbound(client_stream: TcpStream, server_stream: TcpStream) -> Result<(), NetworkError> {
+    let mut play = false;
+    let mut saved_packets = HashSet::new();
+
     loop {
         let packet = read_packet(&server_stream, None, None)?;
+        
         if let Ok(packet) = PlayClientbound::deserialize_uncompressed_minecraft_packet(&packet) {
+            play = true;
             #[cfg(feature = "all-packets")]
             {
                 let mut fpacket = format!("{:?}", packet);
@@ -160,6 +195,18 @@ fn proxy_clientbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
             };
             let err = PlayClientbound::deserialize_uncompressed_minecraft_packet(&packet).unwrap_err();
             println!("\u{001b}[33mserver\u{001b}[0m: \u{001b}[31m{fpacket:?}\nwith {err}\u{001b}[0m");
+        }
+
+        if play {
+            let packet_id = VarInt::deserialize_minecraft_packet_part(&packet)?.0.0;
+            if saved_packets.insert(packet_id) {
+                let test = TEST_PATTERN
+                    .replace("[ID]", &format!("{:x}", packet_id))
+                    .replace("[DEST]", "Clientbound")
+                    .replace("[DEST_LOWER]", "clientbound")
+                    .replace("[DATA]", &format!("{:?}", packet));
+                let _ = std::fs::write(format!("tests/auto_play_clientbound_{packet_id:x}.rs"), test);
+            }
         }
 
         send_packet(&client_stream, packet, None, None)?;
