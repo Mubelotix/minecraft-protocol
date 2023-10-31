@@ -20,8 +20,11 @@ jobs:
           ~/.cargo/bin/
           ~/.cargo/registry/index/
           ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
           target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/rust.yml') }}
+    - name: Download library minecraft-protocol-derive
+      run: git clone https://github.com/Mubelotix/minecraft-protocol-derive ../minecraft-packet-derive || (cd ../minecraft-packet-derive ; git pull)
     - name: Build
       run: cargo build
     - name: Run tests
