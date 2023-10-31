@@ -364,7 +364,7 @@ pub enum ClientboundPacket<'a> {
 
     /// The Notchian client determines how solid to display the warning by comparing to whichever is higher, the warning distance or whichever is lower, the distance from the current diameter to the target diameter or the place the border will be after warningTime seconds.
     /// Look at the [pseudo code](https://wiki.vg/Protocol#Initialize_World_Border)
-    IntitializeWorldBorder {
+    InitializeWorldBorder {
         x: f64,
         y: f64,
         /// Current length of a single side of the world border, in meters.
