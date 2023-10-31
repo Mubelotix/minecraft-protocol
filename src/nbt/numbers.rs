@@ -1,7 +1,7 @@
 /// A single signed byte
 #[inline]
 pub fn parse_byte(input: &[u8]) -> Result<(i8, &[u8]), &'static str> {
-    let byte = *input.get(0).ok_or("A byte tag should contain a byte.")?;
+    let byte = *input.first().ok_or("A byte tag should contain a byte.")?;
     let byte = i8::from_be_bytes([byte]);
     Ok((byte, &input[1..]))
 }
