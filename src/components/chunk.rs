@@ -162,7 +162,7 @@ impl<'a, const LBITS: u8, const HBITS: u8, const DBITS: u8, const TRUNC: usize> 
                 let mut longs: Vec<u64> = Vec::new();
                 for entries in indexed.chunks(entries_per_long as usize) {
                     let mut long = 0;
-                    for entry in entries.iter() {
+                    for entry in entries.iter().rev() {
                         long <<= bits_per_entry;
                         long += *entry as u64;
                     }
@@ -181,7 +181,7 @@ impl<'a, const LBITS: u8, const HBITS: u8, const DBITS: u8, const TRUNC: usize> 
                 let mut longs: Vec<u64> = Vec::new();
                 for entries in values.chunks(entries_per_long as usize) {
                     let mut long = 0;
-                    for entry in entries.iter() {
+                    for entry in entries.iter().rev() {
                         long <<= bits_per_entry;
                         long += *entry as u64;
                     }
