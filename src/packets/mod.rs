@@ -79,6 +79,7 @@ pub struct TestPacket {
     data: u8,
 }
 
+#[derive(Default)]
 pub struct Array<'a, T: MinecraftPacketPart<'a> + std::fmt::Debug, U: MinecraftPacketPart<'a>> {
     _len_prefix: std::marker::PhantomData<&'a U>,
     pub items: Vec<T>,
@@ -99,6 +100,7 @@ impl<'a, T: std::fmt::Debug + MinecraftPacketPart<'a>, U: MinecraftPacketPart<'a
     }
 }
 
+#[derive(Default)]
 pub struct Map<
     'a,
     K: MinecraftPacketPart<'a> + std::fmt::Debug,
