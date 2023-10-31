@@ -61,7 +61,7 @@ fn proxy_clientbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
                     }
                 };
                 value.data.items = reserialized;
-                let packet = match PlayClientbound::ChunkData { value }.serialize_minecraft_packet() {
+                let packet = match (PlayClientbound::ChunkData{value}.serialize_minecraft_packet()) {
                     Ok(packet) => packet,
                     Err(e) => {
                         println!("Failed to reserialize chunk packet: {:?}", e);
