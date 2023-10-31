@@ -28,6 +28,7 @@ pub enum ClientboundPacket<'a> {
     LoginSuccess {
         uuid: UUID,
         username: &'a str,
+        properties: Array<'a, components::players::Property<'a>, VarInt>,
     },
 
     /// Enables compression.
