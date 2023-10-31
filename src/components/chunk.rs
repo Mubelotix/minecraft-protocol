@@ -3,6 +3,7 @@ use crate::{nbt::NbtTag, *, components::blocks::BlockEntity};
 /// A complex data structure including block data and optionally entities of a chunk.
 ///
 /// Note that the Notchian client requires an [ClientboundPacket::UpdateViewPosition](crate::packets::play_clientbound::ClientboundPacket::UpdateViewPosition) packet when it crosses a chunk border, otherwise it'll only display `render distance + 2` chunks around the chunk it spawned in.
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(MinecraftPacketPart, Debug)]
 pub struct ChunkData<'a> {
     /// Chunk coordinate (block coordinate divided by 16, rounded down).
@@ -48,7 +49,7 @@ pub struct ChunkData<'a> {
     pub block_light: Array<'a, Array<'a, u8, VarInt>, VarInt>,
 }
 
-
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone)]
 pub enum PalettedData<const LBITS: u8, const HBITS: u8, const DBITS: u8, const TRUNC: usize> {
     Paletted {
@@ -200,6 +201,7 @@ impl<'a, const LBITS: u8, const HBITS: u8, const DBITS: u8, const TRUNC: usize> 
 /// A [chunk section](ChunkSection) is a 16×24×16 collection of blocks (chunk sections are cubic).
 /// A [chunk column](ChunkData) is a 16×384×16 collection of blocks, and is what most players think of when they hear the term "chunk".
 /// However, these are not the smallest unit data is stored in in the game; [chunk columns](ChunkData) are actually 16 [chunk sections](ChunkSection) aligned vertically.
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart, Clone)]
 pub struct Chunk {
     pub block_count: i16,

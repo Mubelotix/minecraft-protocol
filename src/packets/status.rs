@@ -2,6 +2,7 @@
 
 use crate::*;
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum ClientboundPacket<'a> {
@@ -17,7 +18,7 @@ pub enum ClientboundPacket<'a> {
         payload: i64,
     },
 }
-
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum ServerboundPacket {

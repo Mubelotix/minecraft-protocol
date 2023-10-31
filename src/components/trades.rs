@@ -5,6 +5,7 @@ use crate::*;
 ///
 /// Notes: Modifiers can increase or decrease the number of items for the first input slot. The second input slot and the output slot never change the nubmer of items. The number of items may never be less than 1, and never more than the stack size. If special price and demand are both zero, only the default price is displayed. If either is non-zero, then the adjusted price is displayed next to the crossed-out default price. The adjusted prices is calculated as follows:  
 /// `Adjusted price = default price + floor(default price x multiplier x demand) + special price`
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct Trade {
     /// The first item the player has to supply for this villager trade.

@@ -1,5 +1,6 @@
 use crate::*;
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum UnlockRecipesAction<'a> {
@@ -44,6 +45,7 @@ pub enum UnlockRecipesAction<'a> {
     },
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum RecipeBook {

@@ -2,6 +2,7 @@ use crate::{nbt::NbtTag, components::{chat, players, resource_pack}};
 
 use super::*;
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum ClientboundPacket<'a> {
@@ -60,6 +61,7 @@ pub enum ClientboundPacket<'a> {
     }
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum ServerboundPacket<'a> {

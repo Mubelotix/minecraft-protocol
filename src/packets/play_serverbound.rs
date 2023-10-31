@@ -3,6 +3,7 @@ use super::play_clientbound::ClientboundPacket;
 use super::*;
 use crate::components::*;
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum ServerboundPacket<'a> {

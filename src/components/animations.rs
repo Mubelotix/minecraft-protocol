@@ -1,5 +1,6 @@
 use crate::*;
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(u8)]
 #[derive(Debug)]
 pub enum Animation {
@@ -11,6 +12,7 @@ pub enum Animation {
     MagicCriticalEffect = 5,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(i32)]
 #[derive(Debug)]
 pub enum Effect {

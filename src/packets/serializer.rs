@@ -2,7 +2,42 @@ use std::convert::{TryFrom, TryInto};
 
 use super::*;
 
-pub trait MinecraftPacketPart<'a>: Sized {
+/// Update the test trait too
+#[cfg(not(test))]
+pub trait MinecraftPacketPart<'a>: Sized 
+{
+    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str>;
+    fn deserialize_minecraft_packet_part(input: &'a [u8]) -> Result<(Self, &'a [u8]), &'static str>;
+
+    fn serialize_minecraft_packet(self) -> Result<Vec<u8>, &'static str> {
+        let mut buffer = Vec::new();
+        self.serialize_minecraft_packet_part(&mut buffer)?;
+        Ok(buffer)
+    }
+
+    fn deserialize_uncompressed_minecraft_packet(input: &'a [u8]) -> Result<Self, &'static str> {
+        let (result, input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
+        if !input.is_empty() {
+            return Err("There are still unparsed bytes after parsing.");
+        }
+        Ok(result)
+    }
+
+    fn deserialize_n(mut input: &'a [u8], n: usize) -> Result<(Vec<Self>, &'a [u8]), &'static str> {
+        let mut result = Vec::with_capacity(n);
+        for _ in 0..n {
+            let (item, new_input) = MinecraftPacketPart::deserialize_minecraft_packet_part(input)?;
+            input = new_input;
+            result.push(item);
+        }
+        Ok((result, input))
+    }
+}
+
+/// Update the not test trait too
+#[cfg(test)]
+pub trait MinecraftPacketPart<'a>: Sized + PartialEq
+{
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str>;
     fn deserialize_minecraft_packet_part(input: &'a [u8]) -> Result<(Self, &'a [u8]), &'static str>;
 
@@ -822,6 +857,7 @@ impl<
     }
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 pub struct FixedSizeArray<'a, V: MinecraftPacketPart<'a>, const N: usize> {
     pub items: Vec<V>,
     _phantom: std::marker::PhantomData<&'a ()>,

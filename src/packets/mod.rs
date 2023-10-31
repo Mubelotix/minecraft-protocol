@@ -9,6 +9,7 @@ pub mod handshake;
 pub mod login;
 pub mod status;
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone)]
 pub struct VarInt(pub i32);
 impl TryFrom<VarInt> for usize {
@@ -17,6 +18,7 @@ impl TryFrom<VarInt> for usize {
         TryFrom::try_from(value.0)
     }
 }
+
 impl From<usize> for VarInt {
     fn from(value: usize) -> Self {
         VarInt(value as i32)
@@ -35,6 +37,7 @@ impl From<i32> for VarInt {
     }
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone)]
 pub struct VarLong(pub i64);
 impl TryFrom<VarLong> for usize {
@@ -58,11 +61,13 @@ pub struct Position {
     pub z: i32,
 }
 
+
 #[derive(Debug, PartialEq, Clone, MinecraftPacketPart)] 
 pub struct GlobalPosition<'a> {
     dimension: Identifier<'a>,
     position: Position,
 }
+
 
 #[minecraft_enum(VarInt)]
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -87,16 +92,19 @@ pub type Identifier<'a> = &'a str;
 
 /// This is used to replace an unsupported structure by taking all the remaining bytes of a packet.
 /// Feel free to make PRs.
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Default)]
 pub struct RawBytes<'a> {
     pub data: &'a [u8],
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct TestPacket {
     data: u8,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 pub struct Array<'a, T: MinecraftPacketPart<'a> + std::fmt::Debug, U: MinecraftPacketPart<'a>> {
     _len_prefix: std::marker::PhantomData<&'a U>,
     pub items: Vec<T>,
@@ -123,6 +131,7 @@ impl<'a, T: std::fmt::Debug + MinecraftPacketPart<'a>, U: MinecraftPacketPart<'a
     }
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 pub struct Map<
     'a,
     K: MinecraftPacketPart<'a> + std::fmt::Debug,
@@ -155,6 +164,7 @@ impl<'a, K: std::fmt::Debug + MinecraftPacketPart<'a>, V: std::fmt::Debug + Mine
 }
 
 /// The possible packets are different for each state.
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum ConnectionState {

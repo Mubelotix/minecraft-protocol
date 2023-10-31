@@ -1,5 +1,6 @@
 use crate::*;
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct ChunkBiomeData<'a> {
     /// Chunk coordinate (block coordinate divided by 16, rounded down)

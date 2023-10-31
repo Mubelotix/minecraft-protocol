@@ -1,5 +1,6 @@
 use crate::*;
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum ScoreboardAction<'a> {
@@ -14,6 +15,7 @@ pub enum ScoreboardAction<'a> {
     },
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(u8)]
 pub enum ScoreboardScoreAction<'a> {
@@ -30,6 +32,7 @@ pub enum ScoreboardScoreAction<'a> {
     },
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum ScoreboardType {
@@ -37,6 +40,7 @@ pub enum ScoreboardType {
     Hearts,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(u8)]
 #[derive(Debug)]
 pub enum ScoreboardPosition {
@@ -61,6 +65,7 @@ pub enum ScoreboardPosition {
     WhiteTeam,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(u8)]
 pub enum TeamAction<'a> {
@@ -108,6 +113,7 @@ pub enum TeamAction<'a> {
 }
 
 /// The color of a team defines how the names of the team members are visualized; any formatting code can be used.
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum TeamColor {

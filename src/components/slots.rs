@@ -1,12 +1,14 @@
 use crate::{nbt::NbtTag, *};
 
 /// The [Slot] data structure is how Minecraft represents an item and its associated data in the [Minecraft Protocol](https://wiki.vg/Protocol).
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone, MinecraftPacketPart)]
 pub struct Slot {
     /// `Some(item)` if there is an item in this slot; `None` if it is empty.
     pub item: Option<SlotItem>,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone, MinecraftPacketPart)]
 pub struct SlotItem {
     /// The [item](crate::ids::items::Item).
@@ -17,6 +19,7 @@ pub struct SlotItem {
     pub nbt_data: NbtTag,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum Hand {
@@ -24,6 +27,7 @@ pub enum Hand {
     OffHand,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum MainHand {
@@ -60,10 +64,12 @@ impl std::cmp::Ord for EquipmentSlot {
 }
 
 use std::collections::BTreeMap;
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct EquipmentSlotArray {
     pub slots: BTreeMap<EquipmentSlot, Slot>,
 }
+
 
 impl<'a> MinecraftPacketPart<'a> for EquipmentSlotArray {
     fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
@@ -104,6 +110,7 @@ impl<'a> MinecraftPacketPart<'a> for EquipmentSlotArray {
     }
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum WindowType {

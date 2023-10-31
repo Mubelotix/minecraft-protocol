@@ -92,6 +92,7 @@ impl BlockState {
         format!(
             r#"#[derive(Debug, Clone, Copy)]
 #[repr(u8)]
+#[cfg_attr(test, derive(PartialEq))]
 pub enum {} {{{}
 }}"#,
             self.ty(block_name, competing_definitions),
@@ -101,6 +102,7 @@ pub enum {} {{{}
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(test, derive(PartialEq))]
 #[serde(rename_all = "camelCase")]
 struct Block {
     id: u32,
@@ -747,6 +749,7 @@ use crate::*;
 {enum_definitions}
 
 /// Can be converted for free to [super::blocks::Block] which implements [useful methods](super::blocks::Block#implementations).
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone)]
 #[repr(u32)]
 pub enum BlockWithState {{

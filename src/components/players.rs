@@ -1,10 +1,12 @@
 use crate::*;
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct PlayersInfos<'a> {
     pub players_infos: Vec<PlayerInfos<'a>>
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct PlayerInfos<'a> {
     pub player_uuid: UUID,
@@ -13,6 +15,8 @@ pub struct PlayerInfos<'a> {
 
 #[derive(Debug)]
 #[repr(u8)]
+#[cfg_attr(test, derive(PartialEq))]
+
 pub enum PlayerActions<'a> {
     AddPlayer(AddPlayersAction<'a>) = 0x01,
     InitializeChat(InitializeChatAction<'a>) = 0x02,
@@ -35,34 +39,40 @@ impl<'a> PlayerActions<'a> {
     }
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct AddPlayersAction<'a> {
     name: &'a str,
     properties: Array<'a, Property<'a>, VarInt>,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct InitializeChatAction<'a> {
     initialize_chat: Option<InitializeChat<'a>>,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct UpdateGamemodesAction {
     gamemode: VarInt,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct UpdateListedAction {
     /// Whether the player should be listed on the player list.
     listed: bool,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct PingAction {
     /// Measured in milliseconds
     ping: VarInt,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct UpdateDisplayNameAction<'a> {
     display_name: Option<Chat<'a>>,
@@ -71,6 +81,7 @@ pub struct UpdateDisplayNameAction<'a> {
 /// The Property field looks as in the response of M[ojang API#UUID -> Profile + Skin/Cape](https://wiki.vg/Mojang_API#UUID_-.3E_Profile_.2B_Skin.2FCape), except of course using the protocol format instead of JSON.
 /// That is, each player will usually have one property with Name “textures” and Value being a base64-encoded JSON string as documented at [Mojang API#UUID -> Profile + Skin/Cape](https://wiki.vg/Mojang_API#UUID_-.3E_Profile_.2B_Skin.2FCape).
 /// An empty properties array is also acceptable, and will cause clients to display the player with one of the two default skins depending on UUID.
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct Property<'a> {
     pub name: &'a str,
@@ -78,6 +89,7 @@ pub struct Property<'a> {
     pub signature: Option<&'a str>,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct InitializeChat<'a> {
     pub session_id: UUID,
@@ -89,6 +101,7 @@ pub struct InitializeChat<'a> {
     pub pub_key_signature: Array<'a, u8, VarInt>,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct PlayerAdditionInfo<'a> {
     pub uuid: UUID,
@@ -103,6 +116,7 @@ pub struct PlayerAdditionInfo<'a> {
     pub display_name: Option<Chat<'a>>,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum FaceAim {
@@ -110,18 +124,21 @@ pub enum FaceAim {
     Eyes,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct FaceTarget {
     pub target_entity_id: VarInt,
     pub target_aim: FaceAim,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct DeathLocation<'a> {
     pub dimension: Identifier<'a>,
     pub position: Position,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 #[minecraft_enum(VarInt)]
 pub enum MainHand {

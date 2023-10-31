@@ -1,5 +1,6 @@
 use super::*;
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum ServerboundPacket<'a> {

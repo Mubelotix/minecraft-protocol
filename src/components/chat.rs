@@ -1,6 +1,7 @@
 use crate::{*, packets::serializer::BitSet};
 
 /// See [processing chat](https://wiki.vg/Chat#Processing_chat) for more information
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(u8)]
 #[derive(Debug)]
 pub enum Position {
@@ -13,6 +14,7 @@ pub enum Position {
 }
 
 /// See [processing chat](https://wiki.vg/Chat#Processing_chat) for more information
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum ChatMode {
@@ -21,6 +23,7 @@ pub enum ChatMode {
     Hidden,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum ChatAction {
@@ -29,6 +32,7 @@ pub enum ChatAction {
     Set
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct PreviousMessage<'a> {
     /// The message Id + 1, used for validating message signature. The next field is present only when value of this field is equal to 0.
@@ -37,6 +41,7 @@ pub struct PreviousMessage<'a> {
     pub signature: RawBytes<'a>,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum FilterType<'a> {

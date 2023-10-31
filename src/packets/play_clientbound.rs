@@ -7,6 +7,7 @@ use crate::ids::blocks;
 use crate::ids::*;
 use crate::nbt::NbtTag;
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 #[allow(clippy::large_enum_variant)] // TODO: fix this
 #[discriminant(VarInt)]

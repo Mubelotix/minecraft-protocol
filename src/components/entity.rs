@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::{nbt::NbtTag, *};
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct EntityAttribute<'a> {
     pub value: f64,
@@ -9,6 +10,7 @@ pub struct EntityAttribute<'a> {
 }
 
 /// To make the sum of modifiers, apply all modifiers with `operation` [EntityAttributeModifierOperation::Add], then all with [EntityAttributeModifierOperation::AddProportion], and finally all with [EntityAttributeModifierOperation::Multiply].
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct EntityAttributeModifier {
     pub uuid: UUID,
@@ -18,6 +20,7 @@ pub struct EntityAttributeModifier {
     pub operation: EntityAttributeModifierOperation,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(u8)]
 #[derive(Debug)]
 pub enum EntityAttributeModifierOperation {
@@ -29,6 +32,7 @@ pub enum EntityAttributeModifierOperation {
     Multiply,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum EntityInteraction {
@@ -43,6 +47,7 @@ pub enum EntityInteraction {
         hand: super::slots::Hand,
     },
 }
+
 
 #[minecraft_enum(VarInt)]
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -92,6 +97,7 @@ pub enum SnifferState {
     Rising,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone)]
 pub struct EntityMetadata<'a> {
     pub items: BTreeMap<u8, EntityMetadataValue<'a>>,
@@ -127,6 +133,7 @@ impl<'a> MinecraftPacketPart<'a> for EntityMetadata<'a> {
     }
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone, MinecraftPacketPart)]
 #[discriminant(u8)]
 pub enum EntityMetadataValue<'a> {

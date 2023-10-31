@@ -1,5 +1,6 @@
 use crate::*;
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone, MinecraftPacketPart)]
 #[discriminant(VarInt)]
 pub enum Particle {

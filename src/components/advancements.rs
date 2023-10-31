@@ -1,5 +1,6 @@
 use crate::*;
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct Advancement<'a> {
     /// The identifier of the parent advancement
@@ -12,6 +13,7 @@ pub struct Advancement<'a> {
     pub sends_telemetry_data: bool,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct AdvancementDisplay<'a> {
     pub title: Chat<'a>,
@@ -86,6 +88,7 @@ impl<'a> MinecraftPacketPart<'a> for AdvancementDisplay<'a> {
     }
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum AdvancementFrameType {
@@ -94,6 +97,7 @@ pub enum AdvancementFrameType {
     Goal,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum StatisticCategory {
@@ -108,6 +112,7 @@ pub enum StatisticCategory {
     Custom,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum StatisticId {
@@ -186,6 +191,7 @@ pub enum StatisticId {
     InteractWithSmithingTable,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct Statistic {
     pub category: StatisticCategory,
@@ -196,6 +202,7 @@ pub struct Statistic {
     pub value: VarInt,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct AdvancementTabPacket<'a> {
     tab_id: Option<Identifier<'a>>,

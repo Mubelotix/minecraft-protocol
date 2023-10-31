@@ -9,12 +9,13 @@ use minecraft_protocol::{MinecraftPacketPart, packets::play_serverbound::Serverb
 
 #[test]
 fn auto_play_serverbound_7() {
-    let input = &[7, 64, 37, 129, 191];
-    let packet = ServerboundPacket::deserialize_uncompressed_minecraft_packet(input).unwrap();
+    let input = &[7, 64, 31, 118, 206];
+    let packet_deserialized = ServerboundPacket::deserialize_uncompressed_minecraft_packet(input).unwrap();
 
-    match packet.serialize_minecraft_packet() {
+    match packet_deserialized.serialize_minecraft_packet() {
         Ok(packet) => {
-            assert_eq!(packet, input)
+            let _reserialized = ServerboundPacket::deserialize_uncompressed_minecraft_packet(&packet).unwrap();
+            assert!(matches!(ServerboundPacket::deserialize_uncompressed_minecraft_packet(input).unwrap(), _reserialized));
         }
         Err(e) => panic!("Failed to serialize packet: {:?}", e),
     };

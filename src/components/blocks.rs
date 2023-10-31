@@ -1,5 +1,6 @@
 use crate::{*, nbt::NbtTag};
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct BlockEntity {
     /// The packed section coordinates are relative to the chunk they are in values 0-15 are valid.
@@ -16,6 +17,7 @@ pub struct BlockEntity {
     data: NbtTag,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum PartialDiggingState {
@@ -25,6 +27,7 @@ pub enum PartialDiggingState {
 }
 
 /// See [the wiki](https://wiki.vg/Protocol#Player_Digging)
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum DiggingState {
@@ -37,6 +40,7 @@ pub enum DiggingState {
     SwapItemInHand,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(u8)]
 #[derive(Debug)]
 pub enum BlockFace {
@@ -48,6 +52,7 @@ pub enum BlockFace {
     East,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart)]
 pub struct MultiBlockChange<'a> {
     /// Chunk section coordinate (encoded chunk x and z with each 22 bits, and section y with 20 bits, from left to right).
