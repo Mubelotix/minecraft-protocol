@@ -63,10 +63,6 @@ pub enum PalettedData<const LBITS: u8, const HBITS: u8, const DBITS: u8, const T
 }
 
 impl<'a, const LBITS: u8, const HBITS: u8, const DBITS: u8, const TRUNC: usize> MinecraftPacketPart<'a> for PalettedData<LBITS, HBITS, DBITS, TRUNC> {
-    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
-        todo!()
-    }
-
     fn deserialize_minecraft_packet_part(input: &'a [u8]) -> Result<(Self, &'a [u8]), &'static str> {
         let (mut bits_per_entry, new_input) = u8::deserialize_minecraft_packet_part(input)?;
 
@@ -132,6 +128,72 @@ impl<'a, const LBITS: u8, const HBITS: u8, const DBITS: u8, const TRUNC: usize> 
             }
         })
     }
+
+    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {
+        match self {
+            PalettedData::Single { value } => {
+                0u8.serialize_minecraft_packet_part(output)?;
+                VarInt::from(value as usize).serialize_minecraft_packet_part(output)?;
+                VarInt::from(0).serialize_minecraft_packet_part(output)?;
+                Ok(())
+            },
+            PalettedData::Paletted { palette, indexed } => {
+                let mut bits_per_entry = 64 - (palette.len()-1).leading_zeros();
+
+                // If the palette is too big, drop it and use raw data
+                if bits_per_entry > HBITS as u32 {
+                    let mut values = Vec::new();
+                    for index in indexed.iter() {
+                        values.push(palette[*index as usize]);
+                    }
+                    return PalettedData::<LBITS, HBITS, DBITS, TRUNC>::Raw{values}.serialize_minecraft_packet_part(output);
+                }
+
+                (bits_per_entry as u8).serialize_minecraft_packet_part(output)?;
+                if bits_per_entry < LBITS as u32 {
+                    bits_per_entry = LBITS as u32;
+                }
+                let entries_per_long = 64 / bits_per_entry;
+
+                let palette: Vec<VarInt> = palette.into_iter().map(|id| VarInt::from(id as usize)).collect::<Vec<VarInt>>();
+                let palette: Array<VarInt, VarInt> = Array::from(palette);
+                palette.serialize_minecraft_packet_part(output)?;
+
+                let mut longs: Vec<u64> = Vec::new();
+                for entries in indexed.chunks(entries_per_long as usize) {
+                    let mut long = 0;
+                    for entry in entries.iter() {
+                        long <<= bits_per_entry;
+                        long += *entry as u64;
+                    }
+                    longs.push(long);
+                }
+                let longs: Array<u64, VarInt> = Array::from(longs);
+                longs.serialize_minecraft_packet_part(output)?;
+
+                Ok(())
+            },
+            PalettedData::Raw { values } => {
+                DBITS.serialize_minecraft_packet_part(output)?;
+                let bits_per_entry = DBITS;
+                let entries_per_long = 64 / bits_per_entry;
+
+                let mut longs: Vec<u64> = Vec::new();
+                for entries in values.chunks(entries_per_long as usize) {
+                    let mut long = 0;
+                    for entry in entries.iter() {
+                        long <<= bits_per_entry;
+                        long += *entry as u64;
+                    }
+                    longs.push(long);
+                }
+                let longs: Array<u64, VarInt> = Array::from(longs);
+                longs.serialize_minecraft_packet_part(output)?;
+
+                Ok(())
+            },
+        }
+    }
 }
 
 /// A [chunk section](ChunkSection) is a 16×24×16 collection of blocks (chunk sections are cubic).
@@ -148,7 +210,6 @@ impl Chunk {
     /// Deserialize chunk sections from data in a chunk packet
     pub fn deserialize_from_data(input: &[u8]) -> Result<Vec<Chunk>, &'static str> {
         let chunk_count = (-64..320).len() / 16;
-
         let (chunks, input) = Chunk::deserialize_n(input, chunk_count)?;
 
         if !input.is_empty() {
@@ -156,6 +217,20 @@ impl Chunk {
         }
 
         Ok(chunks)
+    }
+
+    pub fn serialize_chunks(chunks: Vec<Chunk>) -> Result<Vec<u8>, &'static str> {
+        let mut output = Vec::new();
+
+        let chunk_count = (-64..320).len() / 16;
+        if chunks.len() != chunk_count {
+            return Err("invalid chunk count");
+        }
+        for chunk in chunks {
+            chunk.serialize_minecraft_packet_part(&mut output)?;
+        }
+
+        Ok(output)
     }
 }
 
@@ -180,7 +255,10 @@ fn test() {
     // let (packet, rest) = ChunkData::deserialize_minecraft_packet_part(&packet_data).unwrap();
     // assert!(rest.is_empty());
     // let chunk_data = packet.data.items.as_slice();
-    let chunks = Chunk::deserialize_from_data(&packet_data).unwrap();
+    let chunks = Chunk::deserialize_from_data(packet_data).unwrap();
+    let data2 = Chunk::serialize_chunks(chunks).unwrap();
+    std::fs::write("test_data/chunk3.dump", data2.clone());
+    assert_eq!(packet_data, data2.as_slice());
     
     //println!("{:?}", chunk_data_deserialized);
 }
