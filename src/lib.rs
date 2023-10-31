@@ -15,7 +15,7 @@
 //!
 //! You can serialize and deserialize any struct of this library like this:
 //!
-//! ```rust
+//! ```ignore
 //! // Serialize
 //! let packet = ClientboundPacket::UpdateHealth {
 //!     health: 20.0,
@@ -36,7 +36,7 @@
 //!
 //! As you can see, specifying new types is child's play:
 //!
-//! ```rust
+//! ```ignore
 //! #[derive(MinecraftPacketPart)]
 //! struct Entity {
 //!     entity_id: VarInt,

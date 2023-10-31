@@ -3,9 +3,9 @@ use crate::{*, nbt::NbtTag};
 #[derive(Debug, MinecraftPacketPart)]
 pub struct BlockEntity {
     /// The packed section coordinates are relative to the chunk they are in values 0-15 are valid.
-    /// ```
-    /// packed_xz = ((blockX & 15) << 4) | (blockZ & 15) // encode
-    /// x = packed_xz >> 4, z = packed_xz & 15 // decode
+    /// ```python
+    /// packed_xz = ((blockX & 15) << 4) | (blockZ & 15) # encode
+    /// x = packed_xz >> 4, z = packed_xz & 15 # decode
     /// ```
     packed_xz: u8,
     /// The height relative to the world

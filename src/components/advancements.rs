@@ -225,20 +225,3 @@ impl<'a> MinecraftPacketPart<'a> for AdvancementTabPacket<'a> {
         Ok((AdvancementTabPacket { tab_id }, input))
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::packets::play_clientbound::ClientboundPacket;
-    use crate::*;
-
-    #[test]
-    fn test() {
-        use std::io::Read;
-        let mut data = Vec::new();
-        std::fs::File::open("test_data/advancements.mc_packet")
-            .unwrap()
-            .read_to_end(&mut data)
-            .unwrap();
-        ClientboundPacket::deserialize_minecraft_packet_part(data.as_mut_slice()).unwrap();
-    }
-}

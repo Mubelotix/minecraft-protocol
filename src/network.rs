@@ -84,7 +84,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test() {
+    #[ignore]
+    fn old_test() {
         use std::net::TcpStream;
 
         let mut stream = TcpStream::connect("127.0.0.1:25565").unwrap();

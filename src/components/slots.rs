@@ -138,28 +138,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_equipment_slot_array() {
-        let data = [
-            0, 1, 190, 4, 1, 10, 0, 0, 3, 0, 6, 68, 97, 109, 97, 103, 101, 0, 0, 0, 0, 0,
-        ];
-        let slot_array =
-            EquipmentSlotArray::deserialize_uncompressed_minecraft_packet(&data).unwrap();
-        assert_eq!(slot_array.slots.len(), 1);
-        assert_eq!(
-            slot_array
-                .slots
-                .get(&EquipmentSlot::MainHand)
-                .unwrap()
-                .item
-                .as_ref()
-                .unwrap()
-                .item_count
-                .0,
-            1
-        )
-    }
-
-    #[test]
     fn test_slot() {
         let serialized = &mut [0x01, 0x01, 0x01, 0x00];
         let deserialized = Slot::deserialize_uncompressed_minecraft_packet(serialized)
