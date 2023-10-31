@@ -4,7 +4,7 @@ pub mod serializer;
 pub mod config;
 pub use minecraft_packet_derive::*;
 use serializer::*;
-use std::convert::TryFrom;
+use std::{convert::TryFrom, collections::BTreeMap};
 pub mod handshake;
 pub mod login;
 pub mod status;
@@ -79,7 +79,6 @@ pub struct TestPacket {
     data: u8,
 }
 
-#[derive(Default)]
 pub struct Array<'a, T: MinecraftPacketPart<'a> + std::fmt::Debug, U: MinecraftPacketPart<'a>> {
     _len_prefix: std::marker::PhantomData<&'a U>,
     pub items: Vec<T>,
@@ -88,6 +87,12 @@ pub struct Array<'a, T: MinecraftPacketPart<'a> + std::fmt::Debug, U: MinecraftP
 impl<'a, T: MinecraftPacketPart<'a> + std::fmt::Debug, U: MinecraftPacketPart<'a>> std::fmt::Debug for Array<'a, T, U> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.items.fmt(f)
+    }
+}
+
+impl<'a, T: MinecraftPacketPart<'a> + std::fmt::Debug, U: MinecraftPacketPart<'a>> std::default::Default for Array<'a, T, U> {
+    fn default() -> Self {
+        Self { _len_prefix: std::marker::PhantomData, items: Vec::default() }
     }
 }
 
@@ -100,7 +105,6 @@ impl<'a, T: std::fmt::Debug + MinecraftPacketPart<'a>, U: MinecraftPacketPart<'a
     }
 }
 
-#[derive(Default)]
 pub struct Map<
     'a,
     K: MinecraftPacketPart<'a> + std::fmt::Debug,
@@ -108,7 +112,7 @@ pub struct Map<
     U: MinecraftPacketPart<'a>,
 > {
     _len_prefix: std::marker::PhantomData<&'a U>,
-    pub items: std::collections::BTreeMap<K, V>,
+    pub items: BTreeMap<K, V>,
 }
 
 impl<'a, K: std::fmt::Debug + MinecraftPacketPart<'a>, V: std::fmt::Debug + MinecraftPacketPart<'a>, U: MinecraftPacketPart<'a>> std::fmt::Debug for Map<'a, K, V, U> {
@@ -117,14 +121,14 @@ impl<'a, K: std::fmt::Debug + MinecraftPacketPart<'a>, V: std::fmt::Debug + Mine
     }
 }
 
-impl<
-        'a,
-        K: std::fmt::Debug + MinecraftPacketPart<'a>,
-        V: std::fmt::Debug + MinecraftPacketPart<'a>,
-        U: MinecraftPacketPart<'a>,
-    > From<std::collections::BTreeMap<K, V>> for Map<'a, K, V, U>
-{
-    fn from(value: std::collections::BTreeMap<K, V>) -> Self {
+impl<'a, K: std::fmt::Debug + MinecraftPacketPart<'a>, V: std::fmt::Debug + MinecraftPacketPart<'a>, U: MinecraftPacketPart<'a>> std::default::Default for Map<'a, K, V, U> {
+    fn default() -> Self {
+        Self { _len_prefix: std::marker::PhantomData, items: BTreeMap::default() }
+    }
+}
+
+impl<'a, K: std::fmt::Debug + MinecraftPacketPart<'a>, V: std::fmt::Debug + MinecraftPacketPart<'a>, U: MinecraftPacketPart<'a>> From<BTreeMap<K, V>> for Map<'a, K, V, U> {
+    fn from(value: BTreeMap<K, V>) -> Self {
         Map {
             _len_prefix: std::marker::PhantomData,
             items: value,
