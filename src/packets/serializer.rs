@@ -379,7 +379,7 @@ mod integers {
                 input = new_input;
                 let mut value: u32 = (read & 0b01111111) as u32;
                 if num_read == 5 {
-                    value = value & 0b1111;
+                    value &= 0b1111;
                     result |= value << (4 * num_read);
                 } else {
                     result |= value << (7 * num_read);
