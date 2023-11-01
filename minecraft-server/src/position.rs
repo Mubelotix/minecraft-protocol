@@ -1,3 +1,4 @@
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BlockPosition {
     pub x: i32,
     pub y: i32,
@@ -29,18 +30,21 @@ impl BlockPosition {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BlockPositionInChunk {
     pub bx: i32,
     pub by: i32,
     pub bz: i32,
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct Position {
     pub x: f32,
     pub y: f32,
     pub z: f32,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ChunkPosition {
     pub cx: i32,
     pub cy: i32,
@@ -68,6 +72,7 @@ impl std::ops::Add<BlockPositionInChunk> for ChunkPosition {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ChunkColumnPosition {
     pub cx: i32,
     pub cz: i32,

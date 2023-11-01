@@ -350,7 +350,7 @@ pub async fn handle_player(
 
     // Set spawn position
     let set_spawn_position = PlayClientbound::SetSpawnPosition {
-        location: Position { x: 0, y: 70, z: 0 },
+        location: NetworkPosition { x: 0, y: 70, z: 0 },
         angle: 0.0,
     };
     send_packet(&mut stream, set_spawn_position).await;
