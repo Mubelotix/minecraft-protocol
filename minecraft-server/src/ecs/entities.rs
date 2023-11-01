@@ -1,5 +1,5 @@
 use crate::prelude::*;
-
+use minecraft_protocol::packets::UUID;
 use super::tags::Tag;
 
 pub type Eid = u32;

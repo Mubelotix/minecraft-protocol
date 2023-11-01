@@ -6,7 +6,7 @@ pub use minecraft_protocol::packets::{
     config::{ClientboundPacket as ConfigClientbound, ServerboundPacket as ConfigServerbound},
     status::{ClientboundPacket as StatusClientbound, ServerboundPacket as StatusServerbound},
     play_clientbound::ClientboundPacket as PlayClientbound,
-    play_serverbound::ServerboundPacket as PlayServerbound, *,
+    play_serverbound::ServerboundPacket as PlayServerbound,
 };
 
 pub use std::{
