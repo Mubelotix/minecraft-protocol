@@ -51,6 +51,7 @@ impl Entities {
         for tag in tags.drain() {
             let mut entities_with_tag = self.get_entities_by_tag(tag).await;
             for entity in entities_with_tag.drain() {
+                // TODO: remove this check but add an error handling
                 if let Some(entity) = self.get_entity(entity).await {
                     entities.push(entity);
                 }

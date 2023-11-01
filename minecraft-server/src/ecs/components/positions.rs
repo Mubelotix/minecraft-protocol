@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 #[derive(Clone)]
 pub struct PositionComponent {
-    
+    position: Position,
 }
 
 impl Entities {
