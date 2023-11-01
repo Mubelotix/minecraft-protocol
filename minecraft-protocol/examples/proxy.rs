@@ -44,8 +44,7 @@ fn proxy_serverbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
     loop {
         let packet = read_packet(&client_stream, None, None)?;
 
-        if let Ok(packet) = PlayServerbound::deserialize_uncompressed_minecraft_packet(&packet) {
-            play = true;
+        if let Ok(packet) = StatusServerbound::deserialize_uncompressed_minecraft_packet(&packet) {
             #[cfg(feature = "all-packets")]
             {
                 let mut fpacket = format!("{:?}", packet);
@@ -53,8 +52,8 @@ fn proxy_serverbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
                     fpacket.truncate(400);
                     fpacket.push_str("...");
                 }
-                println!("\u{001b}[35mclient\u{001b}[0m: {fpacket}");
-            }
+                println!("STATUS: \u{001b}[35mclient\u{001b}[0m: {fpacket}");
+            } 
         } else if let Ok(packet) = LoginServerbound::deserialize_uncompressed_minecraft_packet(&packet) {
             #[cfg(feature = "all-packets")]
             {
@@ -63,7 +62,18 @@ fn proxy_serverbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
                     fpacket.truncate(400);
                     fpacket.push_str("...");
                 }
-                println!("\u{001b}[35mclient\u{001b}[0m: {fpacket}");
+                println!("LOGIN: \u{001b}[35mclient\u{001b}[0m: {fpacket}");
+            }
+        } else if let Ok(packet) = PlayServerbound::deserialize_uncompressed_minecraft_packet(&packet) {
+            play = true;
+            #[cfg(feature = "all-packets")]
+            {
+                let mut fpacket = format!("{:?}", packet);
+                if fpacket.len() > 400 {
+                    fpacket.truncate(400);
+                    fpacket.push_str("...");
+                }
+                println!("PLAY: \u{001b}[35mclient\u{001b}[0m: {fpacket}");
             }
         } else if let Ok(packet) = HandshakeServerbound::deserialize_uncompressed_minecraft_packet(&packet) {
             #[cfg(feature = "all-packets")]
@@ -73,7 +83,7 @@ fn proxy_serverbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
                     fpacket.truncate(400);
                     fpacket.push_str("...");
                 }
-                println!("\u{001b}[35mclient\u{001b}[0m: {fpacket}");
+                println!("CONFIG: \u{001b}[35mclient\u{001b}[0m: {fpacket}");
             }
         } else if let Ok(packet) = ConfigServerbound::deserialize_uncompressed_minecraft_packet(&packet) {
             #[cfg(feature = "all-packets")]
@@ -83,7 +93,7 @@ fn proxy_serverbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
                     fpacket.truncate(400);
                     fpacket.push_str("...");
                 }
-                println!("\u{001b}[35mclient\u{001b}[0m: {fpacket}");
+                println!("CONFIG: \u{001b}[35mclient\u{001b}[0m: {fpacket}");
             }
         } else if let Ok(packet) = StatusServerbound::deserialize_uncompressed_minecraft_packet(&packet) {
             #[cfg(feature = "all-packets")]
@@ -93,7 +103,7 @@ fn proxy_serverbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
                     fpacket.truncate(400);
                     fpacket.push_str("...");
                 }
-                println!("\u{001b}[35mclient\u{001b}[0m: {fpacket}");
+                println!("STATUS: \u{001b}[35mclient\u{001b}[0m: {fpacket}");
             }
         } else {
             let fpacket = if packet.len() > 200 {
@@ -131,7 +141,37 @@ fn proxy_clientbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
     loop {
         let packet = read_packet(&server_stream, None, None)?;
         
-        if let Ok(packet) = PlayClientbound::deserialize_uncompressed_minecraft_packet(&packet) {
+        if let Ok(packet) = StatusClientbound::deserialize_uncompressed_minecraft_packet(&packet) {
+            #[cfg(feature = "all-packets")]
+            {
+                let mut fpacket = format!("{:?}", packet);
+                if fpacket.len() > 400 {
+                    fpacket.truncate(400);
+                    fpacket.push_str("...");
+                }
+                println!("STATUS: \u{001b}[33mserver\u{001b}[0m: {fpacket}");
+            }
+        } else if let Ok(packet) = LoginClientbound::deserialize_uncompressed_minecraft_packet(&packet) {
+            #[cfg(feature = "all-packets")]
+            {
+                let mut fpacket = format!("{:?}", packet);
+                if fpacket.len() > 400 {
+                    fpacket.truncate(400);
+                    fpacket.push_str("...");
+                }
+                println!("LOGIN: \u{001b}[33mserver\u{001b}[0m: {fpacket}");
+            }
+        } else if let Ok(packet) = ConfigClientbound::deserialize_uncompressed_minecraft_packet(&packet) {
+            #[cfg(feature = "all-packets")]
+            {
+                let mut fpacket = format!("{:?}", packet);
+                if fpacket.len() > 400 {
+                    fpacket.truncate(400);
+                    fpacket.push_str("...");
+                }
+                println!("CONFIG: \u{001b}[33mserver\u{001b}[0m: {fpacket}");
+            }
+        } else if let Ok(packet) = PlayClientbound::deserialize_uncompressed_minecraft_packet(&packet) {
             play = true;
             #[cfg(feature = "all-packets")]
             {
@@ -140,7 +180,7 @@ fn proxy_clientbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
                     fpacket.truncate(400);
                     fpacket.push_str("...");
                 }
-                println!("\u{001b}[33mserver\u{001b}[0m: {fpacket}");
+                println!("PLAY: \u{001b}[33mserver\u{001b}[0m: {fpacket}");
             }
             if let PlayClientbound::ChunkData { mut value } = packet {
                 let chunks = match Chunk::from_data(&value.data.items) {
@@ -168,37 +208,7 @@ fn proxy_clientbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
                 send_packet(&client_stream, packet, None, None)?;
                 continue;
             }
-        } else if let Ok(packet) = LoginClientbound::deserialize_uncompressed_minecraft_packet(&packet) {
-            #[cfg(feature = "all-packets")]
-            {
-                let mut fpacket = format!("{:?}", packet);
-                if fpacket.len() > 400 {
-                    fpacket.truncate(400);
-                    fpacket.push_str("...");
-                }
-                println!("\u{001b}[33mserver\u{001b}[0m: {fpacket}");
-            }
-        } else if let Ok(packet) = ConfigClientbound::deserialize_uncompressed_minecraft_packet(&packet) {
-            #[cfg(feature = "all-packets")]
-            {
-                let mut fpacket = format!("{:?}", packet);
-                if fpacket.len() > 400 {
-                    fpacket.truncate(400);
-                    fpacket.push_str("...");
-                }
-                println!("\u{001b}[33mserver\u{001b}[0m: {fpacket}");
-            }
-        } else if let Ok(packet) = StatusClientbound::deserialize_uncompressed_minecraft_packet(&packet) {
-            #[cfg(feature = "all-packets")]
-            {
-                let mut fpacket = format!("{:?}", packet);
-                if fpacket.len() > 400 {
-                    fpacket.truncate(400);
-                    fpacket.push_str("...");
-                }
-                println!("\u{001b}[33mserver\u{001b}[0m: {fpacket}");
-            }
-        } else {
+        } else  {
             let fpacket = if packet.len() > 200 {
                 format!("{:?}...", &packet[..200])
             } else {
@@ -225,6 +235,7 @@ fn proxy_clientbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
 }
 
 fn main() {
+    // Get the address to connect to
     let listener = TcpListener::bind("127.0.0.1:25566").unwrap();
 
     loop {
