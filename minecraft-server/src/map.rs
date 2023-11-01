@@ -258,4 +258,30 @@ mod tests {
             id += 1;
         }
     }
+
+    #[test]
+    fn test_set_block_raw() {
+        let mut chunk = Chunk::filled(BlockWithState::Dirt).unwrap();
+
+        // Set enough blocks so that it turns to raw values
+        let mut id = 1;
+        for bx in 0..16 {
+            for by in 0..16 {
+                for bz in 0..2 {
+                    chunk.set_block(BlockPositionInChunk { bx, by, bz }, BlockWithState::from_state_id(id).unwrap());
+                    id += 1;
+                }
+            }
+        }
+        let mut id = 1;
+        for bx in 0..16 {
+            for by in 0..16 {
+                for bz in 0..2 {
+                    let got = chunk.get_block(BlockPositionInChunk { bx, by, bz }).unwrap().block_state_id().unwrap();
+                    assert_eq!(id, got);
+                    id += 1;
+                }
+            }
+        }
+    }
 }
