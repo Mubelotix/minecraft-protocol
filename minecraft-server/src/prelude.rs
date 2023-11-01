@@ -1,4 +1,4 @@
-pub use crate::{player_handler::*, server_behavior::*};
+pub use crate::{player_handler::*, server_behavior::*, position::*, map::*};
 pub use log::{debug, error, info, trace, warn};
 pub use minecraft_protocol::packets::{
     handshake::ServerboundPacket as HandshakeServerbound,

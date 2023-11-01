@@ -3,6 +3,7 @@
 mod player_handler;
 mod server_behavior;
 mod prelude;
+mod map;
 
 use std::env;
 
