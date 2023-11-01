@@ -1,10 +1,13 @@
+use ecs_macros::Component;
+
 use crate::prelude::*;
 
-#[derive(Clone)]
+#[derive(Clone, Component)]
 pub struct HealthComponent {
     pub health: f32,
     pub max_health: f32,
 }
+
 
 impl HealthComponent {
     /// Returns true if the entity is dead.s

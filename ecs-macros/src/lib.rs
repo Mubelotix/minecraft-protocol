@@ -1,11 +1,33 @@
 #[macro_use]
 extern crate quote;
 extern crate proc_macro;
+extern crate lazy_static;
 
-use std::collections::HashMap;
+use std::{collections::{HashMap, HashSet}, fs};
 
-use proc_macro::TokenStream;
-use syn::{parse_macro_input, Token, Ident, parse};
+use proc_macro::{TokenStream, Span};
+use syn::{parse_macro_input, Token, Ident, parse, DeriveInput};
+
+lazy_static::lazy_static! {
+    static ref UNIQUE_ID: String = {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+        (time.as_secs() * 1000).to_string()
+    };
+}
+
+fn clear_file() {
+    let path = &format!("component_names_{}.txt", *UNIQUE_ID);
+    // Get all files in the directory 
+    let files = fs::read_dir("target/tmp").unwrap();
+    for file in files {
+        let file = file.unwrap();
+        let file_name = file.file_name().to_str().unwrap().to_string();
+        if file_name.starts_with("component_names_") && file_name.ends_with(".txt")  && !file_name.contains(path) {
+            fs::remove_file(file.path()).unwrap();
+        }
+    }
+}
 
 struct MultipleTags {
     tags: Vec<(Ident, Vec<Ident>)>,
@@ -38,6 +60,7 @@ impl parse::Parse for MultipleTags {
         Ok(Self { tags, components: components_table })
     }
 }
+
 
 
 #[proc_macro]
@@ -134,3 +157,95 @@ pub fn tags(input: TokenStream) -> TokenStream {
     
     output.into()
 }
+
+
+use quote::quote;
+
+#[proc_macro_derive(Component)]
+pub fn component_derive(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let name = &input.ident;
+
+    // Path to the accumulator file
+    let path = &format!("target/tmp/component_names_{}.txt", *UNIQUE_ID);
+    clear_file();
+    // Read the existing component names, if any
+    let mut components = if std::path::Path::new(&path).exists() {
+        fs::read_to_string(path).unwrap_or_default().lines().map(String::from).collect::<HashSet<_>>()
+    } else {
+        HashSet::new()
+    };
+    
+    // Add the new component
+    if !components.contains(&name.to_string()) {
+        let name = name.to_string().trim_end_matches("Component").to_string();
+        
+        components.insert(name.to_string());
+        fs::write(path, components.iter().cloned().collect::<Vec<_>>().join("\n")).expect("Failed to write to component_names.txt");
+    }
+
+    TokenStream::new()
+}
+
+#[proc_macro]
+pub fn generate_component_enum(_: TokenStream) -> TokenStream {
+    let path = &format!("target/tmp/component_names_{}.txt", UNIQUE_ID.to_string());
+    let components = if std::path::Path::new(&path).exists() {
+        fs::read_to_string(path).unwrap_or_default().lines().map(|e| Ident::new(e, Span::call_site().into())).collect::<Vec<_>>()
+    } else {
+        Vec::new()
+    };
+
+    let gen = quote! {
+        #[derive(Eq, Hash, PartialEq, Clone)]
+        pub enum Component {
+            #(#components,)*
+        }
+    };
+
+    gen.into()
+}
+
+/// Insert the fields to the structure with [#[insert_components_fields]]
+#[proc_macro_attribute]
+pub fn insert_components_fields(_attr: TokenStream, input: TokenStream) -> TokenStream {
+ 
+    let mut input_ast = syn::parse_macro_input!(input as syn::ItemStruct);
+
+    let path = &format!("target/tmp/component_names_{}.txt", *UNIQUE_ID);
+    let components = if std::path::Path::new(&path).exists() {
+        fs::read_to_string(path).unwrap_or_default().lines().map(|e| Ident::new(e, Span::call_site().into())).collect::<Vec<_>>()
+    } else {
+        Vec::new()
+    };
+
+    for component in &components {
+        let field_ident = Ident::new(&format!("{}_components", component.to_string().to_lowercase()), component.span());
+        let component_type_ident = Ident::new(&format!("{}Component", component), component.span());
+    
+        let field = syn::Field {
+            attrs: Vec::new(),
+            vis: syn::Visibility::Public(syn::token::Pub { span: component.span() }),
+            ident: Some(field_ident),
+            colon_token: Some(syn::token::Colon { spans: [component.span()] }),
+            ty: syn::parse_quote! {
+                RwLock<HashMap<Eid, #component_type_ident>>
+            },
+            mutability: syn::FieldMutability::None,
+        };
+    
+        match &mut input_ast.fields {
+            syn::Fields::Named(fields_named) => {
+                fields_named.named.push(field);
+            }
+            _ => {}
+        }
+    }
+
+    let gen = quote! {
+
+        #input_ast
+    };
+    
+    gen.into()
+}    

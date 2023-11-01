@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use ecs_macros::insert_components_fields;
 use minecraft_protocol::packets::UUID;
 use super::tags::Tag;
 
@@ -16,7 +17,7 @@ pub struct Entity {
     tag: Tag,
 }
 
-
+#[insert_components_fields]
 pub struct Entities {    
     pub entities: RwLock<HashMap<Eid, Entity>>,
 
@@ -24,11 +25,7 @@ pub struct Entities {
     pub chunks: RwLock<HashMap<ChunkPosition, HashSet<Eid>>>,
     pub uuids: RwLock<HashMap<UUID, Eid>>,
     pub entities_by_tag: RwLock<HashMap<Tag, HashSet<Eid>>>,
-
-    pub health_components: RwLock<HashMap<Eid, HealthComponent>>,
-    pub position_components: RwLock<HashMap<Eid, PositionComponent>>,
 }
-
 
 impl Entities {
     /// Query a specific entity

@@ -1,8 +1,10 @@
 use std::ops::{Deref, DerefMut};
 
+use ecs_macros::Component;
+
 use crate::prelude::*;
 
-#[derive(Clone)]
+#[derive(Clone, Component)]
 pub struct PositionComponent {
     position: Position,
 }
