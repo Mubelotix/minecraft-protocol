@@ -88,21 +88,25 @@ impl WorldMap {
         let chunk_column_position = chunk_position.chunk_column();
         let shard = chunk_column_position.shard(self.shard_count);
 
-        let chunks = self.shards[shard].read().await;
-        let chunk_column = chunks.get(&chunk_column_position)?;
+        let shard = self.shards[shard].read().await;
+        let chunk_column = shard.get(&chunk_column_position)?;
         let chunk = chunk_column.chunks.get(chunk_position.cy as usize)?;
         chunk.get_block(block_position_in_chunk)
     }
 
-    //     pub async fn load(&self, position: ChunkColumnPosition) {
-    //         let chunk = ChunkColumn::flat(); // TODO: load from disk
-    //         let mut chunks = self.chunks.write().await;
-    //         chunks.entry(position).or_insert_with(|| RwLock::new(chunk));
-    //     }
-    // 
-    //     pub async fn unload(&self, position: ChunkColumnPosition) {
-    //         let mut chunks = self.chunks.write().await;
-    //         chunks.remove(&position);
-    //         // TODO: write to disk
-    //     }
+    pub async fn load(&self, position: ChunkColumnPosition) {
+        let chunk = ChunkColumn::flat(); // TODO: load from disk
+        let shard = position.shard(self.shard_count);
+        
+        let mut shard = self.shards[shard].write().await;
+        shard.entry(position).or_insert_with(|| chunk);
+    }
+
+    pub async fn unload(&self, position: ChunkColumnPosition) {
+        let shard = position.shard(self.shard_count);
+
+        let mut shard = self.shards[shard].write().await;
+        shard.remove(&position);
+        // TODO: write to disk
+    }
 }
