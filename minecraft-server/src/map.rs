@@ -1,10 +1,15 @@
 use std::collections::HashMap;
-use minecraft_protocol::components::chunk::{Chunk, PalettedData};
+use minecraft_protocol::components::chunk::{Chunk as ChunkData, PalettedData};
 use tokio::sync::RwLock;
 use crate::prelude::*;
 
 pub struct WorldMap {
     chunks: RwLock<HashMap<ChunkPosition, RwLock<ChunkColumn>>>,
+}
+
+#[derive(Clone)]
+struct Chunk {
+    data: ChunkData,
 }
 
 struct ChunkColumn {
@@ -14,14 +19,18 @@ struct ChunkColumn {
 impl ChunkColumn {
     pub fn flat() -> Self {
         let empty_chunk = Chunk {
-            block_count: 0,
-            blocks: PalettedData::Single { value: 0 },
-            biomes: PalettedData::Single { value: 4 },
+            data: ChunkData {
+                block_count: 0,
+                blocks: PalettedData::Single { value: 0 },
+                biomes: PalettedData::Single { value: 4 },
+            }
         };
         let dirt_chunk = Chunk {
-            block_count: 4096,
-            blocks: PalettedData::Single { value: minecraft_protocol::ids::blocks::Block::GrassBlock.default_state_id() },
-            biomes: PalettedData::Single { value: 4 },
+            data: ChunkData {
+                block_count: 4096,
+                blocks: PalettedData::Single { value: minecraft_protocol::ids::blocks::Block::GrassBlock.default_state_id() },
+                biomes: PalettedData::Single { value: 4 },
+            }
         };
         let mut chunks = Vec::new();
         chunks.push(dirt_chunk);
@@ -45,4 +54,3 @@ impl WorldMap {
         // TODO: write to disk
     }
 }
-
