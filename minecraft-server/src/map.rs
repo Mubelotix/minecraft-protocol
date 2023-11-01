@@ -240,4 +240,22 @@ mod tests {
         let chunk = Chunk::filled(BlockWithState::Dirt).unwrap();
         chunk.get_block(BlockPositionInChunk { bx: 0, by: 1, bz: 2 });
     }
+
+    #[test]
+    fn test_set_block_paletted() {
+        let mut chunk = Chunk::filled(BlockWithState::Dirt).unwrap();
+
+        // Set enough blocks so that the chunk turns into paletted but not raw
+        let mut id = 1;
+        for bx in 0..16 {
+            chunk.set_block(BlockPositionInChunk { bx, by: 0, bz: 0 }, BlockWithState::from_state_id(id).unwrap());
+            id += 1;
+        }
+        let mut id = 1;
+        for bx in 0..16 {
+            let got = chunk.get_block(BlockPositionInChunk { bx, by: 0, bz: 0 }).unwrap().block_state_id().unwrap();
+            assert_eq!(id, got);
+            id += 1;
+        }
+    }
 }
