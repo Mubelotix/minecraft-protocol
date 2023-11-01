@@ -34,8 +34,8 @@ pub async fn receive_packet(stream: &mut TcpStream) -> Vec<u8> {
 
 pub async fn send_packet_raw(stream: &mut TcpStream, packet: &[u8]) {
     let length = VarInt::from(packet.len());
-    stream.write_all(length.serialize_minecraft_packet().unwrap().as_slice()).await.unwrap();
-    stream.write_all(packet).await.unwrap();
+    let _ = stream.write_all(length.serialize_minecraft_packet().unwrap().as_slice()).await;
+    let _ = stream.write_all(packet).await;
     stream.flush().await.unwrap();
 }
 
@@ -80,18 +80,21 @@ pub async fn login(stream: &mut TcpStream) {
     let mut packet = receive_packet(stream).await;
     if let Ok(LoginServerbound::EncryptionResponse { .. }) = LoginServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()) {
         // Ignore for now (TODO)
-        packet = receive_packet(stream).await;
+        //packet = receive_packet(stream).await;
     }
     debug!("EncryptionResponse ignored");    
 }
 
 pub async fn status(stream: &mut TcpStream) {
     let packet = receive_packet(stream).await;
-    let mut request_status_ts = None;
     loop {
         match StatusServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap() {
-            StatusServerbound::Request if request_status_ts.is_none() => {
-                request_status_ts = Some(std::time::SystemTime::now());
+            StatusServerbound::Request => {
+                let response = StatusClientbound::Response {
+                    json_response: include_str!("raw/status_response.json")
+                };
+                send_packet(stream, response).await;    
+
                 debug!("StatusResponse sent");
                 
             },
@@ -102,12 +105,6 @@ pub async fn status(stream: &mut TcpStream) {
                 send_packet(stream, pong).await;
                 debug!("Pong sent");
 
-                if request_status_ts.is_some() {
-                    let response = StatusClientbound::Response {
-                        json_response: include_str!("raw/status_response.json")
-                    };
-                    send_packet(stream, response).await;    
-                }
                 return;
             },
             _ => {
@@ -139,6 +136,8 @@ pub async fn handle_player(
     };
 
     // Receive client informations
+    let packet = receive_packet(&mut stream).await;
+    debug!("Packet received");
     let packet = ConfigServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
     let ConfigServerbound::ClientInformations { locale, render_distance, chat_mode, chat_colors, displayed_skin_parts, main_hand, enable_text_filtering, allow_server_listing } = packet else {
         error!("Expected ClientInformation packet, got: {packet:?}");
@@ -350,7 +349,7 @@ pub async fn handle_player(
 
     // Set spawn position
     let set_spawn_position = PlayClientbound::SetSpawnPosition {
-        location: Position { x: 0, y: 70, z: 0 },
+        location: minecraft_protocol::packets::Position { x: 0, y: 70, z: 0 },
         angle: 0.0,
     };
     send_packet(&mut stream, set_spawn_position).await;
