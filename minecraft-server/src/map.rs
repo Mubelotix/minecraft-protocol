@@ -1,15 +1,47 @@
 use std::collections::HashMap;
-use minecraft_protocol::components::chunk::{Chunk as ChunkData, PalettedData};
+use minecraft_protocol::{components::chunk::{Chunk as ChunkData, PalettedData}, ids::block_states::BlockWithState};
 use tokio::sync::RwLock;
 use crate::prelude::*;
 
 pub struct WorldMap {
-    chunks: RwLock<HashMap<ChunkPosition, RwLock<ChunkColumn>>>,
+    /// The map is divided in shards.
+    /// Chunks are evenly distributed between shards.
+    /// The shards are locked independently.
+    /// This allows high concurrency.
+    shard_count: usize,
+    shards: Vec<RwLock<HashMap<ChunkColumnPosition, ChunkColumn>>>,
+}
+
+impl ChunkColumnPosition {
+    fn shard(&self, shard_count: usize) -> usize {
+        (self.cx + self.cz).abs() as usize % shard_count
+    }
 }
 
 #[derive(Clone)]
 struct Chunk {
     data: ChunkData,
+}
+
+impl Chunk {
+    fn get_block(&self, position: BlockPositionInChunk) -> Option<BlockWithState> {
+        match &self.data.blocks {
+            PalettedData::Paletted { palette, indexed } => {
+                let block_index = position.by * 16 * 16 + position.bz * 16 + position.bx;
+                let block_palette_index = indexed[block_index as usize];
+                let block_state_id = palette[block_palette_index as usize];
+                BlockWithState::from_state_id(block_state_id)
+            },
+            PalettedData::Single { value } => {
+                BlockWithState::from_state_id(*value)
+            }
+            PalettedData::Raw { values } => {
+                let block_index = position.by * 16 * 16 + position.bz * 16 + position.bx;
+                let block_state_id = values[block_index as usize];
+                BlockWithState::from_state_id(block_state_id)
+            }
+        }
+    }
 }
 
 struct ChunkColumn {
@@ -42,15 +74,35 @@ impl ChunkColumn {
 }
 
 impl WorldMap {
-    pub async fn load(&self, position: ChunkPosition) {
-        let chunk = ChunkColumn::flat(); // TODO: load from disk
-        let mut chunks = self.chunks.write().await;
-        chunks.entry(position).or_insert_with(|| RwLock::new(chunk));
+    pub fn new(shard_count: usize) -> WorldMap {
+        let mut shards = Vec::new();
+        for _ in 0..shard_count {
+            shards.push(RwLock::new(HashMap::new()));
+        }
+        WorldMap { shard_count, shards }
     }
 
-    pub async fn unload(&self, position: ChunkPosition) {
-        let mut chunks = self.chunks.write().await;
-        chunks.remove(&position);
-        // TODO: write to disk
+    pub async fn get_block(&self, position: BlockPosition) -> Option<BlockWithState> {
+        let chunk_position = position.chunk();
+        let block_position_in_chunk = position.in_chunk();
+        let chunk_column_position = chunk_position.chunk_column();
+        let shard = chunk_column_position.shard(self.shard_count);
+
+        let chunks = self.shards[shard].read().await;
+        let chunk_column = chunks.get(&chunk_column_position)?;
+        let chunk = chunk_column.chunks.get(chunk_position.cy as usize)?;
+        chunk.get_block(block_position_in_chunk)
     }
+
+    //     pub async fn load(&self, position: ChunkColumnPosition) {
+    //         let chunk = ChunkColumn::flat(); // TODO: load from disk
+    //         let mut chunks = self.chunks.write().await;
+    //         chunks.entry(position).or_insert_with(|| RwLock::new(chunk));
+    //     }
+    // 
+    //     pub async fn unload(&self, position: ChunkColumnPosition) {
+    //         let mut chunks = self.chunks.write().await;
+    //         chunks.remove(&position);
+    //         // TODO: write to disk
+    //     }
 }

@@ -52,7 +52,7 @@ pub struct ChunkPosition {
 }
 
 impl ChunkPosition {
-    fn chunk_column(&self) -> ChunkColumnPosition {
+    pub fn chunk_column(&self) -> ChunkColumnPosition {
         ChunkColumnPosition {
             cx: self.cx,
             cz: self.cz,
