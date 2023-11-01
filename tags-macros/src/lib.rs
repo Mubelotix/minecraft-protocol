@@ -57,6 +57,8 @@ pub fn tags(input: TokenStream) -> TokenStream {
 
     // We write an enum with all tags
     let mut output = quote! {
+        use std::collections::HashSet;
+        
         /// All tags in the game
         #[derive(Clone, PartialEq, Eq, Hash)]
         pub enum Tag {
