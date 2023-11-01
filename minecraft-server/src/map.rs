@@ -14,7 +14,7 @@ pub struct WorldMap {
 
 impl ChunkColumnPosition {
     fn shard(&self, shard_count: usize) -> usize {
-        (self.cx + self.cz).abs() as usize % shard_count
+        (self.cx + self.cz).unsigned_abs() as usize % shard_count
     }
 }
 
@@ -25,6 +25,17 @@ struct Chunk {
 }
 
 impl Chunk {
+    fn filled(block: BlockWithState) -> Option<Chunk> {
+        Some(Chunk {
+            data: ChunkData {
+                block_count: 4096,
+                blocks: PalettedData::Single { value: block.block_state_id()? },
+                biomes: PalettedData::Single { value: 0 },
+            },
+            palette_block_counts: Vec::new(),
+        })
+    }
+
     fn from_chunk_data(data: ChunkData) -> Chunk {
         let mut palette_block_counts = Vec::new();
         if let PalettedData::Paletted { palette, indexed } = &data.blocks {
@@ -62,6 +73,7 @@ impl Chunk {
         }
     }
 
+    // TODO edit block_count in data
     fn set_block(&mut self, position: BlockPositionInChunk, block: BlockWithState) {
         let block_state_id = block.block_state_id().unwrap_or_else(|| {
             error!("Tried to set block with invalid state {block:?}. Placing air"); 0
@@ -216,5 +228,16 @@ impl WorldMap {
         let mut shard = self.shards[shard].write().await;
         shard.remove(&position);
         // TODO: write to disk
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_block() {
+        let chunk = Chunk::filled(BlockWithState::Dirt).unwrap();
+        chunk.get_block(BlockPositionInChunk { bx: 0, by: 1, bz: 2 });
     }
 }
