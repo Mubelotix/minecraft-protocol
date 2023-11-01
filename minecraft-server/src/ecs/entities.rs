@@ -11,7 +11,7 @@ pub struct Entity {
     /// reused when an entity is removed for another
     id: Eid,
     /// Components attached to this entity
-    components: HashSet<Components>,
+    components: HashSet<Component>,
     /// The entity tag
     tag: Tag,
 }
@@ -43,7 +43,7 @@ impl Entities {
 
     /// Query an entity by his components
     /// We get all tags that have the components
-    pub async fn get_entities_with(&self, components: HashSet<Components>) -> Vec<Entity> {
+    pub async fn get_entities_with(&self, components: HashSet<Component>) -> Vec<Entity> {
         // We get all tags that have the components
         let mut tags = Tag::get_tags_from_components(components.clone());
         // We get all entities that have the tags
