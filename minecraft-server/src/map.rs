@@ -246,6 +246,21 @@ impl WorldMap {
         inner_get_block(self, position).await.unwrap_or(BlockWithState::Air)
     }
 
+    pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
+        async fn inner_get_block(s: &WorldMap, position: BlockPosition, block: BlockWithState) -> Option<()> {
+            let chunk_position = position.chunk();
+            let position_in_chunk_column = position.in_chunk_column();
+            let chunk_column_position = chunk_position.chunk_column();
+            let shard = chunk_column_position.shard(s.shard_count);
+        
+            let mut shard = s.shards[shard].write().await;
+            let chunk_column = shard.get_mut(&chunk_column_position)?;
+            chunk_column.set_block(position_in_chunk_column, block);
+            Some(())
+        }
+        inner_get_block(self, position, block).await;
+    }
+
     pub async fn load(&self, position: ChunkColumnPosition) {
         let chunk = ChunkColumn::flat(); // TODO: load from disk
         let shard = position.shard(self.shard_count);
