@@ -20,6 +20,8 @@ mod ambient_creature;
 pub use ambient_creature::*;
 mod bat;
 pub use bat::*;
+mod pathfinder_mob;
+pub use pathfinder_mob::*;
 
 pub use crate::prelude::*;
 pub use minecraft_protocol::{
@@ -44,6 +46,7 @@ pub enum AnyEntity {
     Mob(Mob),
     AmbientCreature(AmbientCreature),
     Bat(Bat),
+    PathfinderMob(PathfinderMob),
 }
 
 #[allow(clippy::single_match)]
@@ -61,6 +64,7 @@ impl AnyEntity {
             AnyEntity::Mob(mob) => mob.get_entity(),
             AnyEntity::AmbientCreature(ambient_creature) => ambient_creature.get_entity(),
             AnyEntity::Bat(bat) => bat.get_entity(),
+            AnyEntity::PathfinderMob(pathfinder_mob) => pathfinder_mob.get_entity(),
         }
     }
 
@@ -96,6 +100,7 @@ impl AnyEntity {
     pub fn as_mob(&self) -> Option<&Mob> {
         match self {
             AnyEntity::Mob(mob) => return Some(mob),
+            AnyEntity::PathfinderMob(pathfinder_mob) => return Some(&pathfinder_mob.mob),
             _ => (),
         };
         if let Some(ambient_creature) = self.as_ambient_creature() {

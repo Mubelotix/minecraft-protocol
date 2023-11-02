@@ -3,11 +3,7 @@ use super::*;
 #[derive(Default)]
 pub struct Bat {
     pub ambient_creature: AmbientCreature,
-}
-
-pub trait AmbientCreatureDescendant: MobDescendant {
-    fn get_ambient_creature(&self) -> &Bat;
-    fn get_ambient_creature_mut(&mut self) -> &mut Bat;
+    pub is_hanging: bool,
 }
 
 impl EntityDescendant for Bat {
@@ -26,6 +22,6 @@ impl MobDescendant for Bat {
 }
 
 impl AmbientCreatureDescendant for Bat {
-    fn get_ambient_creature(&self) -> &Bat { self }
-    fn get_ambient_creature_mut(&mut self) -> &mut Bat { self }
+    fn get_ambient_creature(&self) -> &AmbientCreature { &self.ambient_creature }
+    fn get_ambient_creature_mut(&mut self) -> &mut AmbientCreature { &mut self.ambient_creature }
 }
