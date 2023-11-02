@@ -33,8 +33,8 @@ pub async fn receive_packet(stream: &mut TcpStream) -> Vec<u8> {
 
 pub async fn send_packet_raw(stream: &mut TcpStream, packet: &[u8]) {
     let length = VarInt::from(packet.len());
-    let _ = stream.write_all(length.serialize_minecraft_packet().unwrap().as_slice()).await;
-    let _ = stream.write_all(packet).await;
+    stream.write_all(length.serialize_minecraft_packet().unwrap().as_slice()).await.unwrap();
+    stream.write_all(packet).await.unwrap();
     stream.flush().await.unwrap();
 }
 
