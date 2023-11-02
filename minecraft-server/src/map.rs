@@ -54,7 +54,7 @@ impl Chunk {
         }
     }
 
-    fn get_block(&self, position: BlockPositionInChunk) -> Option<BlockWithState> {
+    fn get_block(&self, position: BlockPositionInChunk) -> BlockWithState {
         match &self.data.blocks {
             PalettedData::Paletted { palette, indexed } => {
                 let data_position = position.by * 16 * 16 + position.bz * 16 + position.bx;
@@ -70,7 +70,7 @@ impl Chunk {
                 let block_state_id = values[data_position as usize];
                 BlockWithState::from_state_id(block_state_id)
             }
-        }
+        }.unwrap_or(BlockWithState::Air)
     }
 
     // TODO edit block_count in data
@@ -198,6 +198,17 @@ impl ChunkColumn {
         }
         ChunkColumn { chunks }
     }
+
+    fn get_block(&self, position: BlockPositionInChunkColumn) -> BlockWithState {
+        fn get_block_inner(s: &ChunkColumn, position: BlockPositionInChunkColumn) -> Option<BlockWithState> {
+            let cy = position.cy();
+            let cy_in_vec: usize = cy.checked_sub(4)?.try_into().ok()?;
+            let position = position.in_chunk();
+            let chunk = s.chunks.get(cy_in_vec)?;
+            Some(chunk.get_block(position))
+        }
+        get_block_inner(self, position).unwrap_or(BlockWithState::Air)
+    }
 }
 
 impl WorldMap {
@@ -209,17 +220,17 @@ impl WorldMap {
         WorldMap { shard_count, shards }
     }
 
-    pub async fn get_block(&self, position: BlockPosition) -> Option<BlockWithState> {
-        let chunk_position = position.chunk();
-        let block_position_in_chunk = position.in_chunk();
-        let chunk_column_position = chunk_position.chunk_column();
-        let shard = chunk_column_position.shard(self.shard_count);
-
-        let shard = self.shards[shard].read().await;
-        let chunk_column = shard.get(&chunk_column_position)?;
-        let chunk = chunk_column.chunks.get(chunk_position.cy as usize)?;
-        chunk.get_block(block_position_in_chunk)
-    }
+    //pub async fn get_block(&self, position: BlockPosition) -> Option<BlockWithState> {
+    //    let chunk_position = position.chunk();
+    //    let block_position_in_chunk = position.in_chunk();
+    //    let chunk_column_position = chunk_position.chunk_column();
+    //    let shard = chunk_column_position.shard(self.shard_count);
+    //
+    //    let shard = self.shards[shard].read().await;
+    //    let chunk_column = shard.get(&chunk_column_position)?;
+    //    let chunk = chunk_column.chunks.get(chunk_position.cy as usize)?;
+    //    chunk.get_block(block_position_in_chunk)
+    //}
 
     pub async fn load(&self, position: ChunkColumnPosition) {
         let chunk = ChunkColumn::flat(); // TODO: load from disk
@@ -261,7 +272,7 @@ mod tests {
         assert!(!chunk.palette_block_counts.is_empty());
         let mut id = 1;
         for bx in 0..16 {
-            let got = chunk.get_block(BlockPositionInChunk { bx, by: 0, bz: 0 }).unwrap().block_state_id().unwrap();
+            let got = chunk.get_block(BlockPositionInChunk { bx, by: 0, bz: 0 }).block_state_id().unwrap();
             assert_eq!(id, got);
             id += 1;
         }
@@ -286,7 +297,7 @@ mod tests {
         for bx in 0..16 {
             for by in 0..16 {
                 for bz in 0..2 {
-                    let got = chunk.get_block(BlockPositionInChunk { bx, by, bz }).unwrap().block_state_id().unwrap();
+                    let got = chunk.get_block(BlockPositionInChunk { bx, by, bz }).block_state_id().unwrap();
                     assert_eq!(id, got);
                     id += 1;
                 }
