@@ -14,6 +14,8 @@ mod living_entity;
 pub use living_entity::*;
 mod player;
 pub use player::*;
+mod mob;
+pub use mob::*;
 
 pub use crate::prelude::*;
 pub use minecraft_protocol::{
@@ -35,6 +37,7 @@ pub enum AnyEntity {
     ChestBoat(ChestBoat),
     LivingEntity(LivingEntity),
     Player(Player),
+    Mob(Mob),
 }
 
 impl AnyEntity {
@@ -48,6 +51,7 @@ impl AnyEntity {
             AnyEntity::ChestBoat(chest_boat) => chest_boat.get_entity(),
             AnyEntity::LivingEntity(living_entity) => living_entity.get_entity(),
             AnyEntity::Player(player) => player.get_entity(),
+            AnyEntity::Mob(mob) => mob.get_entity(),
         }
     }
 
@@ -72,6 +76,14 @@ impl AnyEntity {
         match self {
             AnyEntity::LivingEntity(living_entity) => Some(living_entity),
             AnyEntity::Player(player) => Some(&player.living_entity),
+            AnyEntity::Mob(mob) => Some(&mob.living_entity),
+            _ => None,
+        }
+    }
+
+    pub fn as_mob(&self) -> Option<&Mob> {
+        match self {
+            AnyEntity::Mob(mob) => Some(mob),
             _ => None,
         }
     }
