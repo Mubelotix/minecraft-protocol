@@ -5,14 +5,9 @@
     },
     "players": {
         "max": 1000,
-        "online": 0,
-        "sample": [
-        ]
+        "online": 0
     },
     "description": {
         "text": "Minecraft rust server"
-    },
-    "favicon": "data:image/png;base64,<data>",
-    "enforcesSecureChat": false,
-    "previewsChat": true
+    }
 }

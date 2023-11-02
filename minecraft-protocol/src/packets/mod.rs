@@ -4,7 +4,7 @@ pub mod serializer;
 pub mod config;
 pub use minecraft_protocol_derive::*;
 use serializer::*;
-use std::{convert::TryFrom, collections::BTreeMap};
+use std::{convert::TryFrom, collections::BTreeMap, ops::AddAssign};
 pub mod handshake;
 pub mod login;
 pub mod status;
@@ -60,6 +60,15 @@ pub struct Position {
     pub y: i16,
     pub z: i32,
 }
+
+impl AddAssign<Position> for Position {
+    fn add_assign(&mut self, rhs: Position) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+        self.z += rhs.z;
+    }
+}
+
 
 #[derive(Debug, PartialEq, Clone, MinecraftPacketPart)] 
 pub struct GlobalPosition<'a> {

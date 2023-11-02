@@ -9,7 +9,7 @@ use minecraft_protocol::{MinecraftPacketPart, packets::play_clientbound::Clientb
 
 #[test]
 fn auto_play_clientbound_50() {
-    let input = &[80, 238, 255, 255, 255, 15, 29];
+    let input = &[80, 45, 36];
     let packet_deserialized = ClientboundPacket::deserialize_uncompressed_minecraft_packet(input).unwrap();
 
     match packet_deserialized.serialize_minecraft_packet() {

@@ -1,7 +1,9 @@
 use std::{net::SocketAddr, future::Future, collections::{HashMap, BTreeMap}};
 
+
 use log::Log;
-use minecraft_protocol::{MinecraftPacketPart, components::{gamemode::{Gamemode, PreviousGamemode}, difficulty::Difficulty, chunk::{Chunk, PalettedData, ChunkData}, entity::{EntityMetadata, EntityMetadataValue, EntityAttribute}, slots::Slot}, nbt::NbtTag};
+use minecraft_protocol::{MinecraftPacketPart, components::{gamemode::{Gamemode, PreviousGamemode}, difficulty::Difficulty, chunk::{Chunk, PalettedData, ChunkData}, entity::{EntityMetadata, EntityMetadataValue, EntityAttribute}, slots::Slot}, nbt::NbtTag, packets::*};
+
 use tokio::{net::TcpStream, io::{AsyncReadExt, AsyncWriteExt}};
 
 use crate::prelude::*;
@@ -77,37 +79,32 @@ pub async fn login(stream: &mut TcpStream) {
     debug!("LoginAcknowledged received");
 
     // Ignore encryption response if any
-    let mut packet = receive_packet(stream).await;
+    let packet = receive_packet(stream).await;
     if let Ok(LoginServerbound::EncryptionResponse { .. }) = LoginServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()) {
         // Ignore for now (TODO)
-        packet = receive_packet(stream).await;
+        //packet = receive_packet(stream).await;
     }
     debug!("EncryptionResponse ignored");    
 }
 
 pub async fn status(stream: &mut TcpStream) {
-    let packet = receive_packet(stream).await;
-    let mut request_status_ts = None;
     loop {
+        let packet = receive_packet(stream).await;
         match StatusServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap() {
-            StatusServerbound::Request if request_status_ts.is_none() => {
-                request_status_ts = Some(std::time::SystemTime::now());
-                debug!("StatusResponse sent");
-                
+            StatusServerbound::Request => {
+                let response = StatusClientbound::Response {
+                    json_response: include_str!("raw/status_response.json")
+                };
+                send_packet(stream, response).await;    
+                debug!("StatusResponse sent");                
             },
             StatusServerbound::Ping { payload } => {
+                warn!("Ping received");
                 let pong = StatusClientbound::Pong {
                     payload
                 };
                 send_packet(stream, pong).await;
                 debug!("Pong sent");
-
-                if request_status_ts.is_some() {
-                    let response = StatusClientbound::Response {
-                        json_response: include_str!("raw/status_response.json")
-                    };
-                    send_packet(stream, response).await;    
-                }
                 return;
             },
             _ => {
@@ -139,6 +136,8 @@ pub async fn handle_player(
     };
 
     // Receive client informations
+    let packet = receive_packet(&mut stream).await;
+    debug!("Packet received");
     let packet = ConfigServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
     let ConfigServerbound::ClientInformations { locale, render_distance, chat_mode, chat_colors, displayed_skin_parts, main_hand, enable_text_filtering, allow_server_listing } = packet else {
         error!("Expected ClientInformation packet, got: {packet:?}");

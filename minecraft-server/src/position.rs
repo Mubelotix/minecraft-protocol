@@ -52,6 +52,7 @@ pub struct BlockPositionInChunkColumn {
     pub bz: u8,
 }
 
+
 impl BlockPositionInChunkColumn {
     pub fn in_chunk(&self) -> BlockPositionInChunk {
         BlockPositionInChunk {
@@ -66,7 +67,7 @@ impl BlockPositionInChunkColumn {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Position {
     pub x: f32,
     pub y: f32,
@@ -74,6 +75,37 @@ pub struct Position {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+impl Position {
+    pub fn chunk(&self) -> ChunkPosition {
+        ChunkPosition {
+            cx: (self.x.floor() as i32).div_euclid(16),
+            cy: (self.y.floor() as i32).div_euclid(16),
+            cz: (self.z.floor() as i32).div_euclid(16),
+        }
+    }
+}
+
+impl std::ops::Add<Position> for Position {
+    type Output = Position;
+
+    fn add(self, rhs: Position) -> Self::Output {
+        Position {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
+    }
+}
+
+impl std::ops::AddAssign<Position> for Position {
+    fn add_assign(&mut self, rhs: Position) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+        self.z += rhs.z;
+    }
+}
+
+#[derive(PartialEq, Eq, Hash)]
 pub struct ChunkPosition {
     pub cx: i32,
     pub cy: i32,
