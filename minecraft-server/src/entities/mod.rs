@@ -18,6 +18,8 @@ mod mob;
 pub use mob::*;
 mod ambient_creature;
 pub use ambient_creature::*;
+mod bat;
+pub use bat::*;
 
 pub use crate::prelude::*;
 pub use minecraft_protocol::{
@@ -41,8 +43,10 @@ pub enum AnyEntity {
     Player(Player),
     Mob(Mob),
     AmbientCreature(AmbientCreature),
+    Bat(Bat),
 }
 
+#[allow(clippy::single_match)]
 impl AnyEntity {
     pub fn as_entity(&self) -> &Entity {
         match self {
@@ -56,6 +60,7 @@ impl AnyEntity {
             AnyEntity::Player(player) => player.get_entity(),
             AnyEntity::Mob(mob) => mob.get_entity(),
             AnyEntity::AmbientCreature(ambient_creature) => ambient_creature.get_entity(),
+            AnyEntity::Bat(bat) => bat.get_entity(),
         }
     }
 
@@ -78,25 +83,31 @@ impl AnyEntity {
 
     pub fn as_living_entity(&self) -> Option<&LivingEntity> {
         match self {
-            AnyEntity::LivingEntity(living_entity) => Some(living_entity),
-            AnyEntity::Player(player) => Some(&player.living_entity),
-            AnyEntity::Mob(mob) => Some(&mob.living_entity),
-            AnyEntity::AmbientCreature(ambient_creature) => Some(&ambient_creature.mob.living_entity),
-            _ => None,
+            AnyEntity::LivingEntity(living_entity) => return Some(living_entity),
+            AnyEntity::Player(player) => return Some(&player.living_entity),
+            _ => (),
+        };
+        if let Some(mob) = self.as_mob() {
+            return Some(&mob.living_entity);
         }
+        None
     }
 
     pub fn as_mob(&self) -> Option<&Mob> {
         match self {
-            AnyEntity::Mob(mob) => Some(mob),
-            AnyEntity::AmbientCreature(ambient_creature) => Some(&ambient_creature.mob),
-            _ => None,
+            AnyEntity::Mob(mob) => return Some(mob),
+            _ => (),
+        };
+        if let Some(ambient_creature) = self.as_ambient_creature() {
+            return Some(&ambient_creature.mob);
         }
+        None
     }
 
     pub fn as_ambient_creature(&self) -> Option<&AmbientCreature> {
         match self {
             AnyEntity::AmbientCreature(ambient_creature) => Some(ambient_creature),
+            AnyEntity::Bat(bat) => Some(&bat.ambient_creature),
             _ => None,
         }
     }
