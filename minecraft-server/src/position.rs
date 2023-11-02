@@ -42,37 +42,6 @@ pub struct Position {
     pub z: f32,
 }
 
-impl Position {
-    pub fn chunk(&self) -> ChunkPosition {
-        ChunkPosition {
-            cx: self.x.floor() as i32 / 16,
-            cy: self.y.floor() as i32 / 16,
-            cz: self.z.floor() as i32 / 16,
-        }
-    }
-}
-
-impl std::ops::Add<Position> for Position {
-    type Output = Position;
-
-    fn add(self, rhs: Position) -> Self::Output {
-        Position {
-            x: self.x + rhs.x,
-            y: self.y + rhs.y,
-            z: self.z + rhs.z,
-        }
-    }
-}
-
-impl std::ops::AddAssign<Position> for Position {
-    fn add_assign(&mut self, rhs: Position) {
-        self.x += rhs.x;
-        self.y += rhs.y;
-        self.z += rhs.z;
-    }
-}
-
-#[derive(PartialEq, Eq, Hash)]
 pub struct ChunkPosition {
     pub cx: i32,
     pub cy: i32,
