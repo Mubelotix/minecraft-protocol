@@ -28,6 +28,8 @@ mod squid;
 pub use squid::*;
 mod interaction;
 pub use interaction::*;
+mod ageable_mob;
+pub use ageable_mob::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -57,7 +59,6 @@ pub enum AnyEntity {
     PathfinderMob(PathfinderMob),
     WaterAnimal(WaterAnimal),
     Squid(Squid),
-    Interaction(Interaction),
 }
 
 #[allow(clippy::single_match)]
@@ -78,7 +79,6 @@ impl AnyEntity {
             AnyEntity::PathfinderMob(pathfinder_mob) => pathfinder_mob.get_entity(),
             AnyEntity::WaterAnimal(water_animal) => water_animal.get_entity(),
             AnyEntity::Squid(squid) => squid.get_entity(),
-            AnyEntity::Interaction(interaction) => interaction.get_entity(),
         }
     }
 
