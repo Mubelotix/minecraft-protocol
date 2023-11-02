@@ -1,6 +1,5 @@
-use crate::components::*;
+use crate::ecs::components::*;
 use tags_macros::tags;
-
 
 tags! {
     Player {
