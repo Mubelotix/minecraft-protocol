@@ -2,6 +2,17 @@ mod entity;
 pub use entity::*;
 mod thrown_item_projectile;
 pub use thrown_item_projectile::*;
+mod thrown_egg;
+pub use thrown_egg::*;
+
+pub use minecraft_protocol::{
+    components::{
+        entity::Pose,
+        slots::{Slot, SlotItem}
+    },
+    ids::items::Item,
+    nbt::NbtTag
+};
 
 pub enum AnyEntity {
     Entity(Entity),

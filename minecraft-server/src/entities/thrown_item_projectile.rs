@@ -1,5 +1,4 @@
 use super::*;
-use minecraft_protocol::components::slots::Slot;
 
 pub struct ThrownItemProjectile {
     pub entity: Entity,
@@ -23,4 +22,14 @@ impl EntityDescendant for ThrownItemProjectile {
     fn get_entity_mut(&mut self) -> &mut Entity {
         &mut self.entity
     }
+}
+
+pub trait ThrownItemProjectileDescendant {
+    fn get_thrown_item_projectile(&self) -> &ThrownItemProjectile;
+    fn get_thrown_item_projectile_mut(&mut self) -> &mut ThrownItemProjectile;
+}
+
+impl ThrownItemProjectileDescendant for ThrownItemProjectile {
+    fn get_thrown_item_projectile(&self) -> &ThrownItemProjectile { self }
+    fn get_thrown_item_projectile_mut(&mut self) -> &mut ThrownItemProjectile { self }
 }

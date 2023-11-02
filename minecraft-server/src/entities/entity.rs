@@ -1,5 +1,4 @@
 use super::*;
-use minecraft_protocol::components::entity::Pose;
 
 pub struct Entity {
     pub is_on_fire: bool,
@@ -42,4 +41,9 @@ impl Default for Entity {
 pub trait EntityDescendant {
     fn get_entity(&self) -> &Entity;
     fn get_entity_mut(&mut self) -> &mut Entity;
+}
+
+impl EntityDescendant for Entity {
+    fn get_entity(&self) -> &Entity { self }
+    fn get_entity_mut(&mut self) -> &mut Entity { self }
 }
