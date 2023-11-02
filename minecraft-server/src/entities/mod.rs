@@ -10,11 +10,14 @@ mod boat;
 pub use boat::*;
 mod chest_boat;
 pub use chest_boat::*;
+mod living_entity;
+pub use living_entity::*;
 
+pub use crate::prelude::*;
 pub use minecraft_protocol::{
     components::{
         entity::Pose,
-        slots::{Slot, SlotItem}
+        slots::{Slot, SlotItem, Hand}
     },
     ids::items::Item,
     nbt::NbtTag
@@ -28,6 +31,7 @@ pub enum AnyEntity {
     // TODO some projectiles
     Boat(Boat),
     ChestBoat(ChestBoat),
+    LivingEntity(LivingEntity),
 }
 
 impl AnyEntity {
@@ -39,6 +43,7 @@ impl AnyEntity {
             AnyEntity::ThrownEnderPearl(throw_ender_pearl) => throw_ender_pearl.get_entity(),
             AnyEntity::Boat(boat) => boat.get_entity(),
             AnyEntity::ChestBoat(chest_boat) => chest_boat.get_entity(),
+            AnyEntity::LivingEntity(living_entity) => living_entity.get_entity(),
         }
     }
 
@@ -55,6 +60,13 @@ impl AnyEntity {
         match self {
             AnyEntity::Boat(boat) => Some(boat),
             AnyEntity::ChestBoat(chest_boat) => Some(&chest_boat.boat),
+            _ => None,
+        }
+    }
+
+    pub fn as_living_entity(&self) -> Option<&LivingEntity> {
+        match self {
+            AnyEntity::LivingEntity(living_entity) => Some(living_entity),
             _ => None,
         }
     }
