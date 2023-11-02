@@ -6,8 +6,8 @@ pub struct WaterAnimal {
 }
 
 pub trait WaterAnimalDescendant: PathfinderMobDescendant {
-    fn get_pathfinder_mob(&self) -> &WaterAnimal;
-    fn get_pathfinder_mob_mut(&mut self) -> &mut WaterAnimal;
+    fn get_water_animal(&self) -> &WaterAnimal;
+    fn get_water_animal_mut(&mut self) -> &mut WaterAnimal;
 }
 
 impl EntityDescendant for WaterAnimal {
@@ -31,6 +31,6 @@ impl PathfinderMobDescendant for WaterAnimal {
 }
 
 impl WaterAnimalDescendant for WaterAnimal {
-    fn get_pathfinder_mob(&self) -> &WaterAnimal { self }
-    fn get_pathfinder_mob_mut(&mut self) -> &mut WaterAnimal { self }
+    fn get_water_animal(&self) -> &WaterAnimal { self }
+    fn get_water_animal_mut(&mut self) -> &mut WaterAnimal { self }
 }

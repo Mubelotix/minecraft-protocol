@@ -24,6 +24,8 @@ mod pathfinder_mob;
 pub use pathfinder_mob::*;
 mod water_animal;
 pub use water_animal::*;
+mod squid;
+pub use squid::*;
 
 pub use crate::prelude::*;
 pub use minecraft_protocol::{
@@ -50,6 +52,7 @@ pub enum AnyEntity {
     Bat(Bat),
     PathfinderMob(PathfinderMob),
     WaterAnimal(WaterAnimal),
+    Squid(Squid),
 }
 
 #[allow(clippy::single_match)]
@@ -69,6 +72,7 @@ impl AnyEntity {
             AnyEntity::Bat(bat) => bat.get_entity(),
             AnyEntity::PathfinderMob(pathfinder_mob) => pathfinder_mob.get_entity(),
             AnyEntity::WaterAnimal(water_animal) => water_animal.get_entity(),
+            AnyEntity::Squid(squid) => squid.get_entity(),
         }
     }
 
@@ -135,6 +139,7 @@ impl AnyEntity {
     pub fn as_water_animal(&self) -> Option<&WaterAnimal> {
         match self {
             AnyEntity::WaterAnimal(water_animal) => Some(water_animal),
+            AnyEntity::Squid(squid) => Some(&squid.water_animal),
             _ => None,
         }
     }
