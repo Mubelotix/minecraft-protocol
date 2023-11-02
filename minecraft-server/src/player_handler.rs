@@ -519,6 +519,9 @@ pub async fn handle_player(mut stream: TcpStream, player_info: PlayerInfo, mut s
             Event::Packet(packet) => {
                 drop(receive_packet_fut);
                 receive_packet_fut = Box::pin(receive_packet(&mut stream).fuse());
+
+                let packet = PlayServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
+                debug!("Packet received: {packet:?}");
             },
             Event::Message(Ok(message)) => {
                 drop(receive_server_message_fut);
