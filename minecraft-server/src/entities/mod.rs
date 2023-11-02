@@ -16,6 +16,8 @@ mod player;
 pub use player::*;
 mod mob;
 pub use mob::*;
+mod ambient_creature;
+pub use ambient_creature::*;
 
 pub use crate::prelude::*;
 pub use minecraft_protocol::{
@@ -38,6 +40,7 @@ pub enum AnyEntity {
     LivingEntity(LivingEntity),
     Player(Player),
     Mob(Mob),
+    AmbientCreature(AmbientCreature),
 }
 
 impl AnyEntity {
@@ -52,6 +55,7 @@ impl AnyEntity {
             AnyEntity::LivingEntity(living_entity) => living_entity.get_entity(),
             AnyEntity::Player(player) => player.get_entity(),
             AnyEntity::Mob(mob) => mob.get_entity(),
+            AnyEntity::AmbientCreature(ambient_creature) => ambient_creature.get_entity(),
         }
     }
 
@@ -77,6 +81,7 @@ impl AnyEntity {
             AnyEntity::LivingEntity(living_entity) => Some(living_entity),
             AnyEntity::Player(player) => Some(&player.living_entity),
             AnyEntity::Mob(mob) => Some(&mob.living_entity),
+            AnyEntity::AmbientCreature(ambient_creature) => Some(&ambient_creature.mob.living_entity),
             _ => None,
         }
     }
@@ -84,6 +89,14 @@ impl AnyEntity {
     pub fn as_mob(&self) -> Option<&Mob> {
         match self {
             AnyEntity::Mob(mob) => Some(mob),
+            AnyEntity::AmbientCreature(ambient_creature) => Some(&ambient_creature.mob),
+            _ => None,
+        }
+    }
+
+    pub fn as_ambient_creature(&self) -> Option<&AmbientCreature> {
+        match self {
+            AnyEntity::AmbientCreature(ambient_creature) => Some(ambient_creature),
             _ => None,
         }
     }
