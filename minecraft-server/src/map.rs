@@ -67,7 +67,7 @@ impl Chunk {
             }
             PalettedData::Raw { values } => {
                 let data_position = position.by as usize * 16 * 16 + position.bz as usize * 16 + position.bx as usize;
-                let block_state_id = values[data_position as usize];
+                let block_state_id = values[data_position];
                 BlockWithState::from_state_id(block_state_id)
             }
         }.unwrap_or(BlockWithState::Air)
