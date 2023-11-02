@@ -380,4 +380,42 @@ mod tests {
         let high_block = flat_column.get_block(BlockPositionInChunkColumn { bx: 0, y: 120, bz: 0 });
         assert_eq!(high_block.block_state_id().unwrap(), BlockWithState::Air.block_state_id().unwrap());
     }
+
+    #[tokio::test]
+    async fn test_world_map() {
+        let map = WorldMap::new(1);
+        for cx in -3..=3 {
+            for cz in -3..=3 {
+                map.load(ChunkColumnPosition { cx, cz }).await;
+            }
+        }
+        
+        // Test single block
+        map.set_block(BlockPosition { x: -40, y: -40, z: -40 }, BlockWithState::RedstoneBlock).await;
+        let block = map.get_block(BlockPosition { x: -40, y: -40, z: -40 }).await;
+        assert_eq!(block.block_state_id().unwrap(), BlockWithState::RedstoneBlock.block_state_id().unwrap());
+
+        // Set blocks
+        let mut id = 1;
+        for x in (-40..40).step_by(9) {
+            for y in (-40..200).step_by(15) {
+                for z in (-40..40).step_by(9) {
+                    map.set_block(BlockPosition { x, y, z }, BlockWithState::from_state_id(id).unwrap()).await;
+                    id += 1;
+                }
+            }
+        }
+
+        // Verify they are set
+        let mut id = 1;
+        for x in (-40..40).step_by(9) {
+            for y in (-40..200).step_by(15) {
+                for z in (-40..40).step_by(9) {
+                    let got = map.get_block(BlockPosition { x, y, z }).await.block_state_id().unwrap();
+                    assert_eq!(id, got);
+                    id += 1;
+                }
+            }
+        }
+    }
 }

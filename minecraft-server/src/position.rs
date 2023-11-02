@@ -57,7 +57,7 @@ impl BlockPositionInChunkColumn {
         BlockPositionInChunk {
             bx: self.bx,
             by: self.y.rem_euclid(16) as u8,
-            bz: self.bx,
+            bz: self.bz,
         }
     }
 
