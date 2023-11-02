@@ -1,5 +1,5 @@
 use crate::components::*;
-use ecs_macros::tags;
+use minecraft_ecs_macros::tags;
 
 tags! {
     Player {

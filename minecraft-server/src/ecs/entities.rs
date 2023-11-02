@@ -1,9 +1,8 @@
 use crate::prelude::*;
-use ecs_macros::insert_components_fields;
+use minecraft_ecs_macros::insert_components_fields;
 use minecraft_protocol::packets::UUID;
 use super::tags::Tag;
 
-pub type Eid = u32;
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct Entity {
@@ -17,10 +16,16 @@ pub struct Entity {
     tag: Tag,
 }
 
+impl Entity {
+    pub fn insert_component(&mut self, component: Component) {
+        self.components.insert(component);
+    }
+}
+
 #[insert_components_fields]
 pub struct Entities {    
     pub entities: RwLock<HashMap<Eid, Entity>>,
-
+    entity_count: RwLock<Eid>,
     /// A hashmap of chunk positions to get a list of entities in a chunk
     pub chunks: RwLock<HashMap<ChunkPosition, HashSet<Eid>>>,
     pub uuids: RwLock<HashMap<UUID, Eid>>,
@@ -28,6 +33,45 @@ pub struct Entities {
 }
 
 impl Entities {
+    async fn inc_eid(&self) -> Eid {
+        let mut entity_count = self.entity_count.write().await;
+        *entity_count += 1;
+        *entity_count
+    }
+
+    /// Create a new entity
+    pub async fn create_entity_with_tag(&self, tag: Tag) -> Option<Eid> {
+        let id = self.inc_eid().await;
+        let entity = Entity {
+            id,
+            components: tag.clone().get_components().into_iter().collect(),
+            tag: tag.clone(),
+        };
+        self.entities.write().await.insert(id, entity);
+        self.entities_by_tag.write().await.entry(tag.clone()).or_default().insert(id);
+
+        // Add the components of the tag
+        for component in tag.get_components() {
+            
+        }
+
+        Some(id)
+    }
+
+    /// Create a new entity with components
+    pub async fn create_entity_with_components(&self, components: HashSet<Component>) -> Option<Eid> {
+        let id = self.inc_eid().await;
+        let tag = Tag::get_tags_from_components(components.clone()).into_iter().next()?;
+        let entity = Entity {
+            id,
+            components: components.clone(),
+            tag: tag.clone(),
+        };
+        self.entities.write().await.insert(id, entity);
+        self.entities_by_tag.write().await.entry(tag).or_default().insert(id);
+        Some(id)
+    }
+    
     /// Query a specific entity
     pub async fn get_entity(&self, id: Eid) -> Option<Entity> {
         self.entities.read().await.get(&id).cloned()
@@ -55,5 +99,9 @@ impl Entities {
             }
         }
         entities
-    }
+    }        
+}
+
+impl Entity {
+
 }

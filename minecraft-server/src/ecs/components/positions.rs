@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use ecs_macros::Component;
+use minecraft_ecs_macros::Component;
 
 use crate::prelude::*;
 
@@ -65,5 +65,17 @@ impl PositionComponent {
 
     pub fn get_chunk(&self) -> ChunkPosition {
         self.position.chunk()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    
+    #[tokio::test]
+    async fn change_chunk() {
+        use super::tags::Tag;
+        let entities = crate::ecs::Entities::new();
+        entities.create_entity_with_tag(Tag::Player).await.unwrap();
+
     }
 }

@@ -175,21 +175,42 @@ pub fn component_derive(input: TokenStream) -> TokenStream {
     } else {
         HashSet::new()
     };
-    
+
+    let name_trimed = name.to_string().trim_end_matches("Component").to_string();
+
     // Add the new component
-    if !components.contains(&name.to_string()) {
-        let name = name.to_string().trim_end_matches("Component").to_string();
+    if !components.contains(&name_trimed.to_string()) {
         
-        components.insert(name.to_string());
+        components.insert(name_trimed.to_string());
         fs::write(path, components.iter().cloned().collect::<Vec<_>>().join("\n")).expect("Failed to write to component_names.txt");
     }
 
-    TokenStream::new()
+    let attach_fn_name = Ident::new(&format!("attach_{}", name_trimed.to_lowercase()), name.span());
+    let field_name = Ident::new(&format!("{}_components", name_trimed.to_lowercase()), name.span());
+    let name_trimed = Ident::new(&name_trimed, name.span());
+
+    let gen = quote! {
+        impl ComponentTrait for #name {
+            fn get_component_enum(&self) -> Component {
+                Component::#name_trimed
+            }
+        }
+
+        impl Entities {
+            async fn #attach_fn_name(&self, id: Eid, component: #name) -> Option<()> {
+                let mut components = self.#field_name.write().await;
+                components.insert(id, component);
+                self.entities.write().await.get_mut(&id)?.insert_component(Component::#name_trimed);
+                Some(())
+            }
+        }
+    };
+    gen.into()
 }
 
 #[proc_macro]
 pub fn generate_component_enum(_: TokenStream) -> TokenStream {
-    let path = &format!("target/tmp/component_names_{}.txt", UNIQUE_ID.to_string());
+    let path = &format!("target/tmp/component_names_{}.txt", *UNIQUE_ID);
     let components = if std::path::Path::new(&path).exists() {
         fs::read_to_string(path).unwrap_or_default().lines().map(|e| Ident::new(e, Span::call_site().into())).collect::<Vec<_>>()
     } else {
@@ -211,7 +232,7 @@ pub fn generate_component_enum(_: TokenStream) -> TokenStream {
 pub fn insert_components_fields(_attr: TokenStream, input: TokenStream) -> TokenStream {
  
     let mut input_ast = syn::parse_macro_input!(input as syn::ItemStruct);
-
+    let struct_name = &input_ast.ident;
     let path = &format!("target/tmp/component_names_{}.txt", *UNIQUE_ID);
     let components = if std::path::Path::new(&path).exists() {
         fs::read_to_string(path).unwrap_or_default().lines().map(|e| Ident::new(e, Span::call_site().into())).collect::<Vec<_>>()
@@ -219,10 +240,13 @@ pub fn insert_components_fields(_attr: TokenStream, input: TokenStream) -> Token
         Vec::new()
     };
 
+    let mut fields = Vec::new();
+
     for component in &components {
         let field_ident = Ident::new(&format!("{}_components", component.to_string().to_lowercase()), component.span());
         let component_type_ident = Ident::new(&format!("{}Component", component), component.span());
-    
+        fields.push(field_ident.clone());
+
         let field = syn::Field {
             attrs: Vec::new(),
             vis: syn::Visibility::Public(syn::token::Pub { span: component.span() }),
@@ -242,7 +266,24 @@ pub fn insert_components_fields(_attr: TokenStream, input: TokenStream) -> Token
         }
     }
 
+    let impl_ = quote! {
+        impl #struct_name {
+            /// Create a new entity manager
+            pub fn new() -> Self {
+                Self {
+                    entities: RwLock::new(HashMap::new()),
+                    entity_count: RwLock::new(0),
+                    chunks: RwLock::new(HashMap::new()),
+                    uuids: RwLock::new(HashMap::new()),
+                    entities_by_tag: RwLock::new(HashMap::new()),
+                    #(#fields: RwLock::new(HashMap::new()),)*
+                }
+            }
+        }
+    };
+
     let gen = quote! {
+        #impl_
 
         #input_ast
     };
