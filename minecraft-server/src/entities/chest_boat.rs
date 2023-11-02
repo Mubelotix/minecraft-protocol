@@ -2,13 +2,12 @@ use super::*;
 
 #[derive(Default)]
 pub struct ChestBoat {
-    pub entity: Entity,
     pub boat: Boat,
 }
 
 impl EntityDescendant for ChestBoat {
-    fn get_entity(&self) -> &Entity { &self.entity }
-    fn get_entity_mut(&mut self) -> &mut Entity { &mut self.entity }
+    fn get_entity(&self) -> &Entity { self.boat.get_entity() }
+    fn get_entity_mut(&mut self) -> &mut Entity { self.boat.get_entity_mut() }
 }
 
 impl BoatDescendant for ChestBoat {

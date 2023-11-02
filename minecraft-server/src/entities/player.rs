@@ -1,7 +1,6 @@
 use super::*;
 
 pub struct Player {
-    pub entity: Entity,
     pub living_entity: LivingEntity,
     pub additional_hearts: f32,
     pub score: usize,
@@ -20,7 +19,6 @@ pub struct Player {
 impl Default for Player {
     fn default() -> Self {
         Player {
-            entity: Entity::default(),
             living_entity: LivingEntity::default(),
             additional_hearts: 0.0,
             score: 0,
@@ -39,8 +37,8 @@ impl Default for Player {
 }
 
 impl EntityDescendant for Player {
-    fn get_entity(&self) -> &Entity { &self.entity }
-    fn get_entity_mut(&mut self) -> &mut Entity { &mut self.entity }
+    fn get_entity(&self) -> &Entity { self.living_entity.get_entity() }
+    fn get_entity_mut(&mut self) -> &mut Entity { self.living_entity.get_entity_mut() }
 }
 
 impl LivingEntityDescendant for Player {
