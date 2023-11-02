@@ -1,4 +1,4 @@
-pub use crate::{player_handler::*, position::*, server_behavior::*, ecs::*};
+pub use crate::{ecs::*, player_handler::*, position::*, server_behavior::*};
 pub use futures::FutureExt;
 pub use log::{debug, error, info, trace, warn};
 pub use minecraft_protocol::{
@@ -20,11 +20,10 @@ pub use minecraft_protocol::{
         play_serverbound::ServerboundPacket as PlayServerbound,
         serializer::*,
         status::{ClientboundPacket as StatusClientbound, ServerboundPacket as StatusServerbound},
-        Array, Map, ConnectionState, VarInt, VarLong, RawBytes
+        Array, ConnectionState, Map, RawBytes, VarInt, VarLong,
     },
     MinecraftPacketPart,
 };
-
 pub use std::{
     collections::{BTreeMap, HashMap, HashSet},
     future::Future,
@@ -44,13 +43,14 @@ pub use tokio::{
         tcp::{OwnedReadHalf, OwnedWriteHalf},
         TcpStream,
     },
-    sync::broadcast::{
-        channel as broadcast_channel, error::RecvError as BroadcastRecvError,
-        Receiver as BroadcastReceiver, Sender as BroadcastSender,
+    sync::{
+        broadcast::{
+            channel as broadcast_channel, error::RecvError as BroadcastRecvError,
+            Receiver as BroadcastReceiver, Sender as BroadcastSender,
+        },
+        mpsc::{channel as mpsc_channel, Receiver as MpscReceiver, Sender as MpscSender},
+        RwLock,
     },
-    sync::mpsc::{channel as mpsc_channel, Receiver as MpscReceiver, Sender as MpscSender},
 };
-
-pub use tokio::sync::RwLock;
 
 pub const MAX_PLAYERS: usize = 1001;
