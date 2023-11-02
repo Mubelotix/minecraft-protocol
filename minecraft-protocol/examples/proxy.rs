@@ -83,7 +83,7 @@ fn proxy_serverbound(client_stream: TcpStream, server_stream: TcpStream) -> Resu
                     fpacket.truncate(400);
                     fpacket.push_str("...");
                 }
-                println!("CONFIG: \u{001b}[35mclient\u{001b}[0m: {fpacket}");
+                println!("HANDSHAKE: \u{001b}[35mclient\u{001b}[0m: {fpacket}");
             }
         } else if let Ok(packet) = ConfigServerbound::deserialize_uncompressed_minecraft_packet(&packet) {
             #[cfg(feature = "all-packets")]
