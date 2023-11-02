@@ -14,19 +14,14 @@ impl Default for ThrownItemProjectile {
     }
 }
 
-impl EntityDescendant for ThrownItemProjectile {
-    fn get_entity(&self) -> &Entity {
-        &self.entity
-    }
-
-    fn get_entity_mut(&mut self) -> &mut Entity {
-        &mut self.entity
-    }
-}
-
-pub trait ThrownItemProjectileDescendant {
+pub trait ThrownItemProjectileDescendant: EntityDescendant {
     fn get_thrown_item_projectile(&self) -> &ThrownItemProjectile;
     fn get_thrown_item_projectile_mut(&mut self) -> &mut ThrownItemProjectile;
+}
+
+impl EntityDescendant for ThrownItemProjectile {
+    fn get_entity(&self) -> &Entity { &self.entity }
+    fn get_entity_mut(&mut self) -> &mut Entity { &mut self.entity }
 }
 
 impl ThrownItemProjectileDescendant for ThrownItemProjectile {
