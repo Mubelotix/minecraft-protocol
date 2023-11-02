@@ -6,6 +6,8 @@ mod thrown_egg;
 pub use thrown_egg::*;
 mod thrown_ender_pearl;
 pub use thrown_ender_pearl::*;
+mod boat;
+pub use boat::*;
 
 pub use minecraft_protocol::{
     components::{
@@ -21,6 +23,8 @@ pub enum AnyEntity {
     ThrownItemProjectile(ThrownItemProjectile),
     ThrownEgg(ThrownEgg),
     ThrownEnderPearl(ThrownEnderPearl),
+    // TODO some projectiles
+    Boat(Boat),
 }
 
 impl AnyEntity {
@@ -30,6 +34,7 @@ impl AnyEntity {
             AnyEntity::ThrownItemProjectile(throw_item_projectile) => throw_item_projectile.get_entity(),
             AnyEntity::ThrownEgg(throw_egg) => throw_egg.get_entity(),
             AnyEntity::ThrownEnderPearl(throw_ender_pearl) => throw_ender_pearl.get_entity(),
+            AnyEntity::Boat(boat) => boat.get_entity(),
         }
     }
 
@@ -38,6 +43,13 @@ impl AnyEntity {
             AnyEntity::ThrownItemProjectile(throw_item_projectile) => Some(throw_item_projectile),
             AnyEntity::ThrownEgg(throw_egg) => Some(&throw_egg.thrown_item_projectile),
             AnyEntity::ThrownEnderPearl(throw_ender_pearl) => Some(&throw_ender_pearl.thrown_item_projectile),
+            _ => None,
+        }
+    }
+
+    pub fn as_boat(&self) -> Option<&Boat> {
+        match self {
+            AnyEntity::Boat(boat) => Some(boat),
             _ => None,
         }
     }
