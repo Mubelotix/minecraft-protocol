@@ -76,7 +76,6 @@ pub struct GlobalPosition<'a> {
     position: Position,
 }
 
-
 #[minecraft_enum(VarInt)]
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Direction {
