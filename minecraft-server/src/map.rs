@@ -58,7 +58,7 @@ impl Chunk {
         match &self.data.blocks {
             PalettedData::Paletted { palette, indexed } => {
                 let data_position = position.by as usize * 16 * 16 + position.bz as usize * 16 + position.bx as usize;
-                let palette_position = indexed[data_position as usize];
+                let palette_position = indexed[data_position];
                 let block_state_id = palette[palette_position as usize];
                 BlockWithState::from_state_id(block_state_id)
             },
