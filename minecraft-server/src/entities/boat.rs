@@ -1,5 +1,7 @@
 use super::*;
 
+#[inheritable]
+#[inherit(Entity)]
 pub struct Boat {
     pub entity: Entity,
     pub time_since_last_hit: usize,
@@ -25,19 +27,4 @@ impl Default for Boat {
             splash_timer: 0,
         }
     }
-}
-
-pub trait BoatDescendant: EntityDescendant {
-    fn get_boat(&self) -> &Boat;
-    fn get_boat_mut(&mut self) -> &mut Boat;
-}
-
-impl EntityDescendant for Boat {
-    fn get_entity(&self) -> &Entity { &self.entity }
-    fn get_entity_mut(&mut self) -> &mut Entity { &mut self.entity }
-}
-
-impl BoatDescendant for Boat {
-    fn get_boat(&self) -> &Boat { self }
-    fn get_boat_mut(&mut self) -> &mut Boat { self }
 }

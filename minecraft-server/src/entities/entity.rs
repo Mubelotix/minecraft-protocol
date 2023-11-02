@@ -1,5 +1,6 @@
 use super::*;
 
+#[inheritable]
 pub struct Entity {
     pub is_on_fire: bool,
     pub is_crouching: bool,
@@ -36,14 +37,4 @@ impl Default for Entity {
             ticks_frozen: 0,
         }
     }
-}
-
-pub trait EntityDescendant {
-    fn get_entity(&self) -> &Entity;
-    fn get_entity_mut(&mut self) -> &mut Entity;
-}
-
-impl EntityDescendant for Entity {
-    fn get_entity(&self) -> &Entity { self }
-    fn get_entity_mut(&mut self) -> &mut Entity { self }
 }

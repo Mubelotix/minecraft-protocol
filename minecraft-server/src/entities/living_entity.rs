@@ -1,5 +1,7 @@
 use super::*;
 
+#[inheritable]
+#[inherit(Entity)]
 pub struct LivingEntity {
     pub entity: Entity,
     pub is_hand_active: bool,
@@ -28,19 +30,4 @@ impl Default for LivingEntity {
             bed: None,
         }
     }
-}
-
-pub trait LivingEntityDescendant: EntityDescendant {
-    fn get_living_entity(&self) -> &LivingEntity;
-    fn get_living_entity_mut(&mut self) -> &mut LivingEntity;
-}
-
-impl EntityDescendant for LivingEntity {
-    fn get_entity(&self) -> &Entity { &self.entity }
-    fn get_entity_mut(&mut self) -> &mut Entity { &mut self.entity }
-}
-
-impl LivingEntityDescendant for LivingEntity {
-    fn get_living_entity(&self) -> &LivingEntity { self }
-    fn get_living_entity_mut(&mut self) -> &mut LivingEntity { self }
 }

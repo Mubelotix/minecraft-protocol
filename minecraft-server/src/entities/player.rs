@@ -1,5 +1,6 @@
 use super::*;
 
+#[inherit(LivingEntity, Entity)]
 pub struct Player {
     pub living_entity: LivingEntity,
     pub additional_hearts: f32,
@@ -34,14 +35,4 @@ impl Default for Player {
             right_shoulder_entity: NbtTag::Null,
         }
     }
-}
-
-impl EntityDescendant for Player {
-    fn get_entity(&self) -> &Entity { self.living_entity.get_entity() }
-    fn get_entity_mut(&mut self) -> &mut Entity { self.living_entity.get_entity_mut() }
-}
-
-impl LivingEntityDescendant for Player {
-    fn get_living_entity(&self) -> &LivingEntity { self.living_entity.get_living_entity() }
-    fn get_living_entity_mut(&mut self) -> &mut LivingEntity { self.living_entity.get_living_entity_mut() }
 }
