@@ -2,7 +2,7 @@ use std::{net::SocketAddr, future::Future, collections::{HashMap, BTreeMap}};
 
 use futures::FutureExt;
 use minecraft_protocol::{MinecraftPacketPart, components::{gamemode::{Gamemode, PreviousGamemode}, difficulty::Difficulty, chunk::{Chunk, PalettedData, ChunkData}, entity::{EntityMetadata, EntityMetadataValue, EntityAttribute}, slots::Slot, chat::ChatMode, players::MainHand}, nbt::NbtTag};
-use tokio::{net::TcpStream, io::{AsyncReadExt, AsyncWriteExt}};
+use tokio::{net::TcpStream, io::{AsyncReadExt, AsyncWriteExt}, sync::broadcast::Receiver};
 
 use crate::prelude::*;
 
@@ -501,15 +501,32 @@ pub async fn handshake(mut stream: &mut TcpStream, logged_in_player_info: Logged
     })
 }
 
-pub async fn handle_player(mut stream: TcpStream, addr: SocketAddr) -> Result<(), ()> {
+pub async fn handle_player(mut stream: TcpStream, player_info: PlayerInfo, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>) -> Result<(), ()> {
     
     let mut receive_packet_fut = Box::pin(receive_packet(&mut stream).fuse());
+    let mut receive_server_message_fut = Box::pin(server_msg_rcvr.recv().fuse());
     loop {
-        let event = futures::select! { packet = receive_packet_fut => packet };
+        // Select the first event that happens
+        enum Event {
+            Packet(Vec<u8>),
+            Message(Result<ServerMessage, BroadcastRecvError>),
+        }
+        let event = futures::select! {
+            packet = receive_packet_fut => Event::Packet(packet),
+            message = receive_server_message_fut => Event::Message(message),
+        };
         match event {
-            packet => {
+            Event::Packet(packet) => {
                 drop(receive_packet_fut);
                 receive_packet_fut = Box::pin(receive_packet(&mut stream).fuse());
+            },
+            Event::Message(Ok(message)) => {
+                drop(receive_server_message_fut);
+                receive_server_message_fut = Box::pin(server_msg_rcvr.recv().fuse());
+            },
+            Event::Message(Err(recv_error)) => {
+                error!("Failed to receive message: {recv_error:?}");
+                return Err(());
             }
         }
     }
@@ -517,7 +534,8 @@ pub async fn handle_player(mut stream: TcpStream, addr: SocketAddr) -> Result<()
 
 pub async fn handle_connection(
     mut stream: TcpStream,
-    addr: SocketAddr
+    addr: SocketAddr,
+    server_msg_rcvr: BroadcastReceiver<ServerMessage>,
 ) -> Result<(), ()> {
     // Receive handshake
     let packet = receive_packet(&mut stream).await;
@@ -526,7 +544,7 @@ pub async fn handle_connection(
         ConnectionState::Login => {
             let player_info = login(&mut stream, addr).await?;
             let player_info = handshake(&mut stream, player_info).await?;
-            Ok(())
+            handle_player(stream, player_info, server_msg_rcvr).await
         },
         ConnectionState::Status => {
             status(&mut stream).await;
