@@ -45,9 +45,9 @@ pub struct Position {
 impl Position {
     pub fn chunk(&self) -> ChunkPosition {
         ChunkPosition {
-            cx: self.x.floor() as i32 / 16,
-            cy: self.y.floor() as i32 / 16,
-            cz: self.z.floor() as i32 / 16,
+            cx: (self.x.floor() as i32).div_euclid(16),
+            cy: (self.y.floor() as i32).div_euclid(16),
+            cz: (self.z.floor() as i32).div_euclid(16),
         }
     }
 }
