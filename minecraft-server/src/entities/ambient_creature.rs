@@ -1,13 +1,9 @@
 use super::*;
 
 #[derive(Default)]
+#[inheritable]
 pub struct AmbientCreature {
     pub mob: Mob,
-}
-
-pub trait AmbientCreatureDescendant: MobDescendant {
-    fn get_ambient_creature(&self) -> &AmbientCreature;
-    fn get_ambient_creature_mut(&mut self) -> &mut AmbientCreature;
 }
 
 impl EntityDescendant for AmbientCreature {
@@ -23,9 +19,4 @@ impl LivingEntityDescendant for AmbientCreature {
 impl MobDescendant for AmbientCreature {
     fn get_mob(&self) -> &Mob { &self.mob }
     fn get_mob_mut(&mut self) -> &mut Mob { &mut self.mob }
-}
-
-impl AmbientCreatureDescendant for AmbientCreature {
-    fn get_ambient_creature(&self) -> &AmbientCreature { self }
-    fn get_ambient_creature_mut(&mut self) -> &mut AmbientCreature { self }
 }

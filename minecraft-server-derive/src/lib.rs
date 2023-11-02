@@ -109,7 +109,6 @@ pub fn inherit(attr: TokenStream, item: TokenStream) -> TokenStream {
             replace_idents(element, &to_replace);
         }
         let code: TokenStream = code.into_iter().collect();
-        println!("{}", code);
         codes.push(code);
     }
 
@@ -118,5 +117,54 @@ pub fn inherit(attr: TokenStream, item: TokenStream) -> TokenStream {
     for code in codes {
         final_code.extend(code);
     }
+    final_code
+}
+
+#[proc_macro_attribute]
+pub fn inheritable(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    // Get struct name
+    let mut items = item.clone().into_iter();
+    match items.next() {
+        Some(TokenTree::Ident(ident)) if ident.to_string() == "pub" => (),
+        Some(other) => panic!("expected struct to be public, found {:?}", other),
+        None => panic!("expected public struct, found nothing"),
+    }
+    match items.next() {
+        Some(TokenTree::Ident(ident)) if ident.to_string() == "struct" => (),
+        Some(other) => panic!("expected struct, found {:?}", other),
+        None => panic!("expected struct, found nothing"),
+    }
+    let struct_name = match items.next() {
+        Some(TokenTree::Ident(ident)) => ident,
+        Some(other) => panic!("expected struct name, found {:?}", other),
+        None => panic!("expected struct name, found nothing"),
+    };
+
+    // Generate implementation
+    let code: TokenStream = r#"
+        pub trait ThisDescendant {
+            fn get_this(&self) -> &This;
+            fn get_this_mut(&mut self) -> &mut This;
+        }
+        
+        impl ThisDescendant for This {
+            fn get_this(&self) -> &This { self }
+            fn get_this_mut(&mut self) -> &mut This { self }
+        }
+    "#.parse().unwrap();
+    let mut to_replace = HashMap::new();
+    to_replace.insert("This", struct_name.clone());
+    to_replace.insert("ThisDescendant", Ident::new(&format!("{}Descendant", struct_name), struct_name.span()));
+    to_replace.insert("get_this", Ident::new(&format!("get_{}", struct_name.to_string().to_case(Case::Snake)), struct_name.span()));
+    to_replace.insert("get_this_mut", Ident::new(&format!("get_{}_mut", struct_name.to_string().to_case(Case::Snake)), struct_name.span()));
+    let mut code = code.clone().into_iter().collect::<Vec<_>>();
+    for element in &mut code {
+        replace_idents(element, &to_replace);
+    }
+    let code: TokenStream = code.into_iter().collect();
+
+    // Assemble final code
+    let mut final_code = item;
+    final_code.extend(code);
     final_code
 }
