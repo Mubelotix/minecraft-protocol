@@ -34,6 +34,8 @@ mod animal;
 pub use animal::*;
 mod sniffer;
 pub use sniffer::*;
+mod abstract_horse;
+pub use abstract_horse::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -65,6 +67,7 @@ pub enum AnyEntity {
     Squid(Squid),
     Animal(Animal),
     Sniffer(Sniffer),
+    AbstractHorse(AbstractHorse),
 }
 
 #[allow(clippy::single_match)]
@@ -86,6 +89,9 @@ impl AnyEntity {
             AnyEntity::WaterAnimal(water_animal) => water_animal.get_entity(),
             AnyEntity::Squid(squid) => squid.get_entity(),
             AnyEntity::AgeableMob(ageable_mob) => ageable_mob.get_entity(),
+            AnyEntity::Animal(animal) => animal.get_entity(),
+            AnyEntity::Sniffer(sniffer) => sniffer.get_entity(),
+            AnyEntity::AbstractHorse(abstract_horse) => abstract_horse.get_entity(),
         }
     }
 
