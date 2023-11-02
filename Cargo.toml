@@ -5,3 +5,5 @@ members = [
     "minecraft-server",
     "tags-macros"
 ]
+
+workspace.resolver = "2"
