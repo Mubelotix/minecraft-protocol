@@ -8,8 +8,8 @@
 use minecraft_protocol::{MinecraftPacketPart, packets::play_clientbound::ClientboundPacket};
 
 #[test]
-fn auto_play_clientbound_26() {
-    let input = &[38, 0, 0, 4, 0, 0, 0, 189, 128, 0, 37, 64, 73, 0, 0, 0, 0, 0];
+fn auto_play_clientbound_45() {
+    let input = &[69, 0, 0, 188, 0, 2, 80, 0, 4, 3, 195, 16, 195, 14, 211, 14];
     let packet_deserialized = ClientboundPacket::deserialize_uncompressed_minecraft_packet(input).unwrap();
 
     match packet_deserialized.serialize_minecraft_packet() {

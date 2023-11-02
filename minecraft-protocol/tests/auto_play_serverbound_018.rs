@@ -9,7 +9,7 @@ use minecraft_protocol::{MinecraftPacketPart, packets::play_serverbound::Serverb
 
 #[test]
 fn auto_play_serverbound_18() {
-    let input = &[24, 194, 217, 205, 12, 66, 110, 50, 253, 0];
+    let input = &[24, 66, 245, 179, 47, 65, 97, 152, 195, 0];
     let packet_deserialized = ServerboundPacket::deserialize_uncompressed_minecraft_packet(input).unwrap();
 
     match packet_deserialized.serialize_minecraft_packet() {
