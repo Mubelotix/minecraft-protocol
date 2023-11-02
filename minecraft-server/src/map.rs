@@ -209,6 +209,18 @@ impl ChunkColumn {
         }
         get_block_inner(self, position).unwrap_or(BlockWithState::Air)
     }
+
+    fn set_block(&mut self, position: BlockPositionInChunkColumn, block: BlockWithState) {
+        fn set_block_innter(s: &mut ChunkColumn, position: BlockPositionInChunkColumn, block: BlockWithState) -> Option<()> {
+            let cy = position.cy();
+            let cy_in_vec: usize = cy.checked_sub(4)?.try_into().ok()?;
+            let position = position.in_chunk();
+            let chunk = s.chunks.get_mut(cy_in_vec)?;
+            chunk.set_block(position, block);
+            Some(())
+        }
+        set_block_innter(self, position, block);
+    }
 }
 
 impl WorldMap {
