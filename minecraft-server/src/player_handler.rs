@@ -501,7 +501,61 @@ pub async fn handshake(mut stream: &mut TcpStream, logged_in_player_info: Logged
     })
 }
 
+struct PlayerHandler {
+    info: PlayerInfo,
+    position: Position,
+    yaw: f32,
+    pitch: f32,
+    on_ground: bool,
+}
+
+impl PlayerHandler {
+    async fn on_server_message(&mut self, message: ServerMessage) {
+        use ServerMessage::*;
+        match message {
+            Tick => {
+                
+            }
+        }
+    }
+
+    async fn on_packet<'a>(&mut self, packet: PlayServerbound<'a>) {
+        use PlayServerbound::*;
+        match packet {
+            SetPlayerPosition { x, y, z, on_ground } => {
+                self.position.x = x;
+                self.position.y = y;
+                self.position.z = z;
+                self.on_ground = on_ground;
+                // TODO: make sure the movement is allowed
+            },
+            SetPlayerRotation { yaw, pitch, on_ground } => {
+                self.yaw = yaw;
+                self.pitch = pitch;
+                self.on_ground = on_ground;
+            }
+            SetPlayerPositionAndRotation { x, y, z, yaw, pitch, on_ground } => {
+                self.position.x = x;
+                self.position.y = y;
+                self.position.z = z;
+                self.yaw = yaw;
+                self.pitch = pitch;
+                self.on_ground = on_ground;
+                // TODO: make sure the movement is allowed
+            },
+            packet => warn!("Unsupported packet received: {packet:?}"),
+        }
+    }
+}
+
 pub async fn handle_player(mut stream: TcpStream, player_info: PlayerInfo, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>) -> Result<(), ()> {
+    let mut handler = PlayerHandler {
+        info: player_info,
+        position: Position { x: 0.0, y: 60.0, z: 0.0 },
+        yaw: 0.0,
+        pitch: 0.0,
+        on_ground: false,
+    };
     
     let mut receive_packet_fut = Box::pin(receive_packet(&mut stream).fuse());
     let mut receive_server_message_fut = Box::pin(server_msg_rcvr.recv().fuse());
@@ -521,11 +575,13 @@ pub async fn handle_player(mut stream: TcpStream, player_info: PlayerInfo, mut s
                 receive_packet_fut = Box::pin(receive_packet(&mut stream).fuse());
 
                 let packet = PlayServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
-                debug!("Packet received: {packet:?}");
+                handler.on_packet(packet).await;
             },
             Event::Message(Ok(message)) => {
                 drop(receive_server_message_fut);
                 receive_server_message_fut = Box::pin(server_msg_rcvr.recv().fuse());
+
+                handler.on_server_message(message).await;
             },
             Event::Message(Err(recv_error)) => {
                 error!("Failed to receive message: {recv_error:?}");
