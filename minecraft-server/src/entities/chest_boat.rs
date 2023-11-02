@@ -7,13 +7,8 @@ pub struct ChestBoat {
 }
 
 impl EntityDescendant for ChestBoat {
-    fn get_entity(&self) -> &Entity {
-        &self.entity
-    }
-
-    fn get_entity_mut(&mut self) -> &mut Entity {
-        &mut self.entity
-    }
+    fn get_entity(&self) -> &Entity { &self.entity }
+    fn get_entity_mut(&mut self) -> &mut Entity { &mut self.entity }
 }
 
 impl BoatDescendant for ChestBoat {

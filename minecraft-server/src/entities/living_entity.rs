@@ -30,7 +30,7 @@ impl Default for LivingEntity {
     }
 }
 
-pub trait LivingEntityDescendant {
+pub trait LivingEntityDescendant: EntityDescendant {
     fn get_living_entity(&self) -> &LivingEntity;
     fn get_living_entity_mut(&mut self) -> &mut LivingEntity;
 }

@@ -27,19 +27,14 @@ impl Default for Boat {
     }
 }
 
-impl EntityDescendant for Boat {
-    fn get_entity(&self) -> &Entity {
-        &self.entity
-    }
-
-    fn get_entity_mut(&mut self) -> &mut Entity {
-        &mut self.entity
-    }
-}
-
-pub trait BoatDescendant {
+pub trait BoatDescendant: EntityDescendant {
     fn get_boat(&self) -> &Boat;
     fn get_boat_mut(&mut self) -> &mut Boat;
+}
+
+impl EntityDescendant for Boat {
+    fn get_entity(&self) -> &Entity { &self.entity }
+    fn get_entity_mut(&mut self) -> &mut Entity { &mut self.entity }
 }
 
 impl BoatDescendant for Boat {

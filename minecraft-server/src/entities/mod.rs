@@ -12,6 +12,8 @@ mod chest_boat;
 pub use chest_boat::*;
 mod living_entity;
 pub use living_entity::*;
+mod player;
+pub use player::*;
 
 pub use crate::prelude::*;
 pub use minecraft_protocol::{
@@ -32,6 +34,7 @@ pub enum AnyEntity {
     Boat(Boat),
     ChestBoat(ChestBoat),
     LivingEntity(LivingEntity),
+    Player(Player),
 }
 
 impl AnyEntity {
@@ -44,6 +47,7 @@ impl AnyEntity {
             AnyEntity::Boat(boat) => boat.get_entity(),
             AnyEntity::ChestBoat(chest_boat) => chest_boat.get_entity(),
             AnyEntity::LivingEntity(living_entity) => living_entity.get_entity(),
+            AnyEntity::Player(player) => player.get_entity(),
         }
     }
 
@@ -67,6 +71,7 @@ impl AnyEntity {
     pub fn as_living_entity(&self) -> Option<&LivingEntity> {
         match self {
             AnyEntity::LivingEntity(living_entity) => Some(living_entity),
+            AnyEntity::Player(player) => Some(&player.living_entity),
             _ => None,
         }
     }
