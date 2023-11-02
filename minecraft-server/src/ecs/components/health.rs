@@ -1,8 +1,8 @@
-use minecraft_ecs_macros::Component;
+use minecraft_ecs_macros::is_component;
 
 use crate::prelude::*;
 
-#[derive(Clone, Component)]
+#[is_component]
 pub struct HealthComponent {
     pub health: f32,
     pub max_health: f32,
@@ -59,17 +59,4 @@ impl HealthComponent {
     }
 }
 
-impl Entities {
-    /// Set the health of an entity.
-    pub async fn set_health(&self, id: Eid, health: HealthComponent) -> Option<()> {
-        let mut health_components = self.health_components.write().await;
-        health_components.insert(id, health);
-        Some(())
-    }
-    
-    /// Get the health of an entity.
-    pub async fn get_health(&self, id: Eid) -> Option<HealthComponent> {
-        self.health_components.read().await.get(&id).cloned()
-    }
 
-}

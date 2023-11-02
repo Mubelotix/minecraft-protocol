@@ -3,9 +3,9 @@ extern crate quote;
 extern crate proc_macro;
 extern crate lazy_static;
 
-use std::{collections::{HashMap, HashSet}, fs};
+use std::collections::HashMap;
 
-use proc_macro::{TokenStream, Span};
+use proc_macro::{TokenStream, TokenTree};
 use syn::{parse_macro_input, Token, Ident, parse, DeriveInput};
 
 lazy_static::lazy_static! {
@@ -16,18 +16,6 @@ lazy_static::lazy_static! {
     };
 }
 
-fn clear_file() {
-    let path = &format!("component_names_{}.txt", *UNIQUE_ID);
-    // Get all files in the directory 
-    let files = fs::read_dir("target/tmp").unwrap();
-    for file in files {
-        let file = file.unwrap();
-        let file_name = file.file_name().to_str().unwrap().to_string();
-        if file_name.starts_with("component_names_") && file_name.ends_with(".txt")  && !file_name.contains(path) {
-            fs::remove_file(file.path()).unwrap();
-        }
-    }
-}
 
 struct MultipleTags {
     tags: Vec<(Ident, Vec<Ident>)>,
@@ -89,29 +77,36 @@ pub fn tags(input: TokenStream) -> TokenStream {
                 #tags,
             )*
         }
-
     };
 
     let tags_with_components = items.components;    
     let match_patterns = tags_with_components.iter().map(|(component, tags)| {
+        use std::hash::{Hash, Hasher};
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        component.to_string().hash(&mut hasher);
+        let u = hasher.finish();
+
         let tags = tags.iter().map(|t| {
             let tag = Ident::new(&format!("{}", t), t.span());
             quote! {
                 Tag::#tag
             }
         });
-        let component = Ident::new(&format!("{}", component), component.span());
         quote! {
-            Component::#component => vec![#(#tags),*],
+            #u => vec![#(#tags),*],
         }
     });
     let map_tag_components = items.tags;
     let map_tag_components = map_tag_components.iter().map(|(tag, components)| {
         let tag = Ident::new(&format!("{}", tag), tag.span());
         let components = components.iter().map(|c| {
-            let component = Ident::new(&format!("{}", c), c.span());
+            use std::hash::{Hash, Hasher};
+            let mut hasher = std::collections::hash_map::DefaultHasher::new();
+            c.to_string().hash(&mut hasher);
+            let u = hasher.finish();
+    
             quote! {
-                Component::#component
+                ComponentId(#u)
             }
         });
         quote! {
@@ -122,22 +117,22 @@ pub fn tags(input: TokenStream) -> TokenStream {
     let get_tags_from_components = quote! {
         impl Tag {
             /// we get all components from a tag
-            pub fn get_components(&self) -> Vec<Component> {
+            pub fn get_components(&self) -> Vec<ComponentId> {
                 match self {
                     #(#map_tag_components)*
                 }
             }
 
             /// we get all tags from a component
-            pub fn get_tags_from_component(component: Component) -> Vec<Tag> {
-                match component {
+            pub fn get_tags_from_component(component: ComponentId) -> Vec<Tag> {
+                match component.0 {
                     #(#match_patterns)*
                     _ => vec![],
                 }
             }
 
             /// we get all tags that have the components
-            pub fn get_tags_from_components(components: HashSet<Component>) -> HashSet<Tag> {
+            pub fn get_tags_from_components(components: HashSet<ComponentId>) -> HashSet<Tag> {
                 let mut tags = HashSet::new();
                 for component in components.iter() {
                     for tag in Tag::get_tags_from_component(component.clone()) {
@@ -161,132 +156,53 @@ pub fn tags(input: TokenStream) -> TokenStream {
 
 use quote::quote;
 
-#[proc_macro_derive(Component)]
-pub fn component_derive(input: TokenStream) -> TokenStream {
+#[proc_macro_attribute]
+pub fn is_component(attr: TokenStream, input_stream: TokenStream) -> TokenStream {
+    let input = input_stream.clone();
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
 
-    // Path to the accumulator file
-    let path = &format!("target/tmp/component_names_{}.txt", *UNIQUE_ID);
-    clear_file();
-    // Read the existing component names, if any
-    let mut components = if std::path::Path::new(&path).exists() {
-        fs::read_to_string(path).unwrap_or_default().lines().map(String::from).collect::<HashSet<_>>()
-    } else {
-        HashSet::new()
-    };
-
-    let name_trimed = name.to_string().trim_end_matches("Component").to_string();
-
-    // Add the new component
-    if !components.contains(&name_trimed.to_string()) {
-        
-        components.insert(name_trimed.to_string());
-        fs::write(path, components.iter().cloned().collect::<Vec<_>>().join("\n")).expect("Failed to write to component_names.txt");
-    }
-
-    let attach_fn_name = Ident::new(&format!("attach_{}", name_trimed.to_lowercase()), name.span());
-    let field_name = Ident::new(&format!("{}_components", name_trimed.to_lowercase()), name.span());
-    let name_trimed = Ident::new(&name_trimed, name.span());
-
-    let gen = quote! {
-        impl ComponentTrait for #name {
-            fn get_component_enum(&self) -> Component {
-                Component::#name_trimed
-            }
-        }
-
-        impl Entities {
-            async fn #attach_fn_name(&self, id: Eid, component: #name) -> Option<()> {
-                let mut components = self.#field_name.write().await;
-                components.insert(id, component);
-                self.entities.write().await.get_mut(&id)?.insert_component(Component::#name_trimed);
-                Some(())
-            }
-        }
-    };
-    gen.into()
-}
-
-#[proc_macro]
-pub fn generate_component_enum(_: TokenStream) -> TokenStream {
-    let path = &format!("target/tmp/component_names_{}.txt", *UNIQUE_ID);
-    let components = if std::path::Path::new(&path).exists() {
-        fs::read_to_string(path).unwrap_or_default().lines().map(|e| Ident::new(e, Span::call_site().into())).collect::<Vec<_>>()
-    } else {
-        Vec::new()
-    };
-
-    let gen = quote! {
-        #[derive(Eq, Hash, PartialEq, Clone)]
-        pub enum Component {
-            #(#components,)*
-        }
-    };
-
-    gen.into()
-}
-
-/// Insert the fields to the structure with [#[insert_components_fields]]
-#[proc_macro_attribute]
-pub fn insert_components_fields(_attr: TokenStream, input: TokenStream) -> TokenStream {
- 
-    let mut input_ast = syn::parse_macro_input!(input as syn::ItemStruct);
-    let struct_name = &input_ast.ident;
-    let path = &format!("target/tmp/component_names_{}.txt", *UNIQUE_ID);
-    let components = if std::path::Path::new(&path).exists() {
-        fs::read_to_string(path).unwrap_or_default().lines().map(|e| Ident::new(e, Span::call_site().into())).collect::<Vec<_>>()
-    } else {
-        Vec::new()
-    };
-
-    let mut fields = Vec::new();
-
-    for component in &components {
-        let field_ident = Ident::new(&format!("{}_components", component.to_string().to_lowercase()), component.span());
-        let component_type_ident = Ident::new(&format!("{}Component", component), component.span());
-        fields.push(field_ident.clone());
-
-        let field = syn::Field {
-            attrs: Vec::new(),
-            vis: syn::Visibility::Public(syn::token::Pub { span: component.span() }),
-            ident: Some(field_ident),
-            colon_token: Some(syn::token::Colon { spans: [component.span()] }),
-            ty: syn::parse_quote! {
-                RwLock<HashMap<Eid, #component_type_ident>>
-            },
-            mutability: syn::FieldMutability::None,
-        };
-    
-        match &mut input_ast.fields {
-            syn::Fields::Named(fields_named) => {
-                fields_named.named.push(field);
-            }
-            _ => {}
-        }
-    }
-
-    let impl_ = quote! {
-        impl #struct_name {
-            /// Create a new entity manager
-            pub fn new() -> Self {
-                Self {
-                    entities: RwLock::new(HashMap::new()),
-                    entity_count: RwLock::new(0),
-                    chunks: RwLock::new(HashMap::new()),
-                    uuids: RwLock::new(HashMap::new()),
-                    entities_by_tag: RwLock::new(HashMap::new()),
-                    #(#fields: RwLock::new(HashMap::new()),)*
+    // Check if attr contains an unique id
+    let mut id = None;
+    let mut attr = attr.into_iter();
+    while let Some(token) = attr.next() {
+        if let TokenTree::Ident(ident) = token {
+            if ident.to_string() == "id" {
+                if let Some(TokenTree::Punct(punct)) = attr.next() {
+                    if punct.as_char() == '=' {
+                        if let Some(TokenTree::Literal(literal)) = attr.next() {
+                            id = Some(literal.to_string());
+                        }
+                    }
                 }
             }
         }
+    }
+
+    let id = if let Some(id) = id {
+        id.parse::<u64>().unwrap()
+    } else {
+        // Hash the name
+        use std::hash::{Hash, Hasher};
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        name.to_string().hash(&mut hasher);
+        hasher.finish()
     };
 
-    let gen = quote! {
-        #impl_
+    let gen = quote! {    
+        #input
+        use std::any::Any;
+        use minecraft_ecs::component::ComponentId;
 
-        #input_ast
+        impl Component for #name {
+            
+            fn get_component_id(&self) -> ComponentId { 
+                ComponentId(#id)
+            }
+            fn as_any(&self) -> &dyn Any {
+                self
+            }
+        }
     };
-    
     gen.into()
-}    
+}

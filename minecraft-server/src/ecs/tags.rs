@@ -1,12 +1,12 @@
-use crate::components::*;
+use crate::prelude::*;
 use minecraft_ecs_macros::tags;
 
 tags! {
     Player {
-        Position,
-        Health,
+        PositionComponent,
+        HealthComponent,
     }
     Enemy {
-        Health
+        HealthComponent,
     }
 }

@@ -1,14 +1,13 @@
-use std::ops::{Deref, DerefMut};
-
-use minecraft_ecs_macros::Component;
+use minecraft_ecs_macros::is_component;
 
 use crate::prelude::*;
 
-#[derive(Clone, Component)]
+#[is_component]
 pub struct PositionComponent {
     position: Position,
 }
 
+/*
 impl Entities {
     pub async fn get_position(&self, id: Eid) -> Option<PositionComponent> {
         // we don't check if the entity has a position component because the hashmap will return None if the entity doesn't have it
@@ -79,3 +78,4 @@ mod tests {
 
     }
 }
+*/

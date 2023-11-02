@@ -12,3 +12,4 @@ log = "0.4.20"
 tokio = { version = "1.33.0", features = ["full"] }
 minecraft-protocol = { path= "../minecraft-protocol" }
 minecraft-ecs-macros = { path = "../minecraft-ecs-macros"}
+minecraft-ecs = { path = "../minecraft-ecs" }

@@ -9,6 +9,8 @@ pub use minecraft_protocol::packets::{
     play_serverbound::ServerboundPacket as PlayServerbound,
 };
 
+pub use minecraft_ecs::prelude::*;
+
 pub use std::{
     pin::Pin,
     task::{
