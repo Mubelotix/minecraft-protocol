@@ -4,6 +4,8 @@ mod thrown_item_projectile;
 pub use thrown_item_projectile::*;
 mod thrown_egg;
 pub use thrown_egg::*;
+mod thrown_ender_pearl;
+pub use thrown_ender_pearl::*;
 
 pub use minecraft_protocol::{
     components::{
@@ -17,6 +19,8 @@ pub use minecraft_protocol::{
 pub enum AnyEntity {
     Entity(Entity),
     ThrownItemProjectile(ThrownItemProjectile),
+    ThrownEgg(ThrownEgg),
+    ThrownEnderPearl(ThrownEnderPearl),
 }
 
 impl AnyEntity {
@@ -24,12 +28,16 @@ impl AnyEntity {
         match self {
             AnyEntity::Entity(entity) => entity,
             AnyEntity::ThrownItemProjectile(throw_item_projectile) => throw_item_projectile.get_entity(),
+            AnyEntity::ThrownEgg(throw_egg) => throw_egg.get_entity(),
+            AnyEntity::ThrownEnderPearl(throw_ender_pearl) => throw_ender_pearl.get_entity(),
         }
     }
 
     pub fn as_thrown_item_projectile(&self) -> Option<&ThrownItemProjectile> {
         match self {
             AnyEntity::ThrownItemProjectile(throw_item_projectile) => Some(throw_item_projectile),
+            AnyEntity::ThrownEgg(throw_egg) => Some(&throw_egg.thrown_item_projectile),
+            AnyEntity::ThrownEnderPearl(throw_ender_pearl) => Some(&throw_ender_pearl.thrown_item_projectile),
             _ => None,
         }
     }
