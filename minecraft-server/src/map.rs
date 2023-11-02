@@ -232,17 +232,19 @@ impl WorldMap {
         WorldMap { shard_count, shards }
     }
 
-    //pub async fn get_block(&self, position: BlockPosition) -> Option<BlockWithState> {
-    //    let chunk_position = position.chunk();
-    //    let block_position_in_chunk = position.in_chunk();
-    //    let chunk_column_position = chunk_position.chunk_column();
-    //    let shard = chunk_column_position.shard(self.shard_count);
-    //
-    //    let shard = self.shards[shard].read().await;
-    //    let chunk_column = shard.get(&chunk_column_position)?;
-    //    let chunk = chunk_column.chunks.get(chunk_position.cy as usize)?;
-    //    chunk.get_block(block_position_in_chunk)
-    //}
+    pub async fn get_block(&self, position: BlockPosition) -> BlockWithState {
+        async fn inner_get_block(s: &WorldMap, position: BlockPosition) -> Option<BlockWithState> {
+            let chunk_position = position.chunk();
+            let position_in_chunk_column = position.in_chunk_column();
+            let chunk_column_position = chunk_position.chunk_column();
+            let shard = chunk_column_position.shard(s.shard_count);
+        
+            let shard = s.shards[shard].read().await;
+            let chunk_column = shard.get(&chunk_column_position)?;
+            Some(chunk_column.get_block(position_in_chunk_column))
+        }
+        inner_get_block(self, position).await.unwrap_or(BlockWithState::Air)
+    }
 
     pub async fn load(&self, position: ChunkColumnPosition) {
         let chunk = ChunkColumn::flat(); // TODO: load from disk
