@@ -120,6 +120,13 @@ impl Chunk {
                     None
                 };
 
+                // If palette lenght is one, turn to single-valued
+                if palette.len() == 1 {
+                    self.data.blocks = PalettedData::Single { value: block_state_id };
+                    self.palette_block_counts.clear();
+                    return;
+                }
+
                 match position {
                     Some(palette_position) => {
                         // Add block and increase its count
@@ -283,5 +290,34 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn test_palette_shrinking() {
+        let mut chunk = Chunk::filled(BlockWithState::Air).unwrap();
+
+        // Increase palette size by 16
+        let mut id = 1;
+        for bx in 0..16 {
+            chunk.set_block(BlockPositionInChunk { bx, by: 0, bz: 0 }, BlockWithState::from_state_id(id).unwrap());
+            id += 1;
+        }
+        assert_eq!(chunk.palette_block_counts.len(), 17);
+
+        // Remove last block, it should decrease palete size
+        chunk.set_block(BlockPositionInChunk { bx: 15, by: 0, bz: 0 }, BlockWithState::Air);
+        assert_eq!(chunk.palette_block_counts.len(), 16);
+
+        // Remove blocks at the start, palette cannot be shrinked from the left
+        for bx in 0..8 {
+            chunk.set_block(BlockPositionInChunk { bx, by: 0, bz: 0 }, BlockWithState::Air);
+        }
+        assert_eq!(chunk.palette_block_counts.len(), 16);
+
+        // Remove remaining blocks but 1, palette will shrink and turn into single-valued
+        for bx in 8..16 {
+            chunk.set_block(BlockPositionInChunk { bx, by: 0, bz: 0 }, BlockWithState::Air);
+        }
+        assert_eq!(chunk.palette_block_counts.len(), 0);
     }
 }
