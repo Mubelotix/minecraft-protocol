@@ -60,6 +60,10 @@ impl BlockPositionInChunkColumn {
             bz: self.bx,
         }
     }
+
+    pub fn cy(&self) -> i32 {
+        self.y.div_euclid(16)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
