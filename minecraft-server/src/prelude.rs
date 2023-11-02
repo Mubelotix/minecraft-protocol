@@ -18,6 +18,7 @@ pub use std::{
 };
 pub use tokio::{
     sync::broadcast::{Receiver as BroadcastReceiver, Sender as BroadcastSender, channel as broadcast_channel, error::RecvError as BroadcastRecvError},
+    sync::mpsc::{Receiver as MpscReceiver, Sender as MpscSender, channel as mpsc_channel},
 };
 pub use std::time::Duration;
 

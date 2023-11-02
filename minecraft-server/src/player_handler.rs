@@ -2,7 +2,7 @@ use std::{net::SocketAddr, future::Future, collections::{HashMap, BTreeMap}};
 
 use futures::FutureExt;
 use minecraft_protocol::{MinecraftPacketPart, components::{gamemode::{Gamemode, PreviousGamemode}, difficulty::Difficulty, chunk::{Chunk, PalettedData, ChunkData}, entity::{EntityMetadata, EntityMetadataValue, EntityAttribute}, slots::Slot, chat::ChatMode, players::MainHand}, nbt::NbtTag};
-use tokio::{net::TcpStream, io::{AsyncReadExt, AsyncWriteExt}};
+use tokio::{net::{TcpStream, tcp::{OwnedReadHalf, OwnedWriteHalf}}, io::{AsyncReadExt, AsyncWriteExt}};
 
 use crate::prelude::*;
 
@@ -32,7 +32,38 @@ pub async fn receive_packet(stream: &mut TcpStream) -> Vec<u8> {
     data
 }
 
+pub async fn receive_packet_split(stream: &mut OwnedReadHalf) -> Vec<u8> {
+    let mut length: Vec<u8> = Vec::with_capacity(2);
+
+    loop {
+        if length.len() >= 5 {
+            //return Err("length too long".into());
+        }
+        let mut byte = [0];
+        stream.read_exact(&mut byte).await.unwrap();
+        length.push(byte[0]);
+        if byte[0] < 0b1000_0000 {
+            break;
+        }
+    }
+
+    let length = VarInt::deserialize_uncompressed_minecraft_packet(length.as_mut_slice()).unwrap();
+
+    let mut data = Vec::with_capacity(length.0 as usize);
+    unsafe { data.set_len(length.0 as usize); }
+    stream.read_exact(&mut data).await.unwrap();
+
+    data
+}
+
 pub async fn send_packet_raw(stream: &mut TcpStream, packet: &[u8]) {
+    let length = VarInt::from(packet.len());
+    stream.write_all(length.serialize_minecraft_packet().unwrap().as_slice()).await.unwrap();
+    stream.write_all(packet).await.unwrap();
+    stream.flush().await.unwrap();
+}
+
+pub async fn send_packet_raw_split(stream: &mut OwnedWriteHalf, packet: &[u8]) {
     let length = VarInt::from(packet.len());
     stream.write_all(length.serialize_minecraft_packet().unwrap().as_slice()).await.unwrap();
     stream.write_all(packet).await.unwrap();
@@ -507,14 +538,20 @@ struct PlayerHandler {
     yaw: f32,
     pitch: f32,
     on_ground: bool,
+    packet_sender: MpscSender<Vec<u8>>,
 }
 
 impl PlayerHandler {
+    async fn send_packet<'a>(&mut self, packet: PlayClientbound<'a>) {
+        let packet = packet.serialize_minecraft_packet().unwrap();
+        self.packet_sender.send(packet).await.unwrap();
+    }
+
     async fn on_server_message(&mut self, message: ServerMessage) {
         use ServerMessage::*;
         match message {
             Tick => {
-                
+                self.send_packet(PlayClientbound::BundleDelimiter).await;
             }
         }
     }
@@ -548,34 +585,48 @@ impl PlayerHandler {
     }
 }
 
-pub async fn handle_player(mut stream: TcpStream, player_info: PlayerInfo, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>) -> Result<(), ()> {
+pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>) -> Result<(), ()> {
+    let (packet_sender, mut packet_receiver) = mpsc_channel(100);
+    
     let mut handler = PlayerHandler {
         info: player_info,
         position: Position { x: 0.0, y: 60.0, z: 0.0 },
         yaw: 0.0,
         pitch: 0.0,
         on_ground: false,
+        packet_sender,
     };
+
+    let (mut reader_stream, mut writer_stream) = stream.into_split();
     
-    let mut receive_packet_fut = Box::pin(receive_packet(&mut stream).fuse());
+    let mut receive_packet_fut = Box::pin(receive_packet_split(&mut reader_stream).fuse());
+    let mut receive_clientbound_fut = Box::pin(packet_receiver.recv().fuse());
     let mut receive_server_message_fut = Box::pin(server_msg_rcvr.recv().fuse());
     loop {
         // Select the first event that happens
         enum Event {
-            Packet(Vec<u8>),
+            PacketServerbound(Vec<u8>),
+            PacketClientbound(Option<Vec<u8>>),
             Message(Result<ServerMessage, BroadcastRecvError>),
         }
         let event = futures::select! {
-            packet = receive_packet_fut => Event::Packet(packet),
+            packet_serverbound = receive_packet_fut => Event::PacketServerbound(packet_serverbound),
+            packet_clientbound = receive_clientbound_fut => Event::PacketClientbound(packet_clientbound),
             message = receive_server_message_fut => Event::Message(message),
         };
         match event {
-            Event::Packet(packet) => {
+            Event::PacketServerbound(packet) => {
                 drop(receive_packet_fut);
-                receive_packet_fut = Box::pin(receive_packet(&mut stream).fuse());
+                receive_packet_fut = Box::pin(receive_packet_split(&mut reader_stream).fuse());
 
                 let packet = PlayServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
                 handler.on_packet(packet).await;
+            },
+            Event::PacketClientbound(Some(packet)) => {
+                drop(receive_clientbound_fut);
+                receive_clientbound_fut = Box::pin(packet_receiver.recv().fuse());
+
+                send_packet_raw_split(&mut writer_stream, packet.as_slice()).await;
             },
             Event::Message(Ok(message)) => {
                 drop(receive_server_message_fut);
@@ -585,6 +636,10 @@ pub async fn handle_player(mut stream: TcpStream, player_info: PlayerInfo, mut s
             },
             Event::Message(Err(recv_error)) => {
                 error!("Failed to receive message: {recv_error:?}");
+                return Err(());
+            }
+            Event::PacketClientbound(None) => {
+                error!("Failed to receive clientbound packet");
                 return Err(());
             }
         }
