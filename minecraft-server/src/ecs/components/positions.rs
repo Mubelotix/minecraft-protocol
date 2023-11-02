@@ -1,13 +1,12 @@
-use minecraft_ecs_macros::is_component;
+use std::ops::{Deref, DerefMut};
 
 use crate::prelude::*;
 
-#[is_component]
+#[derive(Clone)]
 pub struct PositionComponent {
     position: Position,
 }
 
-/*
 impl Entities {
     pub async fn get_position(&self, id: Eid) -> Option<PositionComponent> {
         // we don't check if the entity has a position component because the hashmap will return None if the entity doesn't have it
@@ -66,16 +65,3 @@ impl PositionComponent {
         self.position.chunk()
     }
 }
-
-#[cfg(test)]
-mod tests {
-    
-    #[tokio::test]
-    async fn change_chunk() {
-        use super::tags::Tag;
-        let entities = crate::ecs::Entities::new();
-        entities.create_entity_with_tag(Tag::Player).await.unwrap();
-
-    }
-}
-*/

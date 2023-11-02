@@ -1,8 +1,7 @@
-pub mod components; // Compile before components so that we can use the components for the entities macro
 pub mod entities;
 pub mod tags;
-
-pub use components::*;
+pub mod components;
 
 pub use entities::*;
 pub use tags::*;
+pub use components::*;
