@@ -3,4 +3,5 @@ members = [
     "minecraft-protocol",
     "minecraft-protocol-derive",
     "minecraft-server",
+    "minecraft-server-derive",
 ]

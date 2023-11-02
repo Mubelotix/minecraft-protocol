@@ -27,6 +27,8 @@ pub use water_animal::*;
 mod squid;
 pub use squid::*;
 
+pub use minecraft_server_derive::inherit;
+
 pub use crate::prelude::*;
 pub use minecraft_protocol::{
     components::{
