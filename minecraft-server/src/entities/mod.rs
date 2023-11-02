@@ -30,6 +30,10 @@ mod interaction;
 pub use interaction::*;
 mod ageable_mob;
 pub use ageable_mob::*;
+mod animal;
+pub use animal::*;
+mod sniffer;
+pub use sniffer::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -59,6 +63,8 @@ pub enum AnyEntity {
     PathfinderMob(PathfinderMob),
     WaterAnimal(WaterAnimal),
     Squid(Squid),
+    Animal(Animal),
+    Sniffer(Sniffer),
 }
 
 #[allow(clippy::single_match)]
@@ -79,6 +85,7 @@ impl AnyEntity {
             AnyEntity::PathfinderMob(pathfinder_mob) => pathfinder_mob.get_entity(),
             AnyEntity::WaterAnimal(water_animal) => water_animal.get_entity(),
             AnyEntity::Squid(squid) => squid.get_entity(),
+            AnyEntity::AgeableMob(ageable_mob) => ageable_mob.get_entity(),
         }
     }
 
