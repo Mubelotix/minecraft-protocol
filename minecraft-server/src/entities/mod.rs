@@ -22,6 +22,8 @@ mod bat;
 pub use bat::*;
 mod pathfinder_mob;
 pub use pathfinder_mob::*;
+mod water_animal;
+pub use water_animal::*;
 
 pub use crate::prelude::*;
 pub use minecraft_protocol::{
@@ -47,6 +49,7 @@ pub enum AnyEntity {
     AmbientCreature(AmbientCreature),
     Bat(Bat),
     PathfinderMob(PathfinderMob),
+    WaterAnimal(WaterAnimal),
 }
 
 #[allow(clippy::single_match)]
@@ -65,6 +68,7 @@ impl AnyEntity {
             AnyEntity::AmbientCreature(ambient_creature) => ambient_creature.get_entity(),
             AnyEntity::Bat(bat) => bat.get_entity(),
             AnyEntity::PathfinderMob(pathfinder_mob) => pathfinder_mob.get_entity(),
+            AnyEntity::WaterAnimal(water_animal) => water_animal.get_entity(),
         }
     }
 
@@ -113,6 +117,24 @@ impl AnyEntity {
         match self {
             AnyEntity::AmbientCreature(ambient_creature) => Some(ambient_creature),
             AnyEntity::Bat(bat) => Some(&bat.ambient_creature),
+            _ => None,
+        }
+    }
+
+    pub fn as_pathfinder_mob(&self) -> Option<&PathfinderMob> {
+        match self {
+            AnyEntity::PathfinderMob(pathfinder_mob) => return Some(pathfinder_mob),
+            _ => (),
+        }
+        if let Some(water_animal) = self.as_water_animal() {
+            return Some(&water_animal.pathfinder_mob);
+        }
+        None
+    }
+
+    pub fn as_water_animal(&self) -> Option<&WaterAnimal> {
+        match self {
+            AnyEntity::WaterAnimal(water_animal) => Some(water_animal),
             _ => None,
         }
     }
