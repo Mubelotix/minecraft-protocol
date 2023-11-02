@@ -50,6 +50,14 @@ pub fn inherit(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut items = item.clone().into_iter();
     match items.next() {
         Some(TokenTree::Ident(ident)) if ident.to_string() == "pub" => (),
+        Some(TokenTree::Punct(punct)) if punct.as_char() == '#' => {
+            items.next();
+            match items.next() {
+                Some(TokenTree::Ident(ident)) if ident.to_string() == "pub" => (),
+                Some(other) => panic!("expected struct to be public, found {:?}", other),
+                None => panic!("expected public struct, found nothing"),
+            }
+        }
         Some(other) => panic!("expected struct to be public, found {:?}", other),
         None => panic!("expected public struct, found nothing"),
     }
@@ -122,10 +130,20 @@ pub fn inherit(attr: TokenStream, item: TokenStream) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn inheritable(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    println!("{:?}", item);
+
     // Get struct name
     let mut items = item.clone().into_iter();
     match items.next() {
         Some(TokenTree::Ident(ident)) if ident.to_string() == "pub" => (),
+        Some(TokenTree::Punct(punct)) if punct.as_char() == '#' => {
+            items.next();
+            match items.next() {
+                Some(TokenTree::Ident(ident)) if ident.to_string() == "pub" => (),
+                Some(other) => panic!("expected struct to be public, found {:?}", other),
+                None => panic!("expected public struct, found nothing"),
+            }
+        }
         Some(other) => panic!("expected struct to be public, found {:?}", other),
         None => panic!("expected public struct, found nothing"),
     }
