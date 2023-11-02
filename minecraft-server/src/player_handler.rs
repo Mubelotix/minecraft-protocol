@@ -2,7 +2,7 @@ use std::{net::SocketAddr, future::Future, collections::{HashMap, BTreeMap}};
 
 use futures::FutureExt;
 use minecraft_protocol::{MinecraftPacketPart, components::{gamemode::{Gamemode, PreviousGamemode}, difficulty::Difficulty, chunk::{Chunk, PalettedData, ChunkData}, entity::{EntityMetadata, EntityMetadataValue, EntityAttribute}, slots::Slot, chat::ChatMode, players::MainHand}, nbt::NbtTag};
-use tokio::{net::TcpStream, io::{AsyncReadExt, AsyncWriteExt}, sync::broadcast::Receiver};
+use tokio::{net::TcpStream, io::{AsyncReadExt, AsyncWriteExt}};
 
 use crate::prelude::*;
 
@@ -548,11 +548,11 @@ pub async fn handle_connection(
         },
         ConnectionState::Status => {
             status(&mut stream).await;
-            return Ok(());
+            Ok(())
         },
         _ => {
             error!("Unexpected next state: {next_state:?}");
-            return Err(());
+            Err(())
         }
     }
 }
