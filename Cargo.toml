@@ -4,3 +4,5 @@ members = [
     "minecraft-protocol-derive",
     "minecraft-server",
 ]
+
+workspace.resolver = "2"

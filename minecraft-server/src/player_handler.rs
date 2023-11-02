@@ -1,11 +1,12 @@
 use std::{net::SocketAddr, future::Future, collections::{HashMap, BTreeMap}};
 
-use minecraft_protocol::{MinecraftPacketPart, components::{gamemode::{Gamemode, PreviousGamemode}, difficulty::Difficulty, chunk::{Chunk, PalettedData, ChunkData}, entity::{EntityMetadata, EntityMetadataValue, EntityAttribute}, slots::Slot}, nbt::NbtTag};
+use futures::FutureExt;
+use minecraft_protocol::{MinecraftPacketPart, components::{gamemode::{Gamemode, PreviousGamemode}, difficulty::Difficulty, chunk::{Chunk, PalettedData, ChunkData}, entity::{EntityMetadata, EntityMetadataValue, EntityAttribute}, slots::Slot, chat::ChatMode, players::MainHand}, nbt::NbtTag};
 use tokio::{net::TcpStream, io::{AsyncReadExt, AsyncWriteExt}};
 
 use crate::prelude::*;
 
-pub type Task = Pin<Box<dyn Future<Output = ()> + Send + Sync + 'static>>;
+pub type Task = Pin<Box<dyn Future<Output = Result<(), ()>> + Send + Sync + 'static>>;
 
 pub async fn receive_packet(stream: &mut TcpStream) -> Vec<u8> {
     let mut length: Vec<u8> = Vec::with_capacity(2);
@@ -43,47 +44,6 @@ pub async fn send_packet<'a, P: MinecraftPacketPart<'a>>(stream: &mut TcpStream,
     send_packet_raw(stream, packet.as_slice()).await;
 }
 
-pub async fn login(stream: &mut TcpStream) {
-    // Receive login start
-    let packet = receive_packet(stream).await;
-    let packet = LoginServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
-    let LoginServerbound::LoginStart{ username, player_uuid } = packet else {
-        error!("Expected LoginStart packet, got: {packet:?}");
-        return;
-    };
-    debug!("LoginStart: {username}");
-
-    // TODO encryption
-
-    // TODO compression
-
-    // Send login success
-    let login_success = LoginClientbound::LoginSuccess {
-        uuid: player_uuid,
-        username,
-        properties: Array::default(),
-    };
-    send_packet(stream, login_success).await;
-    debug!("LoginSuccess sent");
-
-    // Receive login acknowledged
-    let packet = receive_packet(stream).await;
-    let packet = LoginServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
-    let LoginServerbound::LoginAcknowledged = packet else {
-        error!("Expected LoginAcknowledged packet, got: {packet:?}");
-        return;
-    };
-    debug!("LoginAcknowledged received");
-
-    // Ignore encryption response if any
-    let packet = receive_packet(stream).await;
-    if let Ok(LoginServerbound::EncryptionResponse { .. }) = LoginServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()) {
-        // Ignore for now (TODO)
-        //packet = receive_packet(stream).await;
-    }
-    debug!("EncryptionResponse ignored");    
-}
-
 pub async fn status(stream: &mut TcpStream) {
     loop {
         let packet = receive_packet(stream).await;
@@ -111,34 +71,81 @@ pub async fn status(stream: &mut TcpStream) {
     }
 }
 
-pub async fn handle_player(
-    mut stream: TcpStream,
-    addr: SocketAddr
-) {
-    // Receive handshake
-    let packet = receive_packet(&mut stream).await;
-    let HandshakeServerbound::Hello { protocol_version, server_address, server_port, next_state } = HandshakeServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
-    match next_state {
-        ConnectionState::Login => {
-            login(&mut stream).await;
-        },
-        ConnectionState::Status => {
-            status(&mut stream).await;
-            return;
-        },
-        _ => {
-            error!("Unexpected next state: {next_state:?}");
-            return;
-        }
-    };
+pub struct LoggedInPlayerInfo {
+    addr: SocketAddr,
+    username: String,
+    uuid: u128,
+}
 
-    // Receive client informations
+pub async fn login(stream: &mut TcpStream, addr: SocketAddr) -> Result<LoggedInPlayerInfo, ()> {
+    // Receive login start
+    let packet = receive_packet(stream).await;
+    let packet = LoginServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
+    let LoginServerbound::LoginStart{ username, player_uuid } = packet else {
+        error!("Expected LoginStart packet, got: {packet:?}");
+        return Err(());
+    };
+    debug!("LoginStart: {username}");
+
+    // TODO encryption
+
+    // TODO compression
+
+    // Send login success
+    let login_success = LoginClientbound::LoginSuccess {
+        uuid: player_uuid,
+        username,
+        properties: Array::default(),
+    };
+    send_packet(stream, login_success).await;
+    debug!("LoginSuccess sent");
+
+    // Receive login acknowledged
+    let packet = receive_packet(stream).await;
+    let packet = LoginServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
+    let LoginServerbound::LoginAcknowledged = packet else {
+        error!("Expected LoginAcknowledged packet, got: {packet:?}");
+        return Err(());
+    };
+    debug!("LoginAcknowledged received");
+
+    // Ignore encryption response if any
+    let packet = receive_packet(stream).await;
+    if let Ok(LoginServerbound::EncryptionResponse { .. }) = LoginServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()) {
+        // Ignore for now (TODO)
+        //packet = receive_packet(stream).await;
+    }
+    debug!("EncryptionResponse ignored");
+
+    Ok(LoggedInPlayerInfo {
+        addr,
+        username: username.to_owned(),
+        uuid: player_uuid,
+    })
+}
+
+pub struct PlayerInfo {
+    addr: SocketAddr,
+    username: String,
+    uuid: u128,
+    locale: String,
+    render_distance: usize,
+    chat_mode: ChatMode,
+    chat_colors: bool,
+    displayed_skin_parts: u8,
+    main_hand: MainHand,
+    enable_text_filtering: bool,
+    allow_server_listing: bool,
+}
+
+pub async fn handshake(mut stream: &mut TcpStream, logged_in_player_info: LoggedInPlayerInfo) -> Result<PlayerInfo, ()> {
+        // Receive client informations
     let packet = receive_packet(&mut stream).await;
     debug!("Packet received");
     let packet = ConfigServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
     let ConfigServerbound::ClientInformations { locale, render_distance, chat_mode, chat_colors, displayed_skin_parts, main_hand, enable_text_filtering, allow_server_listing } = packet else {
         error!("Expected ClientInformation packet, got: {packet:?}");
-        return;
+        return Err(());
     };
     debug!("ClientInformation received");
 
@@ -180,7 +187,7 @@ pub async fn handle_player(
     let packet = ConfigServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
     let ConfigServerbound::FinishConfiguration = packet else {
         error!("Expected FinishConfiguration packet, got: {packet:?}");
-        return;
+        return Err(());
     };
     debug!("FinishConfiguration received");
 
@@ -475,17 +482,59 @@ pub async fn handle_player(
     let packet = PlayServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
     let PlayServerbound::ChunkBatchReceived { chunks_per_tick } = packet else {
         error!("Expected ChunkBatchAcknoledgement packet, got: {packet:?}");
-        return;
+        return Err(());
     };
     debug!("ChunkBatchAcknoledgement received");
 
+    Ok(PlayerInfo {
+        addr: logged_in_player_info.addr,
+        username: logged_in_player_info.username,
+        uuid: logged_in_player_info.uuid,
+        locale: locale.to_owned(),
+        render_distance: render_distance.try_into().unwrap_or(5),
+        chat_mode,
+        chat_colors,
+        displayed_skin_parts,
+        main_hand,
+        enable_text_filtering,
+        allow_server_listing,
+    })
+}
+
+pub async fn handle_player(mut stream: TcpStream, addr: SocketAddr) -> Result<(), ()> {
+    
+    let mut receive_packet_fut = Box::pin(receive_packet(&mut stream).fuse());
     loop {
-        let bundle_delimiter = PlayClientbound::BundleDelimiter;
-        send_packet(&mut stream, bundle_delimiter).await;
-        debug!("BundleDelimiter sent");
-
-        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        let event = futures::select! { packet = receive_packet_fut => packet };
+        match event {
+            packet => {
+                drop(receive_packet_fut);
+                receive_packet_fut = Box::pin(receive_packet(&mut stream).fuse());
+            }
+        }
     }
+}
 
-    //let login_start: LoginStart = receive_packet(&mut stream).await;
+pub async fn handle_connection(
+    mut stream: TcpStream,
+    addr: SocketAddr
+) -> Result<(), ()> {
+    // Receive handshake
+    let packet = receive_packet(&mut stream).await;
+    let HandshakeServerbound::Hello { protocol_version, server_address, server_port, next_state } = HandshakeServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
+    match next_state {
+        ConnectionState::Login => {
+            let player_info = login(&mut stream, addr).await?;
+            let player_info = handshake(&mut stream, player_info).await?;
+            Ok(())
+        },
+        ConnectionState::Status => {
+            status(&mut stream).await;
+            return Ok(());
+        },
+        _ => {
+            error!("Unexpected next state: {next_state:?}");
+            return Err(());
+        }
+    }
 }

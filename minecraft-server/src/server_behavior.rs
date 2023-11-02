@@ -27,7 +27,7 @@ impl ServerBehavior {
                     warn!("Server is full and failed to accept new player");
                 } else {
                     debug!("Accepted connection from: {addr}");
-                    self.player_handlers.push(Box::pin(handle_player(stream, addr)));
+                    self.player_handlers.push(Box::pin(handle_connection(stream, addr)));
                 }
             }
             Ready(Err(e)) => error!("Failed to accept connection: {e}"),
@@ -37,7 +37,7 @@ impl ServerBehavior {
         for i in (0..self.player_handlers.len()).rev() {
             let handler = &mut self.player_handlers[i];
             match handler.as_mut().poll(cx) {
-                Ready(()) => {
+                Ready(_) => {
                     debug!("Player handler finished");
                     self.player_handlers.swap_remove(i);
                 }
