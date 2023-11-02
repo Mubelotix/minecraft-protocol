@@ -4,6 +4,8 @@ mod position;
 mod player_handler;
 mod server_behavior;
 mod prelude;
+mod ecs;
+
 
 use std::env;
 
