@@ -258,6 +258,7 @@ mod tests {
             chunk.set_block(BlockPositionInChunk { bx, by: 0, bz: 0 }, BlockWithState::from_state_id(id).unwrap());
             id += 1;
         }
+        assert!(!chunk.palette_block_counts.is_empty());
         let mut id = 1;
         for bx in 0..16 {
             let got = chunk.get_block(BlockPositionInChunk { bx, by: 0, bz: 0 }).unwrap().block_state_id().unwrap();
@@ -280,6 +281,7 @@ mod tests {
                 }
             }
         }
+        assert!(chunk.palette_block_counts.is_empty());
         let mut id = 1;
         for bx in 0..16 {
             for by in 0..16 {
