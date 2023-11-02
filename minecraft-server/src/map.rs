@@ -57,7 +57,7 @@ impl Chunk {
     fn get_block(&self, position: BlockPositionInChunk) -> BlockWithState {
         match &self.data.blocks {
             PalettedData::Paletted { palette, indexed } => {
-                let data_position = position.by * 16 * 16 + position.bz * 16 + position.bx;
+                let data_position = position.by as usize * 16 * 16 + position.bz as usize * 16 + position.bx as usize;
                 let palette_position = indexed[data_position as usize];
                 let block_state_id = palette[palette_position as usize];
                 BlockWithState::from_state_id(block_state_id)
@@ -66,7 +66,7 @@ impl Chunk {
                 BlockWithState::from_state_id(*value)
             }
             PalettedData::Raw { values } => {
-                let data_position = position.by * 16 * 16 + position.bz * 16 + position.bx;
+                let data_position = position.by as usize * 16 * 16 + position.bz as usize * 16 + position.bx as usize;
                 let block_state_id = values[data_position as usize];
                 BlockWithState::from_state_id(block_state_id)
             }
@@ -80,7 +80,7 @@ impl Chunk {
         });
         match &mut self.data.blocks {
             PalettedData::Paletted { palette, indexed } => {
-                let data_position = (position.by * 16 * 16 + position.bz * 16 + position.bx) as usize;
+                let data_position = position.by as usize * 16 * 16 + position.bz as usize * 16 + position.bx as usize;
 
                 // Decrease count of previous block
                 let prev_palette_index = indexed[data_position] as usize;
@@ -156,13 +156,13 @@ impl Chunk {
                 // Turn to paletted values
                 let palette = vec![*value, block_state_id];
                 let mut indexed = vec![0; 4096];
-                let data_position = (position.by * 16 * 16 + position.bz * 16 + position.bx) as usize;
+                let data_position = position.by as usize * 16 * 16 + position.bz as usize * 16 + position.bx as usize;
                 indexed[data_position] = 1;
                 self.data.blocks = PalettedData::Paletted { palette, indexed };
                 self.palette_block_counts = vec![4095, 1];
             }
             PalettedData::Raw { values } => {
-                let data_position = (position.by * 16 * 16 + position.bz * 16 + position.bx) as usize;
+                let data_position = position.by as usize * 16 * 16 + position.bz as usize * 16 + position.bx as usize;
                 values[data_position] = block_state_id;
             }
         }
@@ -202,7 +202,7 @@ impl ChunkColumn {
     fn get_block(&self, position: BlockPositionInChunkColumn) -> BlockWithState {
         fn get_block_inner(s: &ChunkColumn, position: BlockPositionInChunkColumn) -> Option<BlockWithState> {
             let cy = position.cy();
-            let cy_in_vec: usize = cy.checked_sub(4)?.try_into().ok()?;
+            let cy_in_vec: usize = cy.saturating_add(4).try_into().ok()?;
             let position = position.in_chunk();
             let chunk = s.chunks.get(cy_in_vec)?;
             Some(chunk.get_block(position))
@@ -213,7 +213,7 @@ impl ChunkColumn {
     fn set_block(&mut self, position: BlockPositionInChunkColumn, block: BlockWithState) {
         fn set_block_innter(s: &mut ChunkColumn, position: BlockPositionInChunkColumn, block: BlockWithState) -> Option<()> {
             let cy = position.cy();
-            let cy_in_vec: usize = cy.checked_sub(4)?.try_into().ok()?;
+            let cy_in_vec: usize = cy.saturating_add(4).try_into().ok()?;
             let position = position.in_chunk();
             let chunk = s.chunks.get_mut(cy_in_vec)?;
             chunk.set_block(position, block);
@@ -344,5 +344,23 @@ mod tests {
             chunk.set_block(BlockPositionInChunk { bx, by: 0, bz: 0 }, BlockWithState::Air);
         }
         assert_eq!(chunk.palette_block_counts.len(), 0);
+    }
+
+    #[test]
+    fn test_chunk_column() {
+        let mut flat_column = ChunkColumn::flat();
+
+        let low_block = flat_column.get_block(BlockPositionInChunkColumn { bx: 0, y: -55, bz: 0 });
+        assert_eq!(low_block.block_state_id().unwrap(), BlockWithState::GrassBlock { snowy: false }.block_state_id().unwrap());
+
+        flat_column.set_block(BlockPositionInChunkColumn { bx: 0, y: -55, bz: 0 }, BlockWithState::Air);
+        let low_block = flat_column.get_block(BlockPositionInChunkColumn { bx: 0, y: -55, bz: 0 });
+        assert_eq!(low_block.block_state_id().unwrap(), BlockWithState::Air.block_state_id().unwrap());
+
+        let too_low_block = flat_column.get_block(BlockPositionInChunkColumn { bx: 0, y: -65, bz: 0 });
+        assert_eq!(too_low_block.block_state_id().unwrap(), BlockWithState::Air.block_state_id().unwrap());
+
+        let high_block = flat_column.get_block(BlockPositionInChunkColumn { bx: 0, y: 120, bz: 0 });
+        assert_eq!(high_block.block_state_id().unwrap(), BlockWithState::Air.block_state_id().unwrap());
     }
 }
