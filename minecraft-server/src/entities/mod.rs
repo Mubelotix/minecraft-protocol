@@ -36,6 +36,8 @@ mod sniffer;
 pub use sniffer::*;
 mod abstract_horse;
 pub use abstract_horse::*;
+mod display;
+pub use display::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
