@@ -21,3 +21,9 @@ impl Default for Llama {
         }
     }
 }
+
+#[derive(Default)]
+#[inherit(Llama, ChestedHorse, AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity)]
+pub struct TraderLlama {
+    pub llama: Llama,
+}

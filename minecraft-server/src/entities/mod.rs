@@ -94,6 +94,7 @@ pub enum AnyEntity {
     ChestedHorse(ChestedHorse),
     Donkey(Donkey),
     Llama(Llama),
+    TraderLlama(TraderLlama),
 }
 
 #[allow(clippy::single_match)]
@@ -136,6 +137,7 @@ impl AnyEntity {
             AnyEntity::ChestedHorse(chested_horse) => chested_horse.get_entity(),
             AnyEntity::Donkey(donkey) => donkey.get_entity(),
             AnyEntity::Llama(llama) => llama.get_entity(),
+            AnyEntity::TraderLlama(trader_llama) => trader_llama.get_entity(),
         }
     }
 
