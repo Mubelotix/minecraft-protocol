@@ -86,6 +86,8 @@ mod villagers;
 pub use villagers::*;
 mod golemns;
 pub use golemns::*;
+mod shulker;
+pub use shulker::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -164,6 +166,7 @@ pub enum AnyEntity {
     AbstractGolem(AbstractGolem),
     IronGolem(IronGolem),
     SnowGolem(SnowGolem),
+    Shulker(Shulker),
 }
 
 #[allow(clippy::single_match)]
@@ -234,6 +237,7 @@ impl AnyEntity {
             AnyEntity::AbstractGolem(abstract_golem) => abstract_golem.get_entity(),
             AnyEntity::IronGolem(iron_golem) => iron_golem.get_entity(),
             AnyEntity::SnowGolem(snow_golem) => snow_golem.get_entity(),
+            AnyEntity::Shulker(shulker) => shulker.get_entity(),
         }
     }
 
