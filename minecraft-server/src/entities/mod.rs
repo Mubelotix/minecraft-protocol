@@ -134,6 +134,7 @@ pub enum AnyEntity {
     ElderGuardian(ElderGuardian),
     Silverfish(Silverfish),
     Raider(Raider),
+    AbstractIllager(AbstractIllager),
 }
 
 #[allow(clippy::single_match)]
@@ -218,6 +219,7 @@ impl AnyEntity {
             AnyEntity::ElderGuardian(elder_guardian) => elder_guardian.get_entity(),
             AnyEntity::Silverfish(silverfish) => silverfish.get_entity(),
             AnyEntity::Raider(raider) => raider.get_entity(),
+            AnyEntity::AbstractIllager(abstract_illager) => abstract_illager.get_entity(),
         }
     }
 
