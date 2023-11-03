@@ -40,6 +40,8 @@ mod display;
 pub use display::*;
 mod zombie_horse;
 pub use zombie_horse::*;
+mod horse;
+pub use horse::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -83,6 +85,7 @@ pub enum AnyEntity {
     Animal(Animal),
     Sniffer(Sniffer),
     AbstractHorse(AbstractHorse),
+    Horse(Horse),
     ZombieHorse(ZombieHorse),
 }
 
@@ -120,6 +123,7 @@ impl AnyEntity {
             AnyEntity::Sniffer(sniffer) => sniffer.get_entity(),
             AnyEntity::AbstractHorse(abstract_horse) => abstract_horse.get_entity(),
             AnyEntity::ZombieHorse(zombie_horse) => zombie_horse.get_entity(),
+            AnyEntity::Horse(horse) => horse.get_entity(),
         }
     }
 
