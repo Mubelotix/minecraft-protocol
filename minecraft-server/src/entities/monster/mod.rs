@@ -6,6 +6,8 @@ mod piglin;
 pub use piglin::*;
 mod blaze;
 pub use blaze::*;
+mod creeper;
+pub use creeper::*;
 
 #[derive(Default)]
 #[inheritable]

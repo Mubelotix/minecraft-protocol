@@ -174,6 +174,7 @@ pub enum AnyEntity {
     Piglin(Piglin),
     PiglinBrute(PiglinBrute),
     Blaze(Blaze),
+    Creeper(Creeper),
 }
 
 #[allow(clippy::single_match)]
@@ -250,6 +251,7 @@ impl AnyEntity {
             AnyEntity::Piglin(piglin) => piglin.get_entity(),
             AnyEntity::PiglinBrute(piglin_brute) => piglin_brute.get_entity(),
             AnyEntity::Blaze(blaze) => blaze.get_entity(),
+            AnyEntity::Creeper(creeper) => creeper.get_entity(),
         }
     }
 
