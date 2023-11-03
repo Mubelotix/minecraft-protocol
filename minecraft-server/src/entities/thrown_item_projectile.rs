@@ -95,3 +95,23 @@ impl Default for ThrownPotion {
         }
     }
 }
+
+#[inherit(ThrownItemProjectile, Entity)]
+pub struct Snowball {
+    pub thrown_item_projectile: ThrownItemProjectile,
+}
+
+impl Default for Snowball {
+    fn default() -> Self {
+        Snowball {
+            thrown_item_projectile: ThrownItemProjectile {
+                entity: Entity::default(),
+                item: Slot {item: Some(SlotItem {
+                    item_id: Item::Snowball,
+                    item_count: 1,
+                    nbt_data: NbtTag::Null
+                })},
+            }
+        }
+    }
+}
