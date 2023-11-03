@@ -49,3 +49,18 @@ impl Default for Display {
         }
     }
 }
+
+#[inherit(Display, Entity)]
+pub struct BlockDisplay {
+    display: Display,
+    block: BlockWithState,
+}
+
+impl Default for BlockDisplay {
+    fn default() -> Self {
+        Self {
+            display: Display::default(),
+            block: BlockWithState::Air,
+        }
+    }
+}

@@ -47,7 +47,7 @@ pub use minecraft_protocol::{
         entity::Pose,
         slots::{Slot, SlotItem, Hand}
     },
-    ids::items::Item,
+    ids::{items::Item, block_states::BlockWithState},
     nbt::NbtTag
 };
 
