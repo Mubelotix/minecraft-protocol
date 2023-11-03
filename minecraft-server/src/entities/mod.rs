@@ -67,6 +67,7 @@ pub enum AnyEntity {
     PathfinderMob(PathfinderMob),
     WaterAnimal(WaterAnimal),
     Squid(Squid),
+    AgeableMob(AgeableMob),
     Animal(Animal),
     Sniffer(Sniffer),
     AbstractHorse(AbstractHorse),
