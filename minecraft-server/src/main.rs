@@ -5,9 +5,9 @@ mod player_handler;
 mod server_behavior;
 mod prelude;
 mod entities;
+mod ecs;
 
 use std::env;
-
 use crate::prelude::*;
 
 struct Map {

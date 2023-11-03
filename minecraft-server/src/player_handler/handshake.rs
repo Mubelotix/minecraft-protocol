@@ -1,144 +1,27 @@
-use std::{net::SocketAddr, future::Future, collections::{HashMap, BTreeMap}};
+use super::*;
 
-use minecraft_protocol::{MinecraftPacketPart, components::{gamemode::{Gamemode, PreviousGamemode}, difficulty::Difficulty, chunk::{Chunk, PalettedData, ChunkData}, entity::{EntityMetadata, EntityMetadataValue, EntityAttribute}, slots::Slot}, nbt::NbtTag};
-use tokio::{net::TcpStream, io::{AsyncReadExt, AsyncWriteExt}};
-
-use crate::prelude::*;
-
-pub type Task = Pin<Box<dyn Future<Output = ()> + Send + Sync + 'static>>;
-
-pub async fn receive_packet(stream: &mut TcpStream) -> Vec<u8> {
-    let mut length: Vec<u8> = Vec::with_capacity(2);
-
-    loop {
-        if length.len() >= 5 {
-            //return Err("length too long".into());
-        }
-        let mut byte = [0];
-        stream.read_exact(&mut byte).await.unwrap();
-        length.push(byte[0]);
-        if byte[0] < 0b1000_0000 {
-            break;
-        }
-    }
-
-    let length = VarInt::deserialize_uncompressed_minecraft_packet(length.as_mut_slice()).unwrap();
-
-    let mut data = Vec::with_capacity(length.0 as usize);
-    unsafe { data.set_len(length.0 as usize); }
-    stream.read_exact(&mut data).await.unwrap();
-
-    data
+pub struct PlayerInfo {
+    pub(super) addr: SocketAddr,
+    pub(super) username: String,
+    pub(super) uuid: u128,
+    pub(super) locale: String,
+    pub(super) render_distance: usize,
+    pub(super) chat_mode: ChatMode,
+    pub(super) chat_colors: bool,
+    pub(super) displayed_skin_parts: u8,
+    pub(super) main_hand: MainHand,
+    pub(super) enable_text_filtering: bool,
+    pub(super) allow_server_listing: bool,
 }
 
-pub async fn send_packet_raw(stream: &mut TcpStream, packet: &[u8]) {
-    let length = VarInt::from(packet.len());
-    stream.write_all(length.serialize_minecraft_packet().unwrap().as_slice()).await.unwrap();
-    stream.write_all(packet).await.unwrap();
-    stream.flush().await.unwrap();
-}
-
-pub async fn send_packet<'a, P: MinecraftPacketPart<'a>>(stream: &mut TcpStream, packet: P) {
-    let packet = packet.serialize_minecraft_packet().unwrap();
-    send_packet_raw(stream, packet.as_slice()).await;
-}
-
-pub async fn login(stream: &mut TcpStream) {
-    // Receive login start
-    let packet = receive_packet(stream).await;
-    let packet = LoginServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
-    let LoginServerbound::LoginStart{ username, player_uuid } = packet else {
-        error!("Expected LoginStart packet, got: {packet:?}");
-        return;
-    };
-    debug!("LoginStart: {username}");
-
-    // TODO encryption
-
-    // TODO compression
-
-    // Send login success
-    let login_success = LoginClientbound::LoginSuccess {
-        uuid: player_uuid,
-        username,
-        properties: Array::default(),
-    };
-    send_packet(stream, login_success).await;
-    debug!("LoginSuccess sent");
-
-    // Receive login acknowledged
-    let packet = receive_packet(stream).await;
-    let packet = LoginServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
-    let LoginServerbound::LoginAcknowledged = packet else {
-        error!("Expected LoginAcknowledged packet, got: {packet:?}");
-        return;
-    };
-    debug!("LoginAcknowledged received");
-
-    // Ignore encryption response if any
-    let packet = receive_packet(stream).await;
-    if let Ok(LoginServerbound::EncryptionResponse { .. }) = LoginServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()) {
-        // Ignore for now (TODO)
-        //packet = receive_packet(stream).await;
-    }
-    debug!("EncryptionResponse ignored");    
-}
-
-pub async fn status(stream: &mut TcpStream) {
-    loop {
-        let packet = receive_packet(stream).await;
-        match StatusServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap() {
-            StatusServerbound::Request => {
-                let response = StatusClientbound::Response {
-                    json_response: include_str!("raw/status_response.json")
-                };
-                send_packet(stream, response).await;    
-                debug!("StatusResponse sent");                
-            },
-            StatusServerbound::Ping { payload } => {
-                warn!("Ping received");
-                let pong = StatusClientbound::Pong {
-                    payload
-                };
-                send_packet(stream, pong).await;
-                debug!("Pong sent");
-                return;
-            },
-            _ => {
-                debug!("Unexpected packet: {packet:?}");
-            }
-        };    
-    }
-}
-
-pub async fn handle_player(
-    mut stream: TcpStream,
-    addr: SocketAddr
-) {
-    // Receive handshake
-    let packet = receive_packet(&mut stream).await;
-    let HandshakeServerbound::Hello { protocol_version, server_address, server_port, next_state } = HandshakeServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
-    match next_state {
-        ConnectionState::Login => {
-            login(&mut stream).await;
-        },
-        ConnectionState::Status => {
-            status(&mut stream).await;
-            return;
-        },
-        _ => {
-            error!("Unexpected next state: {next_state:?}");
-            return;
-        }
-    };
-
+pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPlayerInfo) -> Result<PlayerInfo, ()> {
     // Receive client informations
-    let packet = receive_packet(&mut stream).await;
+    let packet = receive_packet(stream).await;
     debug!("Packet received");
     let packet = ConfigServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
     let ConfigServerbound::ClientInformations { locale, render_distance, chat_mode, chat_colors, displayed_skin_parts, main_hand, enable_text_filtering, allow_server_listing } = packet else {
         error!("Expected ClientInformation packet, got: {packet:?}");
-        return;
+        return Err(());
     };
     debug!("ClientInformation received");
 
@@ -149,38 +32,38 @@ pub async fn handle_player(
             data: &[6, 83, 112, 105, 103, 111, 116]
         },
     };
-    send_packet(&mut stream, server_agent).await;
+    send_packet(stream, server_agent).await;
     debug!("PluginMessage sent");
 
     // Send feature flags
     let feature_flags = ConfigClientbound::FeatureFlags {
         features: Array::from(vec!["minecraft:vanilla"]),
     };
-    send_packet(&mut stream, feature_flags).await;
+    send_packet(stream, feature_flags).await;
     debug!("FeatureFlags sent");
 
     // Send registry data
-    send_packet_raw(&mut stream, include_bytes!("raw/registry_codec.mc_packet")).await;
+    send_packet_raw(stream, include_bytes!("../raw/registry_codec.mc_packet")).await;
     debug!("RegistryData sent");
 
     // Update tags
     let update_tags = ConfigClientbound::UpdateTags {
         tags: Map::default(),
     };
-    send_packet(&mut stream, update_tags).await;
+    send_packet(stream, update_tags).await;
     debug!("UpdateTags sent");
 
     // Send finish configuration
     let finish_configuration = ConfigClientbound::FinishConfiguration;
-    send_packet(&mut stream, finish_configuration).await;
+    send_packet(stream, finish_configuration).await;
     debug!("FinishConfiguration sent");
 
     // Receive finish configuration
-    let packet = receive_packet(&mut stream).await;
+    let packet = receive_packet(stream).await;
     let packet = ConfigServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
     let ConfigServerbound::FinishConfiguration = packet else {
         error!("Expected FinishConfiguration packet, got: {packet:?}");
-        return;
+        return Err(());
     };
     debug!("FinishConfiguration received");
 
@@ -206,7 +89,7 @@ pub async fn handle_player(
         death_location: None,
         portal_cooldown: VarInt::from(0),
     };
-    send_packet(&mut stream, join_game).await;
+    send_packet(stream, join_game).await;
     debug!("JoinGame sent");
 
     // Set difficulty
@@ -214,7 +97,7 @@ pub async fn handle_player(
         difficulty: Difficulty::Normal,
         difficulty_locked: false
     };
-    send_packet(&mut stream, change_difficulty).await;
+    send_packet(stream, change_difficulty).await;
     debug!("ChangeDifficulty sent");
 
     // Set player abilities
@@ -223,14 +106,14 @@ pub async fn handle_player(
         flying_speed: 0.05,
         field_of_view_modifier: 0.1
     };
-    send_packet(&mut stream, change_player_abilities).await;
+    send_packet(stream, change_player_abilities).await;
     debug!("PlayerAbilities sent");
 
     // Set held item
     let held_item_change = PlayClientbound::SetHeldItem {
         slot: 0 // TODO should be the same as when disconnected
     };
-    send_packet(&mut stream, held_item_change).await;
+    send_packet(stream, held_item_change).await;
     debug!("SetHeldItem sent");
 
     // Update recipes
@@ -239,7 +122,7 @@ pub async fn handle_player(
             data: &[0]
         }
     };
-    send_packet(&mut stream, update_recipes).await;
+    send_packet(stream, update_recipes).await;
     debug!("UpdateRecipes sent");
 
     // Entity event
@@ -247,7 +130,7 @@ pub async fn handle_player(
         entity_id: player_id as i32,
         entity_status: 28
     };
-    send_packet(&mut stream, entity_event).await;
+    send_packet(stream, entity_event).await;
     debug!("EntityEvent sent");
 
     // Declare commands
@@ -257,7 +140,7 @@ pub async fn handle_player(
             data: &[0]
         }
     };
-    send_packet(&mut stream, declare_commands).await;
+    send_packet(stream, declare_commands).await;
     debug!("DeclareCommands sent");
 
     // Unlock recipes
@@ -275,7 +158,7 @@ pub async fn handle_player(
             added_recipes: Array::default()
         }
     };
-    send_packet(&mut stream, unlock_recipes).await;
+    send_packet(stream, unlock_recipes).await;
     debug!("UnlockRecipes sent");
 
     // Spawn player
@@ -288,7 +171,7 @@ pub async fn handle_player(
         flags: 0,
         teleport_id: VarInt(1),
     };
-    send_packet(&mut stream, player_position).await;
+    send_packet(stream, player_position).await;
     debug!("PlayerPositionAndLook sent");
 
     // Send server metadata
@@ -297,7 +180,7 @@ pub async fn handle_player(
         icon: None,
         enforces_secure_chat: false,
     };
-    send_packet(&mut stream, server_data).await;
+    send_packet(stream, server_data).await;
     debug!("ServerData sent");
 
     // Spawn message
@@ -305,7 +188,7 @@ pub async fn handle_player(
         content: "{\"text\":\"Hello world\"}",
         overlay: false,
     };
-    send_packet(&mut stream, spawn_message).await;
+    send_packet(stream, spawn_message).await;
     debug!("SystemChatMessage sent");
 
     // TODO: update players info (x2)
@@ -319,7 +202,7 @@ pub async fn handle_player(
         entity_id: VarInt::from(player_id),
         metadata: EntityMetadata { items: entity_metadata.clone() }
     };
-    send_packet(&mut stream, set_entity_metadata).await;
+    send_packet(stream, set_entity_metadata).await;
     debug!("SetEntityMetadata sent");
 
     // Initialize world border
@@ -333,7 +216,7 @@ pub async fn handle_player(
         warning_blocks: VarInt(5),
         warning_time: VarInt(15),
     };
-    send_packet(&mut stream, world_border_init).await;
+    send_packet(stream, world_border_init).await;
     debug!("InitializeWorldBorder sent");
 
     // Update time
@@ -341,7 +224,7 @@ pub async fn handle_player(
         world_age: 0,
         time_of_day: 0,
     };
-    send_packet(&mut stream, time_update).await;
+    send_packet(stream, time_update).await;
     debug!("UpdateTime sent");
 
     // Set spawn position
@@ -349,7 +232,7 @@ pub async fn handle_player(
         location: minecraft_protocol::packets::Position { x: 0, y: 70, z: 0 },
         angle: 0.0,
     };
-    send_packet(&mut stream, set_spawn_position).await;
+    send_packet(stream, set_spawn_position).await;
     debug!("SetSpawnPosition sent");
 
     // Set center chunk
@@ -357,7 +240,7 @@ pub async fn handle_player(
         chunk_x: VarInt(0), // TODO: should be the same as when disconnected
         chunk_z: VarInt(0), // TODO: should be the same as when disconnected
     };
-    send_packet(&mut stream, set_center_chunk).await;
+    send_packet(stream, set_center_chunk).await;
     debug!("SetCenterChunk sent");
 
     // Set inventory
@@ -367,7 +250,7 @@ pub async fn handle_player(
         slots: Array::default(),
         carried_item: Slot { item: None }
     };
-    send_packet(&mut stream, set_container_content).await;
+    send_packet(stream, set_container_content).await;
     debug!("SetContainerContent sent");
 
     // Set entity metadata (again)
@@ -375,7 +258,7 @@ pub async fn handle_player(
         entity_id: VarInt::from(player_id),
         metadata: EntityMetadata { items: entity_metadata }
     };
-    send_packet(&mut stream, set_entity_metadata).await;
+    send_packet(stream, set_entity_metadata).await;
     debug!("SetEntityMetadata sent");
 
     // Update entity attributes
@@ -387,7 +270,7 @@ pub async fn handle_player(
         entity_id: VarInt::from(player_id),
         attributes: Map::from(entity_attributes)
     };
-    send_packet(&mut stream, update_entity_attributes).await;
+    send_packet(stream, update_entity_attributes).await;
     debug!("UpdateEntityAttributes sent");
 
     // Update advancements
@@ -397,7 +280,7 @@ pub async fn handle_player(
         advancements_to_remove: Array::default(),
         progress_mapping: Map::default(),
     };
-    send_packet(&mut stream, update_advancements).await;
+    send_packet(stream, update_advancements).await;
     debug!("UpdateAdvancements sent");
 
     // Set health
@@ -406,7 +289,7 @@ pub async fn handle_player(
         food: VarInt(20),
         food_saturation: 5.0,
     };
-    send_packet(&mut stream, set_health).await;
+    send_packet(stream, set_health).await;
     debug!("UpdateHealth sent");
 
     // Set experience
@@ -415,12 +298,12 @@ pub async fn handle_player(
         experience_bar: 0.0,
         total_experience: VarInt(0),
     };
-    send_packet(&mut stream, set_experience).await;
+    send_packet(stream, set_experience).await;
     debug!("SetExperience sent");
 
     // Chunk batch start
     let chunk_data = PlayClientbound::ChunkBatchStart;
-    send_packet(&mut stream, chunk_data).await;
+    send_packet(stream, chunk_data).await;
     debug!("ChunkBatchStart sent");
 
     let empty_chunk = Chunk {
@@ -460,32 +343,36 @@ pub async fn handle_player(
                     block_light: Array::default(),
                 }
             };
-            send_packet(&mut stream, chunk_data).await;
+            send_packet(stream, chunk_data).await;
         }
     }
     debug!("ChunkData sent");
 
     // Chunk batch end
     let chunk_data = PlayClientbound::ChunkBatchFinished { batch_size: VarInt(49) };
-    send_packet(&mut stream, chunk_data).await;
+    send_packet(stream, chunk_data).await;
     debug!("ChunkBatchFinished sent");
 
     // Get chunk batch acknoledgement
-    let packet = receive_packet(&mut stream).await;
+    let packet = receive_packet(stream).await;
     let packet = PlayServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
     let PlayServerbound::ChunkBatchReceived { chunks_per_tick } = packet else {
         error!("Expected ChunkBatchAcknoledgement packet, got: {packet:?}");
-        return;
+        return Err(());
     };
     debug!("ChunkBatchAcknoledgement received");
 
-    loop {
-        let bundle_delimiter = PlayClientbound::BundleDelimiter;
-        send_packet(&mut stream, bundle_delimiter).await;
-        debug!("BundleDelimiter sent");
-
-        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
-    }
-
-    //let login_start: LoginStart = receive_packet(&mut stream).await;
+    Ok(PlayerInfo {
+        addr: logged_in_player_info.addr,
+        username: logged_in_player_info.username,
+        uuid: logged_in_player_info.uuid,
+        locale: locale.to_owned(),
+        render_distance: render_distance.try_into().unwrap_or(5),
+        chat_mode,
+        chat_colors,
+        displayed_skin_parts,
+        main_hand,
+        enable_text_filtering,
+        allow_server_listing,
+    })
 }

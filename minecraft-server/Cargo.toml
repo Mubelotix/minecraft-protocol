@@ -9,5 +9,7 @@ edition = "2021"
 env_logger = "0.10.0"
 log = "0.4.20"
 tokio = { version = "1.33.0", features = ["full"] }
+futures = "0.3.29"
 minecraft-protocol = { path="../minecraft-protocol" }
 minecraft-server-derive = { path="../minecraft-server-derive" }
+tags-macros = { path = "../tags-macros"}
