@@ -1,6 +1,5 @@
 use super::*;
 
-#[derive(Default)]
 #[inherit(TameableAnimal, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity)]
 pub struct Cat {
     pub tameable_animal: TameableAnimal,
