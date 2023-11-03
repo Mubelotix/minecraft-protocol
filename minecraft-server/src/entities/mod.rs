@@ -62,6 +62,8 @@ mod rabbit;
 pub use rabbit::*;
 mod turtle;
 pub use turtle::*;
+mod polar_bear;
+pub use polar_bear::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -123,6 +125,7 @@ pub enum AnyEntity {
     Pig(Pig),
     Rabbit(Rabbit),
     Turtle(Turtle),
+    PolarBear(PolarBear),
 }
 
 #[allow(clippy::single_match)]
@@ -176,6 +179,7 @@ impl AnyEntity {
             AnyEntity::Pig(pig) => pig.get_entity(),
             AnyEntity::Rabbit(rabbit) => rabbit.get_entity(),
             AnyEntity::Turtle(turtle) => turtle.get_entity(),
+            AnyEntity::PolarBear(polar_bear) => polar_bear.get_entity(),
         }
     }
 
