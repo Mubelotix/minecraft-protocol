@@ -4,5 +4,5 @@ use super::*;
 #[inheritable]
 #[inherit(Monster, PathfinderMob, Mob, LivingEntity, Entity)]
 pub struct Silverfish {
-    pub silverfish: Silverfish,
+    pub monster: Monster,
 }
