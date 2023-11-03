@@ -18,3 +18,11 @@ pub struct ZombieHorse {
 pub struct SkeletonHorse {
     pub abstract_horse: AbstractHorse,
 }
+
+#[derive(Default)]
+#[inherit(AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity)]
+pub struct Camel {
+    pub abstract_horse: AbstractHorse,
+    pub is_dashing: bool,
+    pub last_pose_change_tick: usize,
+}

@@ -86,6 +86,7 @@ pub enum AnyEntity {
     Horse(Horse),
     ZombieHorse(ZombieHorse),
     SkeletonHorse(SkeletonHorse),
+    Camel(Camel),
 }
 
 #[allow(clippy::single_match)]
@@ -124,6 +125,7 @@ impl AnyEntity {
             AnyEntity::ZombieHorse(zombie_horse) => zombie_horse.get_entity(),
             AnyEntity::Horse(horse) => horse.get_entity(),
             AnyEntity::SkeletonHorse(skeleton_horse) => skeleton_horse.get_entity(),
+            AnyEntity::Camel(camel) => camel.get_entity(),
         }
     }
 
