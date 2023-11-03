@@ -68,6 +68,8 @@ mod chicken;
 pub use chicken::*;
 mod cow;
 pub use cow::*;
+mod hoglin;
+pub use hoglin::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -132,6 +134,7 @@ pub enum AnyEntity {
     PolarBear(PolarBear),
     Chicken(Chicken),
     Cow(Cow),
+    Hoglin(Hoglin),
 }
 
 #[allow(clippy::single_match)]
@@ -188,6 +191,7 @@ impl AnyEntity {
             AnyEntity::PolarBear(polar_bear) => polar_bear.get_entity(),
             AnyEntity::Chicken(chicken) => chicken.get_entity(),
             AnyEntity::Cow(cow) => cow.get_entity(),
+            AnyEntity::Hoglin(hoglin) => hoglin.get_entity(),
         }
     }
 
