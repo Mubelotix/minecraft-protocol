@@ -26,3 +26,10 @@ pub struct Camel {
     pub is_dashing: bool,
     pub last_pose_change_tick: usize,
 }
+
+#[derive(Default)]
+#[inherit(AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity)]
+pub struct ChestedHorse {
+    pub abstract_horse: AbstractHorse,
+    pub has_chest: bool,
+}
