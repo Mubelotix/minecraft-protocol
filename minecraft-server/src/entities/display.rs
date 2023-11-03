@@ -4,24 +4,24 @@ use super::*;
 #[inheritable]
 pub struct Display {
     pub entity: Entity,
-    interpolation_delay: u32,
-    transformation_interpolation_duration: u32,
-    position_interpolation_duration: u32,
-    translation: (f64, f64, f64),
-    scale: (f64, f64, f64),
-    rotation_left: (f64, f64, f64, f64),
-    rotation_right: (f64, f64, f64, f64),
-    fixed_constraint: bool,
-    vertical_constraint: bool,
-    horizontal_constraint: bool,
-    center_constraint: bool,
-    brightness: isize,
-    view_range: f32,
-    shadow_radius: f32,
-    shadow_strenght: f32,
-    width: f32,
-    height: f32,
-    glow_color: isize,
+    pub interpolation_delay: u32,
+    pub transformation_interpolation_duration: u32,
+    pub position_interpolation_duration: u32,
+    pub translation: (f64, f64, f64),
+    pub scale: (f64, f64, f64),
+    pub rotation_left: (f64, f64, f64, f64),
+    pub rotation_right: (f64, f64, f64, f64),
+    pub fixed_constraint: bool,
+    pub vertical_constraint: bool,
+    pub horizontal_constraint: bool,
+    pub center_constraint: bool,
+    pub brightness: isize,
+    pub view_range: f32,
+    pub shadow_radius: f32,
+    pub shadow_strenght: f32,
+    pub width: f32,
+    pub height: f32,
+    pub glow_color: isize,
 }
 
 impl Default for Display {
@@ -52,8 +52,8 @@ impl Default for Display {
 
 #[inherit(Display, Entity)]
 pub struct BlockDisplay {
-    display: Display,
-    block: BlockWithState,
+    pub display: Display,
+    pub block: BlockWithState,
 }
 
 impl Default for BlockDisplay {
@@ -67,9 +67,9 @@ impl Default for BlockDisplay {
 
 #[inherit(Display, Entity)]
 pub struct ItemDisplay {
-    display: Display,
-    item: Slot,
-    display_type: u8,
+    pub display: Display,
+    pub item: Slot,
+    pub display_type: u8,
 }
 
 impl Default for ItemDisplay {
@@ -84,15 +84,15 @@ impl Default for ItemDisplay {
 
 #[inherit(Display, Entity)]
 pub struct TextDisplay {
-    display: Display,
-    text: String,
-    line_width: usize,
-    background_color: isize,
-    text_opacity: i8,
-    has_shadow: bool,
-    is_seethrough: bool,
-    use_default_background: bool,
-    alignement: u8,
+    pub display: Display,
+    pub text: String,
+    pub line_width: usize,
+    pub background_color: isize,
+    pub text_opacity: i8,
+    pub has_shadow: bool,
+    pub is_seethrough: bool,
+    pub use_default_background: bool,
+    pub alignement: u8,
 }
 
 impl Default for TextDisplay {

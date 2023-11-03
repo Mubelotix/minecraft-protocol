@@ -53,6 +53,10 @@ pub use minecraft_protocol::{
 
 pub enum AnyEntity {
     Entity(Entity),
+    Display(Display),
+    BlockDisplay(BlockDisplay),
+    ItemDisplay(ItemDisplay),
+    TextDisplay(TextDisplay),
     ThrownItemProjectile(ThrownItemProjectile),
     ThrownEgg(ThrownEgg),
     ThrownEnderPearl(ThrownEnderPearl),
@@ -78,6 +82,10 @@ impl AnyEntity {
     pub fn as_entity(&self) -> &Entity {
         match self {
             AnyEntity::Entity(entity) => entity,
+            AnyEntity::Display(display) => display.get_entity(),
+            AnyEntity::BlockDisplay(block_display) => block_display.get_entity(),
+            AnyEntity::ItemDisplay(item_display) => item_display.get_entity(),
+            AnyEntity::TextDisplay(text_display) => text_display.get_entity(),
             AnyEntity::ThrownItemProjectile(throw_item_projectile) => throw_item_projectile.get_entity(),
             AnyEntity::ThrownEgg(throw_egg) => throw_egg.get_entity(),
             AnyEntity::ThrownEnderPearl(throw_ender_pearl) => throw_ender_pearl.get_entity(),
@@ -95,6 +103,16 @@ impl AnyEntity {
             AnyEntity::Animal(animal) => animal.get_entity(),
             AnyEntity::Sniffer(sniffer) => sniffer.get_entity(),
             AnyEntity::AbstractHorse(abstract_horse) => abstract_horse.get_entity(),
+        }
+    }
+
+    pub fn as_display(&self) -> Option<&Display> {
+        match self {
+            AnyEntity::Display(display) => Some(display),
+            AnyEntity::BlockDisplay(block_display) => Some(&block_display.display),
+            AnyEntity::ItemDisplay(item_display) => Some(&item_display.display),
+            AnyEntity::TextDisplay(text_display) => Some(&text_display.display),
+            _ => None,
         }
     }
 
