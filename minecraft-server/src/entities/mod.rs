@@ -135,6 +135,8 @@ pub enum AnyEntity {
     Silverfish(Silverfish),
     Raider(Raider),
     AbstractIllager(AbstractIllager),
+    Vindicator(Vindicator),
+    Pillager(Pillager),
 }
 
 #[allow(clippy::single_match)]
@@ -220,6 +222,8 @@ impl AnyEntity {
             AnyEntity::Silverfish(silverfish) => silverfish.get_entity(),
             AnyEntity::Raider(raider) => raider.get_entity(),
             AnyEntity::AbstractIllager(abstract_illager) => abstract_illager.get_entity(),
+            AnyEntity::Vindicator(vindicator) => vindicator.get_entity(),
+            AnyEntity::Pillager(pillager) => pillager.get_entity(),
         }
     }
 

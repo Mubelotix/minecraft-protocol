@@ -14,3 +14,16 @@ pub struct Raider {
 pub struct AbstractIllager {
     pub raider: Raider,
 }
+
+#[derive(Default)]
+#[inherit(AbstractIllager, Raider, Monster, PathfinderMob, Mob, LivingEntity, Entity)]
+pub struct Vindicator {
+    pub abstract_illager: AbstractIllager,
+}
+
+#[derive(Default)]
+#[inherit(AbstractIllager, Raider, Monster, PathfinderMob, Mob, LivingEntity, Entity)]
+pub struct Pillager {
+    pub abstract_illager: AbstractIllager,
+    pub is_charging: bool,
+}
