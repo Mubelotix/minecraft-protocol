@@ -56,7 +56,9 @@ pub enum AnyEntity {
     ThrownItemProjectile(ThrownItemProjectile),
     ThrownEgg(ThrownEgg),
     ThrownEnderPearl(ThrownEnderPearl),
-    // TODO some projectiles
+    ThrownExperienceBottle(ThrownExperienceBottle),
+    ThrownPotion(ThrownPotion),
+    Snowball(Snowball),
     Boat(Boat),
     ChestBoat(ChestBoat),
     LivingEntity(LivingEntity),
@@ -85,6 +87,9 @@ impl AnyEntity {
             AnyEntity::ThrownItemProjectile(throw_item_projectile) => throw_item_projectile.get_entity(),
             AnyEntity::ThrownEgg(throw_egg) => throw_egg.get_entity(),
             AnyEntity::ThrownEnderPearl(throw_ender_pearl) => throw_ender_pearl.get_entity(),
+            AnyEntity::ThrownExperienceBottle(throw_experience_bottle) => throw_experience_bottle.get_entity(),
+            AnyEntity::ThrownPotion(throw_potion) => throw_potion.get_entity(),
+            AnyEntity::Snowball(snowball) => snowball.get_entity(),
             AnyEntity::Boat(boat) => boat.get_entity(),
             AnyEntity::ChestBoat(chest_boat) => chest_boat.get_entity(),
             AnyEntity::LivingEntity(living_entity) => living_entity.get_entity(),
@@ -117,6 +122,9 @@ impl AnyEntity {
             AnyEntity::ThrownItemProjectile(throw_item_projectile) => Some(throw_item_projectile),
             AnyEntity::ThrownEgg(throw_egg) => Some(&throw_egg.thrown_item_projectile),
             AnyEntity::ThrownEnderPearl(throw_ender_pearl) => Some(&throw_ender_pearl.thrown_item_projectile),
+            AnyEntity::ThrownExperienceBottle(throw_experience_bottle) => Some(&throw_experience_bottle.thrown_item_projectile),
+            AnyEntity::ThrownPotion(throw_potion) => Some(&throw_potion.thrown_item_projectile),
+            AnyEntity::Snowball(snowball) => Some(&snowball.thrown_item_projectile),
             _ => None,
         }
     }
