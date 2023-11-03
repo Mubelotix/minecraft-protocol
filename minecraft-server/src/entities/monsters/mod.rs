@@ -14,6 +14,8 @@ mod giant;
 pub use giant::*;
 mod guardian;
 pub use guardian::*;
+mod silverfish;
+pub use silverfish::*;
 
 #[derive(Default)]
 #[inheritable]

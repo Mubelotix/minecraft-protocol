@@ -132,6 +132,7 @@ pub enum AnyEntity {
     Goat(Goat),
     Guardian(Guardian),
     ElderGuardian(ElderGuardian),
+    Silverfish(Silverfish),
 }
 
 #[allow(clippy::single_match)]
@@ -214,6 +215,7 @@ impl AnyEntity {
             AnyEntity::Goat(goat) => goat.get_entity(),
             AnyEntity::Guardian(guardian) => guardian.get_entity(),
             AnyEntity::ElderGuardian(elder_guardian) => elder_guardian.get_entity(),
+            AnyEntity::Silverfish(silverfish) => silverfish.get_entity(),
         }
     }
 
