@@ -18,17 +18,13 @@ pub struct Entities {
 
 impl Entities {
     /// Observe an entity through a closure
-    pub async fn observe_entity(&self, eid: Eid, observer: impl FnOnce(&AnyEntity)) {
-        if let Some(entity) = self.entities.read().await.get(&eid) {
-            observer(entity);
-        }
+    pub async fn observe_entity<R>(&self, eid: Eid, observer: impl FnOnce(&AnyEntity) -> R) -> Option<R> {
+        self.entities.read().await.get(&eid).map(observer)
     }
 
     /// Mutate an entity through a closure
-    pub async fn mutate_entity(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity)) {
-        if let Some(entity) = self.entities.write().await.get_mut(&eid) {
-            mutator(entity);
-        }
+    pub async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> R) -> Option<R> {
+        self.entities.write().await.get_mut(&eid).map(mutator)
     }
 
     /// Remove an entity
