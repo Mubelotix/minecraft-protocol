@@ -48,7 +48,8 @@ mod wolf;
 pub use wolf::*;
 mod parrot;
 pub use parrot::*;
-
+mod goat;
+pub use goat::*;
 
 #[derive(Default)]
 #[inheritable]

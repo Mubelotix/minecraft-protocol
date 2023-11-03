@@ -129,6 +129,7 @@ pub enum AnyEntity {
     Creeper(Creeper),
     Endermite(Endermite),
     Giant(Giant),
+    Goat(Goat)
 }
 
 #[allow(clippy::single_match)]
@@ -208,6 +209,7 @@ impl AnyEntity {
             AnyEntity::Creeper(creeper) => creeper.get_entity(),
             AnyEntity::Endermite(endermite) => endermite.get_entity(),
             AnyEntity::Giant(giant) => giant.get_entity(),
+            AnyEntity::Goat(goat) => goat.get_entity(),
         }
     }
 
