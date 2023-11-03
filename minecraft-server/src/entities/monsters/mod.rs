@@ -16,6 +16,8 @@ mod guardian;
 pub use guardian::*;
 mod silverfish;
 pub use silverfish::*;
+mod raider;
+pub use raider::*;
 
 #[derive(Default)]
 #[inheritable]
