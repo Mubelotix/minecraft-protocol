@@ -55,12 +55,29 @@ pub struct BlockDisplay {
     display: Display,
     block: BlockWithState,
 }
-
+ItemDisplay
 impl Default for BlockDisplay {
     fn default() -> Self {
         Self {
             display: Display::default(),
             block: BlockWithState::Air,
+        }
+    }
+}
+
+#[inherit(Display, Entity)]
+pub struct  {
+    display: Display,
+    item: Slot,
+    display_type: u8,
+}
+
+impl Default for ItemDisplay {
+    fn default() -> Self {
+        Self {
+            display: Display::default(),
+            item: Slot { item: None },
+            display_type: 0,
         }
     }
 }
