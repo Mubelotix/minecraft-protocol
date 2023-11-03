@@ -56,6 +56,8 @@ mod ocelot;
 pub use ocelot::*;
 mod panda;
 pub use panda::*;
+mod pig;
+pub use pig::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -114,6 +116,7 @@ pub enum AnyEntity {
     Frog(Frog),
     Ocelot(Ocelot),
     Panda(Panda),
+    Pig(Pig),
 }
 
 #[allow(clippy::single_match)]
@@ -164,6 +167,7 @@ impl AnyEntity {
             AnyEntity::Frog(frog) => frog.get_entity(),
             AnyEntity::Ocelot(ocelot) => ocelot.get_entity(),
             AnyEntity::Panda(panda) => panda.get_entity(),
+            AnyEntity::Pig(pig) => pig.get_entity(),
         }
     }
 
