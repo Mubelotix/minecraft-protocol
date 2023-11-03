@@ -30,8 +30,8 @@ mod interaction;
 pub use interaction::*;
 mod ageable_mob;
 pub use ageable_mob::*;
-mod animal;
-pub use animal::*;
+mod animals;
+pub use animals::*;
 mod display;
 pub use display::*;
 mod villagers;
@@ -40,8 +40,8 @@ mod golems;
 pub use golems::*;
 mod shulker;
 pub use shulker::*;
-mod monster;
-pub use monster::*;
+mod monsters;
+pub use monsters::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
