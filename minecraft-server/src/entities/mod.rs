@@ -42,6 +42,8 @@ mod horses;
 pub use horses::*;
 mod donkey;
 pub use donkey::*;
+mod llama;
+pub use llama::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -91,6 +93,7 @@ pub enum AnyEntity {
     Camel(Camel),
     ChestedHorse(ChestedHorse),
     Donkey(Donkey),
+    Llama(Llama),
 }
 
 #[allow(clippy::single_match)]
@@ -132,6 +135,7 @@ impl AnyEntity {
             AnyEntity::Camel(camel) => camel.get_entity(),
             AnyEntity::ChestedHorse(chested_horse) => chested_horse.get_entity(),
             AnyEntity::Donkey(donkey) => donkey.get_entity(),
+            AnyEntity::Llama(llama) => llama.get_entity(),
         }
     }
 
