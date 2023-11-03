@@ -75,3 +75,23 @@ impl Default for ThrownExperienceBottle {
         }
     }
 }
+
+#[inherit(ThrownItemProjectile, Entity)]
+pub struct ThrownPotion {
+    pub thrown_item_projectile: ThrownItemProjectile,
+}
+
+impl Default for ThrownPotion {
+    fn default() -> Self {
+        ThrownPotion {
+            thrown_item_projectile: ThrownItemProjectile {
+                entity: Entity::default(),
+                item: Slot {item: Some(SlotItem {
+                    item_id: Item::SplashPotion,
+                    item_count: 1,
+                    nbt_data: NbtTag::Null
+                })},
+            }
+        }
+    }
+}
