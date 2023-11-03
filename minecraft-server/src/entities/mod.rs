@@ -1,3 +1,5 @@
+#![allow(clippy::derivable_impls)]
+
 mod entity;
 pub use entity::*;
 mod thrown_item_projectile;
