@@ -158,6 +158,7 @@ pub enum AnyEntity {
     Parrot(Parrot),
     AbstractVillager(AbstractVillager),
     Villager(Villager),
+    WanderingTrader(WanderingTrader),
 }
 
 #[allow(clippy::single_match)]
@@ -224,6 +225,7 @@ impl AnyEntity {
             AnyEntity::Parrot(parrot) => parrot.get_entity(),
             AnyEntity::AbstractVillager(abstract_villager) => abstract_villager.get_entity(),
             AnyEntity::Villager(villager) => villager.get_entity(),
+            AnyEntity::WanderingTrader(wandering_trader) => wandering_trader.get_entity(),
         }
     }
 
