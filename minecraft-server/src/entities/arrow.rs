@@ -6,7 +6,7 @@ pub struct AbstractArrow {
     pub entity: Entity,
     pub is_critical: bool,
     pub is_no_clip: bool,
-    pub piercing_level: i32,
+    pub piercing_level: isize,
 }
 
 impl Default for AbstractArrow {
@@ -38,11 +38,28 @@ impl Default for Arrow {
 #[inherit(AbstractArrow, Entity)]
 pub struct SpectralArrow {
     pub abstract_arrow: AbstractArrow,
-    pub loyalty_level: i32,
+    pub loyalty_level: isize,
     pub has_enchantment_glint: bool,
 }
 
 impl Default for SpectralArrow {
+    fn default() -> Self {
+        Self {
+            abstract_arrow: AbstractArrow::default(),
+            loyalty_level: 0,
+            has_enchantment_glint: false,
+        }
+    }
+}
+
+#[inherit(AbstractArrow, Entity)]
+pub struct ThrownTrident {
+    pub abstract_arrow: AbstractArrow,
+    pub loyalty_level: isize,
+    pub has_enchantment_glint: bool,
+}
+
+impl Default for ThrownTrident {
     fn default() -> Self {
         Self {
             abstract_arrow: AbstractArrow::default(),
