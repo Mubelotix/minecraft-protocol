@@ -135,6 +135,7 @@ pub enum AnyEntity {
     Chicken(Chicken),
     Cow(Cow),
     Hoglin(Hoglin),
+    Mooshroom(Mooshroom),
 }
 
 #[allow(clippy::single_match)]
@@ -192,6 +193,7 @@ impl AnyEntity {
             AnyEntity::Chicken(chicken) => chicken.get_entity(),
             AnyEntity::Cow(cow) => cow.get_entity(),
             AnyEntity::Hoglin(hoglin) => hoglin.get_entity(),
+            AnyEntity::Mooshroom(mooshroom) => mooshroom.get_entity(),
         }
     }
 
