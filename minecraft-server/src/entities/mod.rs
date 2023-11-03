@@ -38,6 +38,8 @@ mod abstract_horse;
 pub use abstract_horse::*;
 mod display;
 pub use display::*;
+mod zombie_horse;
+pub use zombie_horse::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -81,6 +83,7 @@ pub enum AnyEntity {
     Animal(Animal),
     Sniffer(Sniffer),
     AbstractHorse(AbstractHorse),
+    ZombieHorse(ZombieHorse),
 }
 
 #[allow(clippy::single_match)]
@@ -116,6 +119,7 @@ impl AnyEntity {
             AnyEntity::Animal(animal) => animal.get_entity(),
             AnyEntity::Sniffer(sniffer) => sniffer.get_entity(),
             AnyEntity::AbstractHorse(abstract_horse) => abstract_horse.get_entity(),
+            AnyEntity::ZombieHorse(zombie_horse) => zombie_horse.get_entity(),
         }
     }
 
