@@ -72,6 +72,8 @@ mod hoglin;
 pub use hoglin::*;
 mod sheep;
 pub use sheep::*;
+mod strider;
+pub use strider::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -139,6 +141,7 @@ pub enum AnyEntity {
     Hoglin(Hoglin),
     Mooshroom(Mooshroom),
     Sheep(Sheep),
+    Strider(Strider),
 }
 
 #[allow(clippy::single_match)]
@@ -198,6 +201,7 @@ impl AnyEntity {
             AnyEntity::Hoglin(hoglin) => hoglin.get_entity(),
             AnyEntity::Mooshroom(mooshroom) => mooshroom.get_entity(),
             AnyEntity::Sheep(sheep) => sheep.get_entity(),
+            AnyEntity::Strider(strider) => strider.get_entity(),
         }
     }
 
