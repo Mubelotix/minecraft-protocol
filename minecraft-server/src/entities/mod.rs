@@ -171,6 +171,8 @@ pub enum AnyEntity {
     Shulker(Shulker),
     Monster(Monster),
     BasePiglin(BasePiglin),
+    Piglin(Piglin),
+    PiglinBrute(PiglinBrute),
 }
 
 #[allow(clippy::single_match)]
@@ -244,6 +246,8 @@ impl AnyEntity {
             AnyEntity::Shulker(shulker) => shulker.get_entity(),
             AnyEntity::Monster(monster) => monster.get_entity(),
             AnyEntity::BasePiglin(base_piglin) => base_piglin.get_entity(),
+            AnyEntity::Piglin(piglin) => piglin.get_entity(),
+            AnyEntity::PiglinBrute(piglin_brute) => piglin_brute.get_entity(),
         }
     }
 
