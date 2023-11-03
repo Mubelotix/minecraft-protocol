@@ -95,6 +95,7 @@ pub enum AnyEntity {
     Donkey(Donkey),
     Llama(Llama),
     TraderLlama(TraderLlama),
+    Mule(Mule),
 }
 
 #[allow(clippy::single_match)]
@@ -138,6 +139,7 @@ impl AnyEntity {
             AnyEntity::Donkey(donkey) => donkey.get_entity(),
             AnyEntity::Llama(llama) => llama.get_entity(),
             AnyEntity::TraderLlama(trader_llama) => trader_llama.get_entity(),
+            AnyEntity::Mule(mule) => mule.get_entity(),
         }
     }
 

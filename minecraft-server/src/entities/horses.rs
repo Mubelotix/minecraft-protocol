@@ -34,3 +34,10 @@ pub struct ChestedHorse {
     pub abstract_horse: AbstractHorse,
     pub has_chest: bool,
 }
+
+#[derive(Default)]
+#[inheritable]
+#[inherit(ChestedHorse, AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity)]
+pub struct Mule {
+    pub chested_horse: ChestedHorse,
+}
