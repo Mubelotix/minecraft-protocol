@@ -306,12 +306,12 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
     send_packet(stream, chunk_data).await;
     debug!("ChunkBatchStart sent");
 
-    let empty_chunk = Chunk {
+    let empty_chunk = NetworkChunk {
         block_count: 0,
         blocks: PalettedData::Single { value: 0 },
         biomes: PalettedData::Single { value: 4 },
     };
-    let dirt_chunk = Chunk {
+    let dirt_chunk = NetworkChunk {
         block_count: 4096,
         blocks: PalettedData::Single { value: minecraft_protocol::ids::blocks::Block::GrassBlock.default_state_id() },
         biomes: PalettedData::Single { value: 4 },
@@ -321,7 +321,7 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
     for _ in 0..23 {
         flat_column.push(empty_chunk.clone());
     }
-    let serialized: Vec<u8> = Chunk::into_data(flat_column).unwrap();
+    let serialized: Vec<u8> = NetworkChunk::into_data(flat_column).unwrap();
     let mut heightmaps = HashMap::new();
     heightmaps.insert(String::from("MOTION_BLOCKING"), NbtTag::LongArray(vec![0; 37]));
     let heightmaps = NbtTag::Compound(heightmaps);
