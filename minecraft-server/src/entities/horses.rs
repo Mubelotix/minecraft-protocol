@@ -28,6 +28,7 @@ pub struct Camel {
 }
 
 #[derive(Default)]
+#[inheritable]
 #[inherit(AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity)]
 pub struct ChestedHorse {
     pub abstract_horse: AbstractHorse,
