@@ -78,6 +78,8 @@ mod tameable_animal;
 pub use tameable_animal::*;
 mod cat;
 pub use cat::*;
+mod wolf;
+pub use wolf::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -148,6 +150,7 @@ pub enum AnyEntity {
     Strider(Strider),
     TameableAnimal(TameableAnimal),
     Cat(Cat),
+    Wolf(Wolf),
 }
 
 #[allow(clippy::single_match)]
@@ -210,6 +213,7 @@ impl AnyEntity {
             AnyEntity::Strider(strider) => strider.get_entity(),
             AnyEntity::TameableAnimal(tameable_animal) => tameable_animal.get_entity(),
             AnyEntity::Cat(cat) => cat.get_entity(),
+            AnyEntity::Wolf(wolf) => wolf.get_entity(),
         }
     }
 
