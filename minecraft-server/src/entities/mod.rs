@@ -70,6 +70,8 @@ mod cow;
 pub use cow::*;
 mod hoglin;
 pub use hoglin::*;
+mod sheep;
+pub use sheep::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -136,6 +138,7 @@ pub enum AnyEntity {
     Cow(Cow),
     Hoglin(Hoglin),
     Mooshroom(Mooshroom),
+    Sheep(Sheep),
 }
 
 #[allow(clippy::single_match)]
@@ -194,6 +197,7 @@ impl AnyEntity {
             AnyEntity::Cow(cow) => cow.get_entity(),
             AnyEntity::Hoglin(hoglin) => hoglin.get_entity(),
             AnyEntity::Mooshroom(mooshroom) => mooshroom.get_entity(),
+            AnyEntity::Sheep(sheep) => sheep.get_entity(),
         }
     }
 
