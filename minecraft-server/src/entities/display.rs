@@ -55,7 +55,7 @@ pub struct BlockDisplay {
     display: Display,
     block: BlockWithState,
 }
-ItemDisplay
+
 impl Default for BlockDisplay {
     fn default() -> Self {
         Self {
@@ -66,7 +66,7 @@ impl Default for BlockDisplay {
 }
 
 #[inherit(Display, Entity)]
-pub struct  {
+pub struct ItemDisplay {
     display: Display,
     item: Slot,
     display_type: u8,
@@ -78,6 +78,35 @@ impl Default for ItemDisplay {
             display: Display::default(),
             item: Slot { item: None },
             display_type: 0,
+        }
+    }
+}
+
+#[inherit(Display, Entity)]
+pub struct TextDisplay {
+    display: Display,
+    text: String,
+    line_width: usize,
+    background_color: isize,
+    text_opacity: i8,
+    has_shadow: bool,
+    is_seethrough: bool,
+    use_default_background: bool,
+    alignement: u8,
+}
+
+impl Default for TextDisplay {
+    fn default() -> Self {
+        Self {
+            display: Display::default(),
+            text: String::new(),
+            line_width: 0,
+            background_color: 1073741824,
+            text_opacity: -1,
+            has_shadow: false,
+            is_seethrough: false,
+            use_default_background: false,
+            alignement: 0,
         }
     }
 }
