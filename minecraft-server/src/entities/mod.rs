@@ -74,6 +74,8 @@ mod sheep;
 pub use sheep::*;
 mod strider;
 pub use strider::*;
+mod tameable_animal;
+pub use tameable_animal::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -142,6 +144,7 @@ pub enum AnyEntity {
     Mooshroom(Mooshroom),
     Sheep(Sheep),
     Strider(Strider),
+    TameableAnimal(TameableAnimal),
 }
 
 #[allow(clippy::single_match)]
@@ -202,6 +205,7 @@ impl AnyEntity {
             AnyEntity::Mooshroom(mooshroom) => mooshroom.get_entity(),
             AnyEntity::Sheep(sheep) => sheep.get_entity(),
             AnyEntity::Strider(strider) => strider.get_entity(),
+            AnyEntity::TameableAnimal(tameable_animal) => tameable_animal.get_entity(),
         }
     }
 
