@@ -10,6 +10,8 @@ mod creeper;
 pub use creeper::*;
 mod endermite;
 pub use endermite::*;
+mod giant;
+pub use giant::*;
 
 #[derive(Default)]
 #[inheritable]

@@ -176,6 +176,7 @@ pub enum AnyEntity {
     Blaze(Blaze),
     Creeper(Creeper),
     Endermite(Endermite),
+    Giant(Giant),
 }
 
 #[allow(clippy::single_match)]
@@ -254,6 +255,7 @@ impl AnyEntity {
             AnyEntity::Blaze(blaze) => blaze.get_entity(),
             AnyEntity::Creeper(creeper) => creeper.get_entity(),
             AnyEntity::Endermite(endermite) => endermite.get_entity(),
+            AnyEntity::Giant(giant) => giant.get_entity(),
         }
     }
 
