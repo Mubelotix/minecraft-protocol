@@ -84,6 +84,8 @@ mod parrot;
 pub use parrot::*;
 mod villagers;
 pub use villagers::*;
+mod golemns;
+pub use golemns::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -159,6 +161,7 @@ pub enum AnyEntity {
     AbstractVillager(AbstractVillager),
     Villager(Villager),
     WanderingTrader(WanderingTrader),
+    AbstractGolem(AbstractGolem),
 }
 
 #[allow(clippy::single_match)]
@@ -226,6 +229,7 @@ impl AnyEntity {
             AnyEntity::AbstractVillager(abstract_villager) => abstract_villager.get_entity(),
             AnyEntity::Villager(villager) => villager.get_entity(),
             AnyEntity::WanderingTrader(wandering_trader) => wandering_trader.get_entity(),
+            AnyEntity::AbstractGolem(abstract_golem) => abstract_golem.get_entity(),
         }
     }
 
