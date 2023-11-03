@@ -35,7 +35,7 @@ pub struct BlockPositionInChunk {
     pub bz: i32,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Position {
     pub x: f64,
     pub y: f64,

@@ -24,7 +24,23 @@ impl Entities {
 
     /// Mutate an entity through a closure
     pub async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> R) -> Option<R> {
-        self.entities.write().await.get_mut(&eid).map(mutator)
+        let mut entities = self.entities.write().await;
+
+        if let Some(entity) = entities.get_mut(&eid) {
+            let prev_position = entity.as_entity().position.clone();
+            let r = mutator(entity);
+            if prev_position != entity.as_entity().position {
+                let old_chunk = prev_position.chunk();
+                let new_chunk = entity.as_entity().position.chunk();
+                drop(entities);
+                let mut chunks = self.chunks.write().await;
+                chunks.get_mut(&old_chunk).unwrap().remove(&eid);
+                chunks.get_mut(&new_chunk).unwrap().insert(eid);
+            }
+            Some(r)
+        } else {
+            None
+        }
     }
 
     /// Remove an entity
