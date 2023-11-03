@@ -170,6 +170,7 @@ pub enum AnyEntity {
     SnowGolem(SnowGolem),
     Shulker(Shulker),
     Monster(Monster),
+    BasePiglin(BasePiglin),
 }
 
 #[allow(clippy::single_match)]
@@ -242,6 +243,7 @@ impl AnyEntity {
             AnyEntity::SnowGolem(snow_golem) => snow_golem.get_entity(),
             AnyEntity::Shulker(shulker) => shulker.get_entity(),
             AnyEntity::Monster(monster) => monster.get_entity(),
+            AnyEntity::BasePiglin(base_piglin) => base_piglin.get_entity(),
         }
     }
 
