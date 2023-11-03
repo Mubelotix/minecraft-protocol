@@ -44,6 +44,8 @@ mod donkey;
 pub use donkey::*;
 mod llama;
 pub use llama::*;
+mod axolot;
+pub use axolot::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -96,6 +98,7 @@ pub enum AnyEntity {
     Llama(Llama),
     TraderLlama(TraderLlama),
     Mule(Mule),
+    Axolot(Axolot),
 }
 
 #[allow(clippy::single_match)]
@@ -140,6 +143,7 @@ impl AnyEntity {
             AnyEntity::Llama(llama) => llama.get_entity(),
             AnyEntity::TraderLlama(trader_llama) => trader_llama.get_entity(),
             AnyEntity::Mule(mule) => mule.get_entity(),
+            AnyEntity::Axolot(axolot) => axolot.get_entity(),
         }
     }
 
