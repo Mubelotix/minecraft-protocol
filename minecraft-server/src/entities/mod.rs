@@ -82,6 +82,8 @@ mod wolf;
 pub use wolf::*;
 mod parrot;
 pub use parrot::*;
+mod villagers;
+pub use villagers::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -154,6 +156,8 @@ pub enum AnyEntity {
     Cat(Cat),
     Wolf(Wolf),
     Parrot(Parrot),
+    AbstractVillager(AbstractVillager),
+    Villager(Villager),
 }
 
 #[allow(clippy::single_match)]
@@ -218,6 +222,8 @@ impl AnyEntity {
             AnyEntity::Cat(cat) => cat.get_entity(),
             AnyEntity::Wolf(wolf) => wolf.get_entity(),
             AnyEntity::Parrot(parrot) => parrot.get_entity(),
+            AnyEntity::AbstractVillager(abstract_villager) => abstract_villager.get_entity(),
+            AnyEntity::Villager(villager) => villager.get_entity(),
         }
     }
 
