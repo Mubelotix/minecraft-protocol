@@ -12,6 +12,8 @@ mod endermite;
 pub use endermite::*;
 mod giant;
 pub use giant::*;
+mod guardian;
+pub use guardian::*;
 
 #[derive(Default)]
 #[inheritable]
