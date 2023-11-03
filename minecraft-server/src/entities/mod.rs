@@ -63,6 +63,10 @@ pub enum AnyEntity {
     ThrownExperienceBottle(ThrownExperienceBottle),
     ThrownPotion(ThrownPotion),
     Snowball(Snowball),
+    AbstractArrow(AbstractArrow),
+    Arrow(Arrow),
+    SpectralArrow(SpectralArrow),
+    ThrownTrident(ThrownTrident),
     Boat(Boat),
     ChestBoat(ChestBoat),
     LivingEntity(LivingEntity),
@@ -94,6 +98,10 @@ impl AnyEntity {
             AnyEntity::ThrownExperienceBottle(throw_experience_bottle) => throw_experience_bottle.get_entity(),
             AnyEntity::ThrownPotion(throw_potion) => throw_potion.get_entity(),
             AnyEntity::Snowball(snowball) => snowball.get_entity(),
+            AnyEntity::AbstractArrow(abstract_arrow) => abstract_arrow.get_entity(),
+            AnyEntity::Arrow(arrow) => arrow.get_entity(),
+            AnyEntity::SpectralArrow(spectral_arrow) => spectral_arrow.get_entity(),
+            AnyEntity::ThrownTrident(throw_trident) => throw_trident.get_entity(),
             AnyEntity::Boat(boat) => boat.get_entity(),
             AnyEntity::ChestBoat(chest_boat) => chest_boat.get_entity(),
             AnyEntity::LivingEntity(living_entity) => living_entity.get_entity(),
@@ -129,6 +137,16 @@ impl AnyEntity {
             AnyEntity::ThrownExperienceBottle(throw_experience_bottle) => Some(&throw_experience_bottle.thrown_item_projectile),
             AnyEntity::ThrownPotion(throw_potion) => Some(&throw_potion.thrown_item_projectile),
             AnyEntity::Snowball(snowball) => Some(&snowball.thrown_item_projectile),
+            _ => None,
+        }
+    }
+
+    pub fn as_abstract_arrow(&self) -> Option<&AbstractArrow> {
+        match self {
+            AnyEntity::AbstractArrow(abstract_arrow) => Some(abstract_arrow),
+            AnyEntity::Arrow(arrow) => Some(&arrow.abstract_arrow),
+            AnyEntity::SpectralArrow(spectral_arrow) => Some(&spectral_arrow.abstract_arrow),
+            AnyEntity::ThrownTrident(throw_trident) => Some(&throw_trident.abstract_arrow),
             _ => None,
         }
     }
