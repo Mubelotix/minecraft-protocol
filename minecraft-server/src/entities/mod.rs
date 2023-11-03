@@ -88,6 +88,8 @@ mod golemns;
 pub use golemns::*;
 mod shulker;
 pub use shulker::*;
+mod monster;
+pub use monster::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -167,6 +169,7 @@ pub enum AnyEntity {
     IronGolem(IronGolem),
     SnowGolem(SnowGolem),
     Shulker(Shulker),
+    Monster(Monster),
 }
 
 #[allow(clippy::single_match)]
@@ -238,6 +241,7 @@ impl AnyEntity {
             AnyEntity::IronGolem(iron_golem) => iron_golem.get_entity(),
             AnyEntity::SnowGolem(snow_golem) => snow_golem.get_entity(),
             AnyEntity::Shulker(shulker) => shulker.get_entity(),
+            AnyEntity::Monster(monster) => monster.get_entity(),
         }
     }
 
