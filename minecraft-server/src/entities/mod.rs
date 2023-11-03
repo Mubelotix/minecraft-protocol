@@ -162,6 +162,7 @@ pub enum AnyEntity {
     Villager(Villager),
     WanderingTrader(WanderingTrader),
     AbstractGolem(AbstractGolem),
+    IronGolem(IronGolem),
 }
 
 #[allow(clippy::single_match)]
@@ -230,6 +231,7 @@ impl AnyEntity {
             AnyEntity::Villager(villager) => villager.get_entity(),
             AnyEntity::WanderingTrader(wandering_trader) => wandering_trader.get_entity(),
             AnyEntity::AbstractGolem(abstract_golem) => abstract_golem.get_entity(),
+            AnyEntity::IronGolem(iron_golem) => iron_golem.get_entity(),
         }
     }
 
