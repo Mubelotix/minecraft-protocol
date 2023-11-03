@@ -8,6 +8,8 @@ mod blaze;
 pub use blaze::*;
 mod creeper;
 pub use creeper::*;
+mod endermite;
+pub use endermite::*;
 
 #[derive(Default)]
 #[inheritable]
