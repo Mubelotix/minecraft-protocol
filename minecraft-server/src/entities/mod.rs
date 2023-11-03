@@ -76,6 +76,8 @@ mod strider;
 pub use strider::*;
 mod tameable_animal;
 pub use tameable_animal::*;
+mod cat;
+pub use cat::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -145,6 +147,7 @@ pub enum AnyEntity {
     Sheep(Sheep),
     Strider(Strider),
     TameableAnimal(TameableAnimal),
+    Cat(Cat),
 }
 
 #[allow(clippy::single_match)]
@@ -206,6 +209,7 @@ impl AnyEntity {
             AnyEntity::Sheep(sheep) => sheep.get_entity(),
             AnyEntity::Strider(strider) => strider.get_entity(),
             AnyEntity::TameableAnimal(tameable_animal) => tameable_animal.get_entity(),
+            AnyEntity::Cat(cat) => cat.get_entity(),
         }
     }
 
