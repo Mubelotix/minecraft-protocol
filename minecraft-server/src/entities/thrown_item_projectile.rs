@@ -55,3 +55,23 @@ impl Default for ThrownEnderPearl {
         }
     }
 }
+
+#[inherit(ThrownItemProjectile, Entity)]
+pub struct ThrownExperienceBottle {
+    pub thrown_item_projectile: ThrownItemProjectile,
+}
+
+impl Default for ThrownExperienceBottle {
+    fn default() -> Self {
+        ThrownExperienceBottle {
+            thrown_item_projectile: ThrownItemProjectile {
+                entity: Entity::default(),
+                item: Slot {item: Some(SlotItem {
+                    item_id: Item::ExperienceBottle,
+                    item_count: 1,
+                    nbt_data: NbtTag::Null
+                })},
+            }
+        }
+    }
+}
