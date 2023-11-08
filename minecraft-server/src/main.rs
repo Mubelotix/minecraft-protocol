@@ -3,7 +3,6 @@
 mod player_handler;
 mod server_behavior;
 mod prelude;
-mod map;
 mod ecs;
 mod world;
 
