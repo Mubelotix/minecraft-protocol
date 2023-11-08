@@ -15,6 +15,12 @@ pub struct Evoker {
 }
 
 #[derive(Default)]
+#[inherit(Entity)]
+pub struct EvokerFangs {
+    pub entity: Entity,
+}
+
+#[derive(Default)]
 #[inherit(SpellcasterIllager, AbstractIllager, Raider, Monster, PathfinderMob, Mob, LivingEntity, Entity)]
 pub struct Illusioner {
     pub spellcaster_illager:  SpellcasterIllager,
