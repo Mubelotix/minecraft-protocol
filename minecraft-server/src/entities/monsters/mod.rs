@@ -28,6 +28,8 @@ mod skeleton;
 pub use skeleton::*;
 mod spider;
 pub use spider::*;
+mod warden;
+pub use warden::*;
 
 #[derive(Default)]
 #[inheritable]
