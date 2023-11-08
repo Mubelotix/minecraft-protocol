@@ -30,6 +30,8 @@ mod spider;
 pub use spider::*;
 mod warden;
 pub use warden::*;
+mod wither;
+pub use wither::*;
 
 #[derive(Default)]
 #[inheritable]

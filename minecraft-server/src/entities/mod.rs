@@ -150,6 +150,7 @@ pub enum AnyEntity {
     Stray(Stray),
     Spider(Spider),
     Warden(Warden),
+    Wither(Wither),
 }
 
 #[allow(clippy::single_match)]
@@ -250,6 +251,7 @@ impl AnyEntity {
             AnyEntity::Stray(stray) => stray.get_entity(), 
             AnyEntity::Spider(spider) => spider.get_entity(),      
             AnyEntity::Warden(warden) => warden.get_entity(),
+            AnyEntity::Wither(wither) => wither.get_entity(),
         }   
     }
 
