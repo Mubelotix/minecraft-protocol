@@ -168,8 +168,12 @@ impl PlayerHandler {
                     self.world.set_block(location.into(), BlockWithState::Air).await;
                 }
             }
-            PlaceBlock { hand, location, face, cursor_position_x, cursor_position_y, cursor_position_z, inside_block, sequence } => {
+            PlaceBlock { hand, location, face, sequence, .. } => {
                 use minecraft_protocol::components::blocks::BlockFace;
+
+                // TODO: use cursor position
+                
+                // TODO: check legitimacy
                 
                 let slot_id = match hand {
                     Hand::MainHand => self.held_item + 36,
@@ -192,15 +196,14 @@ impl PlayerHandler {
                 }
 
                 let text_id = item.item_id.text_id();
-                debug!("Client wants {text_id}");
                 let Some(block) = Block::from_text_id(text_id) else {return};
                 let Some(block) = BlockWithState::from_state_id(block.default_state_id()) else {return};
-                debug!("Placing {block:?}");
 
-                self.world.set_block(block_location.into(), block).await;
                 if self.game_mode != Gamemode::Creative {
                     item.item_count -= 1;
                 }
+                self.world.set_block(block_location.into(), block).await;
+                self.send_packet(PlayClientbound::AcknowledgeBlockChange { id: sequence }).await;
             }
             packet => warn!("Unsupported packet received: {packet:?}"),
         }
