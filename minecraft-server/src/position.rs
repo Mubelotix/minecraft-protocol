@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct BlockPosition {
     pub x: i32,
     pub y: i32,
@@ -101,6 +101,13 @@ impl std::ops::AddAssign<Position> for Position {
         self.y += rhs.y;
         self.z += rhs.z;
     }
+}
+
+#[derive(Clone, Default)]
+pub struct Rotation {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
 }
 
 #[derive(PartialEq, Eq, Hash)]

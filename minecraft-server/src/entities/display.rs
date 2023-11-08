@@ -1,4 +1,5 @@
 use super::*;
+use minecraft_protocol::components::paintings::Painting as PaintingType;
 
 #[inherit(Entity)]
 #[inheritable]
@@ -109,4 +110,11 @@ impl Default for TextDisplay {
             alignement: 0,
         }
     }
+}
+
+#[derive(Default)]
+#[inherit(Entity)]
+pub struct Painting {
+    pub entity: Entity,
+    pub painting_type: PaintingType,
 }

@@ -38,7 +38,7 @@ impl Entities {
             Some(r)
         } else {
             None
-        }
+      }
     }
 
     /// Remove an entity

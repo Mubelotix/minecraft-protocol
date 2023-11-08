@@ -115,3 +115,11 @@ impl Default for Snowball {
         }
     }
 }
+
+#[derive(Default)]
+#[inherit(Entity)]
+pub struct EyeOfEnder {
+    pub entity: Entity,
+    pub item: Slot,
+}
+
