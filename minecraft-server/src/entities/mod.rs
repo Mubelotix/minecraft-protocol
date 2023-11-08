@@ -145,6 +145,7 @@ pub enum AnyEntity {
     EvokerFangs(EvokerFangs),
     Vex(Vex),
     Skeleton(Skeleton),
+    AbstractSkeleton(AbstractSkeleton),
 }
 
 #[allow(clippy::single_match)]
@@ -240,6 +241,7 @@ impl AnyEntity {
             AnyEntity::EvokerFangs(evoker_fangs) => evoker_fangs.get_entity(),
             AnyEntity::Vex(vex) => vex.get_entity(),
             AnyEntity::Skeleton(skeleton) => skeleton.get_entity(),
+            AnyEntity::AbstractSkeleton(abstract_skeleton) => abstract_skeleton.get_entity(),        
         }
     }
 
