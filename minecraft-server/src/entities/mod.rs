@@ -332,6 +332,8 @@ impl AnyEntity {
             AnyEntity::Cod(cod) => cod.get_entity(),
             AnyEntity::PufferFish(pufferfish) => pufferfish.get_entity(),
             AnyEntity::Salmon(salmon) => salmon.get_entity(),
+            AnyEntity::TropicalFish(tropical_fish) => tropical_fish.get_entity(),
+            AnyEntity::Tadpole(tadpole) => tadpole.get_entity(),
         }   
     }
 
