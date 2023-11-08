@@ -24,3 +24,10 @@ pub struct WitherSkeleton {
 pub struct Stray {
     pub abstract_skeleton: AbstractSkeleton,
 }
+
+#[derive(Default)]
+#[inherit(Entity)]
+pub struct WitherSkull {
+    pub entity: Entity,
+    pub is_invulnerable: bool,
+}

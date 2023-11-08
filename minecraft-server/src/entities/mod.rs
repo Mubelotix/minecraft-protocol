@@ -184,6 +184,7 @@ pub enum AnyEntity {
     DragonFireball(DragonFireball),
     SmallFireball(SmallFireball),
     Fireball(Fireball),
+    WitherSkull(WitherSkull),
 }
 
 #[allow(clippy::single_match)]
@@ -306,6 +307,7 @@ impl AnyEntity {
             AnyEntity::DragonFireball(dragon_fireball) => dragon_fireball.get_entity(),
             AnyEntity::SmallFireball(small_fireball) => small_fireball.get_entity(),
             AnyEntity::Fireball(fireball) => fireball.get_entity(),
+            AnyEntity::WitherSkull(wither_skull) => wither_skull.get_entity(),
         }   
     }
 
