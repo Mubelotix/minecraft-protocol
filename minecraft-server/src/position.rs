@@ -103,7 +103,7 @@ impl std::ops::AddAssign<Position> for Position {
     }
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Clone)]
 pub struct ChunkPosition {
     pub cx: i32,
     pub cy: i32,

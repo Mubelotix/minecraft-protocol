@@ -7,24 +7,35 @@ enum WorldChange {
 
 struct WorldLoadingManager {
     loaded_chunks: HashMap<UUID, HashSet<ChunkPosition>>,
-    loader_players: HashMap<ChunkPosition, HashSet<UUID>>,
+    loader_entities: HashMap<ChunkPosition, HashSet<UUID>>,
+    change_senders: HashMap<UUID, MpscSender<WorldChange>>,
 }
 
 impl WorldLoadingManager {
+    fn add_loader(&mut self, uuid: UUID) -> MpscReceiver<WorldChange> {
+        let (sender, receiver) = mpsc_channel(100);
+        self.change_senders.insert(uuid, sender);
+        receiver
+    }
+
+    fn remove_loader(&mut self, uuid: UUID) {
+        self.change_senders.remove(&uuid);
+    }
+
     fn update_loaded_chunks(&mut self, uuid: UUID, loaded_chunks: HashSet<ChunkPosition>) {
         self.loaded_chunks.entry(uuid).and_modify(|f| {
             for just_unloaded in f.difference(&loaded_chunks) {
                 let mut can_be_removed = false;
-                self.loader_players.entry(just_unloaded.clone()).and_modify(|f| {
+                self.loader_entities.entry(just_unloaded.clone()).and_modify(|f| {
                     f.remove(&uuid);
                     if f.is_empty() { can_be_removed = true;}
                 });
                 if can_be_removed {
-                    self.loader_players.remove(just_unloaded);
+                    self.loader_entities.remove(just_unloaded);
                 }
             }
             for newly_loaded in loaded_chunks.difference(f).cloned() {
-                self.loader_players.entry(newly_loaded).or_default().insert(uuid);
+                self.loader_entities.entry(newly_loaded).or_default().insert(uuid);
             }
         }).or_insert(loaded_chunks);
     }
@@ -36,6 +47,8 @@ impl WorldLoadingManager {
 struct World {
     map: WorldMap,
     entities: Entities,
+
+    loading_manager: RwLock<WorldLoadingManager>,
 }
 
 impl World {
