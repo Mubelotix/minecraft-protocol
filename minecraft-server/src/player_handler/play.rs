@@ -169,10 +169,21 @@ impl PlayerHandler {
                 }
             }
             PlaceBlock { hand, location, face, cursor_position_x, cursor_position_y, cursor_position_z, inside_block, sequence } => {
+                use minecraft_protocol::components::blocks::BlockFace;
+                
                 let slot_id = match hand {
                     Hand::MainHand => self.held_item + 36,
                     Hand::OffHand => 45,
                 };
+                let block_location = match face {
+                    BlockFace::Bottom => { let mut location = location; location.y -= 1; location }
+                    BlockFace::Top => { let mut location = location; location.y += 1; location }
+                    BlockFace::North => { let mut location = location; location.z -= 1; location }
+                    BlockFace::South => { let mut location = location; location.z += 1; location }
+                    BlockFace::West => { let mut location = location; location.x -= 1; location }
+                    BlockFace::East => { let mut location = location; location.x += 1; location }
+                };
+
                 let Some(slot) = self.inventory.get_slot_mut(slot_id) else {return};
                 let Some(item) = &mut slot.item else {return};
                 
@@ -181,10 +192,12 @@ impl PlayerHandler {
                 }
 
                 let text_id = item.item_id.text_id();
+                debug!("Client wants {text_id}");
                 let Some(block) = Block::from_text_id(text_id) else {return};
                 let Some(block) = BlockWithState::from_state_id(block.default_state_id()) else {return};
+                debug!("Placing {block:?}");
 
-                self.world.set_block(location.into(), block).await;
+                self.world.set_block(block_location.into(), block).await;
                 if self.game_mode != Gamemode::Creative {
                     item.item_count -= 1;
                 }
