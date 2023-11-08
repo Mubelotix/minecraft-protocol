@@ -106,7 +106,7 @@ pub enum AnyEntity {
     Llama(Llama),
     TraderLlama(TraderLlama),
     Mule(Mule),
-    Axolott(Axolott),
+    Axolotl(Axolotl),
     Bee(Bee),
     Fox(Fox),
     Frog(Frog),
