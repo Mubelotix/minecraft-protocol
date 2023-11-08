@@ -36,3 +36,28 @@ impl WorldLoadingManager {
         self.loader_entities.keys().cloned().collect()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_world_loading_manager() {
+        let mut manager = WorldLoadingManager::default();
+
+        let mut loaded_first = vec![ChunkColumnPosition{cx: 0, cz: 0}, ChunkColumnPosition{cx: 1, cz: 0}, ChunkColumnPosition{cx: 2, cz: 0}];
+        manager.update_loaded_chunks(0, loaded_first.clone().into_iter().collect());
+        assert!(manager.get_loaded_chunks().len() == 3);
+        assert!(manager.get_loaders(&ChunkColumnPosition{cx: 2, cz: 0}).unwrap().len() == 1);
+
+        let loaded_second = vec![ChunkColumnPosition{cx: 0, cz: 1}, ChunkColumnPosition{cx: 1, cz: 1}, ChunkColumnPosition{cx: 2, cz: 1}];
+        manager.update_loaded_chunks(1, loaded_second.clone().into_iter().collect());
+        assert!(manager.get_loaded_chunks().len() == 6);
+
+        loaded_first = vec![ChunkColumnPosition{cx: 0, cz: 0}, ChunkColumnPosition{cx: 1, cz: 1}];
+        manager.update_loaded_chunks(0, loaded_first.clone().into_iter().collect());
+        assert!(manager.get_loaded_chunks().len() == 4);
+        assert!(manager.get_loaders(&ChunkColumnPosition{cx: 1, cz: 1}).unwrap().len() == 2);
+        assert!(manager.get_loaders(&ChunkColumnPosition{cx: 2, cz: 0}).is_none());
+    }
+}
