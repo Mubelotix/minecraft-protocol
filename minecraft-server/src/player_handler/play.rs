@@ -150,6 +150,17 @@ impl PlayerHandler {
                 slot = slot.clamp(0, 8);
                 self.held_item = slot as usize;
             }
+            SetCreativeModeSlot { id, clicked_item } => {
+                if self.game_mode != Gamemode::Creative {
+                    warn!("Received SetCreativeModeSlot packet in non-creative gamemode");
+                    return;
+                }
+                match id {
+                    -1 => (), // TODO drop item
+                    0..=45 => self.inventory.set_slot(id as usize, clicked_item),
+                    id => error!("Invalid creative mode slot: {id}"),
+                }
+            }
             DigBlock { status, location, face: _, sequence: _ } => {
                 use minecraft_protocol::components::blocks::DiggingState;
 

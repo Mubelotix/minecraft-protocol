@@ -12,17 +12,15 @@ impl PlayerInventory {
         }
     }
 
-    pub fn get_slot(&self, slot: i16) -> Option<&Slot> {
-        let idx: usize = slot.try_into().ok()?;
-        self.slots.get(idx)
+    pub fn get_slot(&self, slot: usize) -> Option<&Slot> {
+        self.slots.get(slot)
     }
 
-    pub fn get_slot_mut(&mut self, slot: i16) -> Option<&mut Slot> {
-        let idx: usize = slot.try_into().ok()?;
-        self.slots.get_mut(idx)
+    pub fn get_slot_mut(&mut self, slot: usize) -> Option<&mut Slot> {
+        self.slots.get_mut(slot)
     }
 
-    pub fn set_slot(&mut self, slot: i16, item: Slot) {
+    pub fn set_slot(&mut self, slot: usize, item: Slot) {
         let Some(slot) = self.get_slot_mut(slot) else {error!("Tried to set invalid slot {slot}"); return};
         *slot = item;
     }
