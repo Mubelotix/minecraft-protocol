@@ -8,4 +8,4 @@ edition = "2021"
 [dependencies]
 minecraft-protocol = { path = "../minecraft-protocol" }
 minecraft-positions = { path = "../minecraft-positions" }
-minecraft-server-derive = { path="../minecraft-server-derive" }
+minecraft-entities-derive = { path="../minecraft-entities-derive" }

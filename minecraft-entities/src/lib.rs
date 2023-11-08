@@ -34,7 +34,7 @@ mod item;
 pub use item::*;
 
 pub(crate) use minecraft_positions::*;
-pub(crate) use minecraft_server_derive::{inherit, inheritable};
+pub(crate) use minecraft_entities_derive::{inherit, inheritable};
 pub(crate) use minecraft_protocol::{
     components::{
         entity::Pose,
