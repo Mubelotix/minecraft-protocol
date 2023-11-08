@@ -172,7 +172,7 @@ impl PlayerHandler {
                 use minecraft_protocol::components::blocks::BlockFace;
 
                 // TODO: use cursor position
-                
+
                 // TODO: check legitimacy
                 
                 let slot_id = match hand {
@@ -202,7 +202,7 @@ impl PlayerHandler {
                 if self.game_mode != Gamemode::Creative {
                     item.item_count -= 1;
                 }
-                self.world.set_block(block_location.into(), block).await;
+                self.world.set_block_by(block_location.into(), block, self.info.uuid).await;
                 self.send_packet(PlayClientbound::AcknowledgeBlockChange { id: sequence }).await;
             }
             packet => warn!("Unsupported packet received: {packet:?}"),
