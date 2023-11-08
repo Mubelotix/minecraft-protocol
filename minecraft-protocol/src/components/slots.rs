@@ -2,7 +2,7 @@ use crate::{nbt::NbtTag, *};
 
 /// The [Slot] data structure is how Minecraft represents an item and its associated data in the [Minecraft Protocol](https://wiki.vg/Protocol).
 #[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug, Clone, MinecraftPacketPart)]
+#[derive(Debug, Clone, Default, MinecraftPacketPart)]
 pub struct Slot {
     /// `Some(item)` if there is an item in this slot; `None` if it is empty.
     pub item: Option<SlotItem>,
