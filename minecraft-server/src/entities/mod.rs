@@ -157,6 +157,7 @@ pub enum AnyEntity {
     Husk(Husk),
     Drowned(Drowned),
     ZombifiedPiglin(ZombifiedPiglin),
+    Enderman(Enderman),
 }
 
 #[allow(clippy::single_match)]
@@ -264,6 +265,7 @@ impl AnyEntity {
             AnyEntity::Husk(husk) => husk.get_entity(),
             AnyEntity::Drowned(drowned) => drowned.get_entity(),
             AnyEntity::ZombifiedPiglin(zombified_piglin) => zombified_piglin.get_entity(),
+            AnyEntity::Enderman(enderman) => enderman.get_entity(),
         }   
     }
 
