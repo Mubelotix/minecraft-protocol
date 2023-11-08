@@ -22,3 +22,4 @@ pub mod sound;
 pub mod tags;
 pub mod teams;
 pub mod trades;
+pub mod light;
