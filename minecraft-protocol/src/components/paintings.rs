@@ -32,6 +32,13 @@ pub enum Painting {
     DonkeyKong,
 }
 
+impl Default for Painting {
+    fn default() -> Self {
+        Self::Kebab
+    }
+}
+
+
 impl Painting {
     pub fn get_id(&self) -> i32 {
         *self as i32

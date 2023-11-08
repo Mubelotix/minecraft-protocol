@@ -1,4 +1,6 @@
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+mod shards;
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct BlockPosition {
     pub x: i32,
     pub y: i32,
@@ -52,7 +54,6 @@ pub struct BlockPositionInChunkColumn {
     pub bz: u8,
 }
 
-
 impl BlockPositionInChunkColumn {
     pub fn in_chunk(&self) -> BlockPositionInChunk {
         BlockPositionInChunk {
@@ -102,6 +103,13 @@ impl std::ops::AddAssign<Position> for Position {
         self.y += rhs.y;
         self.z += rhs.z;
     }
+}
+
+#[derive(Clone, Default)]
+pub struct Rotation {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
 }
 
 #[derive(PartialEq, Eq, Hash)]
