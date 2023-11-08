@@ -61,6 +61,10 @@ impl World {
         Some(self.map.get_block(position).await)
     }
 
+    pub async fn get_network_chunk(&self, position: ChunkPosition) -> Option<NetworkChunk> {
+        self.map.get_network_chunk(position).await
+    }
+
     pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
         self.map.set_block(position.clone(), block.clone()).await;
         self.notify(&position.chunk(), WorldChange::BlockChange(position, block)).await;

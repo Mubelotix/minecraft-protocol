@@ -12,7 +12,7 @@ pub async fn handle_connection(
     match next_state {
         ConnectionState::Login => {
             let player_info = login(&mut stream, addr).await?;
-            let player_info = handshake(&mut stream, player_info).await?;
+            let player_info = handshake(&mut stream, player_info, Arc::clone(&world)).await?;
             let uuid = player_info.uuid;
             let r = handle_player(stream, player_info, server_msg_rcvr, Arc::clone(&world)).await;
             world.remove_loader(uuid).await;

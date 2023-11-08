@@ -14,7 +14,7 @@ pub struct PlayerInfo {
     pub(super) allow_server_listing: bool,
 }
 
-pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPlayerInfo) -> Result<PlayerInfo, ()> {
+pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPlayerInfo, world: Arc<World>) -> Result<PlayerInfo, ()> {
     // Receive client informations
     let packet = receive_packet(stream).await;
     debug!("Packet received");
@@ -306,28 +306,22 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
     send_packet(stream, chunk_data).await;
     debug!("ChunkBatchStart sent");
 
-    let empty_chunk = NetworkChunk {
-        block_count: 0,
-        blocks: PalettedData::Single { value: 0 },
-        biomes: PalettedData::Single { value: 4 },
-    };
-    let dirt_chunk = NetworkChunk {
-        block_count: 4096,
-        blocks: PalettedData::Single { value: minecraft_protocol::ids::blocks::Block::GrassBlock.default_state_id() },
-        biomes: PalettedData::Single { value: 4 },
-    };
-    let mut flat_column = Vec::new();
-    flat_column.push(dirt_chunk);
-    for _ in 0..23 {
-        flat_column.push(empty_chunk.clone());
-    }
-    let serialized: Vec<u8> = NetworkChunk::into_data(flat_column).unwrap();
     let mut heightmaps = HashMap::new();
     heightmaps.insert(String::from("MOTION_BLOCKING"), NbtTag::LongArray(vec![0; 37]));
     let heightmaps = NbtTag::Compound(heightmaps);
     
     for cx in -3..=3 {
         for cz in -3..=3 {
+            let mut column = Vec::new();
+            for cy in -4..20 {
+                let chunk = world.get_network_chunk(ChunkPosition { cx, cy, cz }).await.unwrap_or(NetworkChunk { // TODO ensure loaded
+                    block_count: 0,
+                    blocks: PalettedData::Single { value: 0 },
+                    biomes: PalettedData::Single { value: 4 },
+                });
+                column.push(chunk);
+            }
+            let serialized: Vec<u8> = NetworkChunk::into_data(column).unwrap();
             let chunk_data = PlayClientbound::ChunkData {
                 value: ChunkData {
                     chunk_x: cx,
