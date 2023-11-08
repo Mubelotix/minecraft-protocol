@@ -141,6 +141,7 @@ pub enum AnyEntity {
     Evoker(Evoker),
     Illusioner(Illusioner),
     Ravager(Ravager),
+    Witch(Witch),
 }
 
 #[allow(clippy::single_match)]
@@ -232,6 +233,7 @@ impl AnyEntity {
             AnyEntity::Evoker(evoker) => evoker.get_entity(),
             AnyEntity::Illusioner(illusioner) => illusioner.get_entity(),
             AnyEntity::Ravager(ravager) => ravager.get_entity(),
+            AnyEntity::Witch(witch) => witch.get_entity(),
         }
     }
 

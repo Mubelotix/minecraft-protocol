@@ -20,6 +20,8 @@ mod raider;
 pub use raider::*;
 mod spellcaster_illager;
 pub use spellcaster_illager::*;
+mod witch;
+pub use witch::*;
 
 #[derive(Default)]
 #[inheritable]
