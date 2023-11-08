@@ -10,7 +10,6 @@ pub struct ItemFrame {
 }
 
 #[derive(Default)]
-#[inheritable]
 #[inherit(ItemFrame, Entity)]
 pub struct GlowingItemFrame {
     pub item_frame: ItemFrame,
