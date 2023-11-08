@@ -12,3 +12,15 @@ pub struct AbstractSkeleton {
 pub struct Skeleton {
     pub abstract_skeleton: AbstractSkeleton,
 }
+
+#[derive(Default)]
+#[inherit(AbstractSkeleton, Monster, PathfinderMob, Mob, LivingEntity, Entity)]
+pub struct WitherSkeleton {
+    pub abstract_skeleton: AbstractSkeleton,
+}
+
+#[derive(Default)]
+#[inherit(AbstractSkeleton, Monster, PathfinderMob, Mob, LivingEntity, Entity)]
+pub struct Stray {
+    pub abstract_skeleton: AbstractSkeleton,
+}
