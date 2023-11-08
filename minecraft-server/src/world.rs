@@ -3,7 +3,7 @@ use crate::prelude::*;
 
 #[derive(Debug, Clone)]
 enum WorldChange {
-
+    BlockChange(BlockPosition, BlockWithState),
 }
 
 struct WorldLoadingManager {
@@ -30,8 +30,8 @@ impl WorldLoadingManager {
         }).or_insert(loaded_chunks);
     }
 
-    pub fn get_loaders(&self, position: ChunkPosition) -> Option<&HashSet<UUID>> {
-        self.loader_entities.get(&position)
+    pub fn get_loaders(&self, position: &ChunkPosition) -> Option<&HashSet<UUID>> {
+        self.loader_entities.get(position)
     }
 }
 
@@ -52,7 +52,8 @@ impl World {
     }
 
     pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
-        self.map.set_block(position, block).await;
+        self.map.set_block(position.clone(), block.clone()).await;
+        self.notify(&position.chunk(), WorldChange::BlockChange(position, block)).await;
     }
 
     pub async fn add_loader(&self, uuid: UUID) -> MpscReceiver<WorldChange> {
@@ -65,7 +66,7 @@ impl World {
         self.change_senders.write().await.remove(&uuid);
     }
 
-    async fn notify(&self, position: ChunkPosition, change: WorldChange) {
+    async fn notify(&self, position: &ChunkPosition, change: WorldChange) {
         let loading_manager = self.loading_manager.read().await;
         let mut senders = self.change_senders.write().await;
         let Some(loaders) = loading_manager.get_loaders(position) else {return};
