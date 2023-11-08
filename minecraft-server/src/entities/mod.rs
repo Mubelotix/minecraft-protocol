@@ -52,8 +52,8 @@ mod block;
 pub use block::*;
 mod particles;
 pub use particles::*;
-mod fire_balls;
-pub use fire_balls::*;
+mod fire_entities;
+pub use fire_entities::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -185,6 +185,7 @@ pub enum AnyEntity {
     SmallFireball(SmallFireball),
     Fireball(Fireball),
     WitherSkull(WitherSkull),
+    FireworkRocket(FireworkRocket),
 }
 
 #[allow(clippy::single_match)]
@@ -308,6 +309,7 @@ impl AnyEntity {
             AnyEntity::SmallFireball(small_fireball) => small_fireball.get_entity(),
             AnyEntity::Fireball(fireball) => fireball.get_entity(),
             AnyEntity::WitherSkull(wither_skull) => wither_skull.get_entity(),
+            AnyEntity::FireworkRocket(firework_rocket) => firework_rocket.get_entity(),
         }   
     }
 

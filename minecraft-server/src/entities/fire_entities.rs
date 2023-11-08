@@ -20,3 +20,11 @@ pub struct Fireball {
     pub item: Slot,
 }
 
+#[derive(Default)]
+#[inherit(Entity)]
+pub struct FireworkRocket {
+    pub entity: Entity,
+    pub item: Slot,
+    pub used_by: Option<Eid>,
+    pub is_shot_at_angle: bool,
+}
