@@ -9,7 +9,7 @@ pub use minecraft_protocol::{
         entity::{EntityAttribute, EntityMetadata, EntityMetadataValue},
         gamemode::{Gamemode, PreviousGamemode},
         players::MainHand,
-        slots::Slot,
+        slots::{Slot, Hand},
     },
     nbt::NbtTag,
     packets::{
@@ -22,7 +22,7 @@ pub use minecraft_protocol::{
         status::{ClientboundPacket as StatusClientbound, ServerboundPacket as StatusServerbound},
         Array, ConnectionState, Map, RawBytes, VarInt, VarLong, UUID, Position as NetworkPosition
     },
-    ids::block_states::BlockWithState,
+    ids::{block_states::BlockWithState, blocks::Block, items::Item},
     MinecraftPacketPart,
 };
 pub use std::{

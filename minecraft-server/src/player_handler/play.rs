@@ -168,6 +168,27 @@ impl PlayerHandler {
                     self.world.set_block(location.into(), BlockWithState::Air).await;
                 }
             }
+            PlaceBlock { hand, location, face, cursor_position_x, cursor_position_y, cursor_position_z, inside_block, sequence } => {
+                let slot_id = match hand {
+                    Hand::MainHand => self.held_item + 36,
+                    Hand::OffHand => 45,
+                };
+                let Some(slot) = self.inventory.get_slot_mut(slot_id) else {return};
+                let Some(item) = &mut slot.item else {return};
+                
+                if item.item_count <= 0 {
+                    return;
+                }
+
+                let text_id = item.item_id.text_id();
+                let Some(block) = Block::from_text_id(text_id) else {return};
+                let Some(block) = BlockWithState::from_state_id(block.default_state_id()) else {return};
+
+                self.world.set_block(location.into(), block).await;
+                if self.game_mode != Gamemode::Creative {
+                    item.item_count -= 1;
+                }
+            }
             packet => warn!("Unsupported packet received: {packet:?}"),
         }
     }

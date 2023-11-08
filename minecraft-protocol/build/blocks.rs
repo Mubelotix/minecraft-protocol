@@ -290,6 +290,13 @@ impl Block {{
         unsafe {{*TEXT_IDS.get_unchecked((self as u32) as usize)}}
     }}
 
+    pub fn from_text_id(text_id: &str) -> Option<Self> {{
+        match text_id {{
+            {text_id_match}
+            _ => None,
+        }}
+    }}
+
     #[inline]
     pub fn default_state_id(self) -> u32 {{
         unsafe {{*DEFAULT_STATE_IDS.get_unchecked((self as u32) as usize)}}
@@ -419,6 +426,11 @@ const AIR_BLOCKS: [bool; {max_value}] = {air_blocks:?};
         max_value = expected,
         state_id_match_arms = state_id_match_arms,
         text_ids = blocks.iter().map(|b| &b.text_id).collect::<Vec<_>>(),
+        text_id_match = blocks
+            .iter()
+            .map(|b| format!("\"{}\" => Some(Block::{}),", b.text_id, b.text_id.from_case(Case::Snake).to_case(Case::UpperCamel)))
+            .collect::<Vec<_>>()
+            .join("\n            "),
         display_names = blocks.iter().map(|b| &b.display_name).collect::<Vec<_>>(),
         state_id_ranges = blocks
             .iter()
@@ -427,7 +439,7 @@ const AIR_BLOCKS: [bool; {max_value}] = {air_blocks:?};
         default_state_ids = blocks.iter().map(|b| b.default_state).collect::<Vec<_>>(),
         item_ids = blocks
             .iter()
-            .map(|b| b.drops.get(0).copied().unwrap_or(0))
+            .map(|b| b.drops.first().copied().unwrap_or(0))
             .collect::<Vec<_>>(),
         materials = materials,
         resistances = blocks.iter().map(|b| b.resistance).collect::<Vec<_>>(),
