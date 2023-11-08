@@ -59,4 +59,12 @@ impl World {
     pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
         self.map.set_block(position, block).await;
     }
+
+    pub async fn add_loader(&self, uuid: UUID) -> MpscReceiver<WorldChange> {
+        self.loading_manager.write().await.add_loader(uuid)
+    }
+
+    pub async fn remove_loader(&self, uuid: UUID) {
+        self.loading_manager.write().await.remove_loader(uuid)
+    }
 }
