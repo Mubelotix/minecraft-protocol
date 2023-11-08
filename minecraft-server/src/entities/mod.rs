@@ -190,6 +190,7 @@ pub enum AnyEntity {
     FireworkRocket(FireworkRocket),
     ItemFrame(ItemFrame),
     GlowingItemFrame(GlowingItemFrame),
+    Painting(Painting),
 }
 
 #[allow(clippy::single_match)]
@@ -316,6 +317,7 @@ impl AnyEntity {
             AnyEntity::FireworkRocket(firework_rocket) => firework_rocket.get_entity(),
             AnyEntity::ItemFrame(item_frame) => item_frame.get_entity(),
             AnyEntity::GlowingItemFrame(glowing_item_frame) => glowing_item_frame.get_entity(),
+            AnyEntity::Painting(painting) => painting.get_entity(),
         }   
     }
 
