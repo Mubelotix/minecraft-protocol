@@ -8,20 +8,9 @@ enum WorldChange {
 struct WorldLoadingManager {
     loaded_chunks: HashMap<UUID, HashSet<ChunkPosition>>,
     loader_entities: HashMap<ChunkPosition, HashSet<UUID>>,
-    change_senders: HashMap<UUID, MpscSender<WorldChange>>,
 }
 
 impl WorldLoadingManager {
-    fn add_loader(&mut self, uuid: UUID) -> MpscReceiver<WorldChange> {
-        let (sender, receiver) = mpsc_channel(100);
-        self.change_senders.insert(uuid, sender);
-        receiver
-    }
-
-    fn remove_loader(&mut self, uuid: UUID) {
-        self.change_senders.remove(&uuid);
-    }
-
     fn update_loaded_chunks(&mut self, uuid: UUID, loaded_chunks: HashSet<ChunkPosition>) {
         self.loaded_chunks.entry(uuid).and_modify(|f| {
             for just_unloaded in f.difference(&loaded_chunks) {
@@ -49,6 +38,7 @@ struct World {
     entities: Entities,
 
     loading_manager: RwLock<WorldLoadingManager>,
+    change_senders: RwLock<HashMap<UUID, MpscSender<WorldChange>>>,
 }
 
 impl World {
@@ -61,10 +51,12 @@ impl World {
     }
 
     pub async fn add_loader(&self, uuid: UUID) -> MpscReceiver<WorldChange> {
-        self.loading_manager.write().await.add_loader(uuid)
+        let (sender, receiver) = mpsc_channel(100);
+        self.change_senders.write().await.insert(uuid, sender);
+        receiver
     }
 
     pub async fn remove_loader(&self, uuid: UUID) {
-        self.loading_manager.write().await.remove_loader(uuid)
+        self.change_senders.write().await.remove(&uuid);
     }
 }
