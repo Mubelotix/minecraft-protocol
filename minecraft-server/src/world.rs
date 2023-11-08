@@ -8,12 +8,12 @@ pub enum WorldChange {
 
 #[derive(Default)]
 struct WorldLoadingManager {
-    loaded_chunks: HashMap<UUID, HashSet<ChunkPosition>>,
-    loader_entities: HashMap<ChunkPosition, HashSet<UUID>>,
+    loaded_chunks: HashMap<UUID, HashSet<ChunkColumnPosition>>,
+    loader_entities: HashMap<ChunkColumnPosition, HashSet<UUID>>,
 }
 
 impl WorldLoadingManager {
-    fn update_loaded_chunks(&mut self, uuid: UUID, loaded_chunks: HashSet<ChunkPosition>) {
+    fn update_loaded_chunks(&mut self, uuid: UUID, loaded_chunks: HashSet<ChunkColumnPosition>) {
         self.loaded_chunks.entry(uuid).and_modify(|f| {
             for just_unloaded in f.difference(&loaded_chunks) {
                 let mut can_be_removed = false;
@@ -31,8 +31,12 @@ impl WorldLoadingManager {
         }).or_insert(loaded_chunks);
     }
 
-    pub fn get_loaders(&self, position: &ChunkPosition) -> Option<&HashSet<UUID>> {
+    pub fn get_loaders(&self, position: &ChunkColumnPosition) -> Option<&HashSet<UUID>> {
         self.loader_entities.get(position)
+    }
+
+    pub fn get_loaded_chunks(&self) -> HashSet<ChunkColumnPosition> {
+        self.loader_entities.keys().cloned().collect()
     }
 }
 
@@ -67,7 +71,7 @@ impl World {
 
     pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
         self.map.set_block(position.clone(), block.clone()).await;
-        self.notify(&position.chunk(), WorldChange::BlockChange(position, block)).await;
+        self.notify(&position.chunk_column(), WorldChange::BlockChange(position, block)).await;
     }
 
     pub async fn add_loader(&self, uuid: UUID) -> MpscReceiver<WorldChange> {
@@ -80,7 +84,23 @@ impl World {
         self.change_senders.write().await.remove(&uuid);
     }
 
-    async fn notify(&self, position: &ChunkPosition, change: WorldChange) {
+    pub async fn update_loaded_chunks(&self, uuid: UUID, loaded_chunks: HashSet<ChunkColumnPosition>) {
+        let mut loading_manager = self.loading_manager.write().await;
+        let loaded_chunks_before = loading_manager.get_loaded_chunks();
+        loading_manager.update_loaded_chunks(uuid, loaded_chunks);
+        let loaded_chunks_after = loading_manager.get_loaded_chunks();
+        let newly_loaded_chunks = loaded_chunks_after.difference(&loaded_chunks_before);
+        let just_unloaded_chunks = loaded_chunks_before.difference(&loaded_chunks_after);
+        drop(loading_manager);
+        for newly_loaded_chunk in newly_loaded_chunks {
+            self.map.load(newly_loaded_chunk.clone()).await;
+        }
+        for just_unloaded_chunk in just_unloaded_chunks {
+            self.map.unload(just_unloaded_chunk.clone()).await;
+        }
+    }
+
+    async fn notify(&self, position: &ChunkColumnPosition, change: WorldChange) {
         let loading_manager = self.loading_manager.read().await;
         let mut senders = self.change_senders.write().await;
         let Some(loaders) = loading_manager.get_loaders(position) else {return};

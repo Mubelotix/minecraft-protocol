@@ -14,7 +14,7 @@ pub struct PlayerInfo {
     pub(super) allow_server_listing: bool,
 }
 
-pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPlayerInfo, world: Arc<World>) -> Result<PlayerInfo, ()> {
+pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPlayerInfo, world: Arc<World>) -> Result<(PlayerInfo, MpscReceiver<WorldChange>), ()> {
     // Receive client informations
     let packet = receive_packet(stream).await;
     debug!("Packet received");
@@ -306,6 +306,15 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
     send_packet(stream, chunk_data).await;
     debug!("ChunkBatchStart sent");
 
+    let change_receiver = world.add_loader(logged_in_player_info.uuid).await;
+    let mut loaded_chunks = HashSet::new();
+    for cx in -3..=3 {
+        for cz in -3..=3 {
+            loaded_chunks.insert(ChunkColumnPosition { cx, cz });
+        }
+    }
+    world.update_loaded_chunks(logged_in_player_info.uuid, loaded_chunks).await;
+
     let mut heightmaps = HashMap::new();
     heightmaps.insert(String::from("MOTION_BLOCKING"), NbtTag::LongArray(vec![0; 37]));
     let heightmaps = NbtTag::Compound(heightmaps);
@@ -356,7 +365,7 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
     };
     debug!("ChunkBatchAcknoledgement received");
 
-    Ok(PlayerInfo {
+    Ok((PlayerInfo {
         addr: logged_in_player_info.addr,
         username: logged_in_player_info.username,
         uuid: logged_in_player_info.uuid,
@@ -368,5 +377,5 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
         main_hand,
         enable_text_filtering,
         allow_server_listing,
-    })
+    }, change_receiver))
 }
