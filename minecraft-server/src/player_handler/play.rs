@@ -60,7 +60,6 @@ impl PlayerHandler {
 
         let mut newly_loaded_chunks: Vec<_> = loaded_chunks_after.difference(&self.loaded_chunks).cloned().collect();
         let unloaded_chunks: Vec<_> = self.loaded_chunks.difference(&loaded_chunks_after).cloned().collect();
-        debug!("render distance is {}, should have {} chunks, loading {} (skipped {}) and unloading {}", self.render_distance, loaded_chunks_after.len(), newly_loaded_chunks.len().clamp(0, 50), newly_loaded_chunks.len().saturating_sub(50), unloaded_chunks.len());
         for skipped in newly_loaded_chunks.iter().skip(50) {
             loaded_chunks_after.remove(skipped);
         }
@@ -103,10 +102,10 @@ impl PlayerHandler {
         }
 
         for unloaded_chunk in unloaded_chunks {
-            //self.send_packet(PlayClientbound::UnloadChunk {
-            //    chunk_x: unloaded_chunk.cx,
-            //    chunk_z: unloaded_chunk.cz,
-            //}).await;
+            self.send_packet(PlayClientbound::UnloadChunk {
+                chunk_x: unloaded_chunk.cx,
+                chunk_z: unloaded_chunk.cz,
+            }).await;
         }
 
         self.loaded_chunks = loaded_chunks_after;

@@ -334,9 +334,9 @@ pub enum ClientboundPacket<'a> {
     /// It is legal to send this packet even if the given chunk is not currently loaded.
     UnloadChunk {
         /// Block coordinate divided by 16, rounded down.
-        chunk_x: i32,
-        /// Block coordinate divided by 16, rounded down.
         chunk_z: i32,
+        /// Block coordinate divided by 16, rounded down.
+        chunk_x: i32,
     },
 
     /// Used for a wide variety of game state things, from weather to bed use to gamemode to demo messages.
