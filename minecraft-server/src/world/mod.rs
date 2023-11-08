@@ -78,3 +78,23 @@ impl World {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio::sync::mpsc::error::TryRecvError;
+
+    #[tokio::test]
+    async fn test_world_notifications() {
+        let world = World::new();
+
+        let mut receiver1 = world.add_loader(1).await;
+        let mut receiver2 = world.add_loader(2).await;
+        world.update_loaded_chunks(1, vec![ChunkColumnPosition{cx: 0, cz: 0}].into_iter().collect()).await;
+        world.update_loaded_chunks(2, vec![ChunkColumnPosition{cx: 1, cz: 1}].into_iter().collect()).await;
+
+        world.set_block(BlockPosition{x: 1, y: 1, z: 1}, BlockWithState::Air).await;
+        assert!(matches!(receiver1.try_recv(), Ok(WorldChange::BlockChange(BlockPosition{x: 1, y: 1, z: 1}, BlockWithState::Air))));
+        assert!(matches!(receiver2.try_recv(), Err(TryRecvError::Empty)));
+    }
+}
