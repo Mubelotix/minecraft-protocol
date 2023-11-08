@@ -2,6 +2,7 @@
 
 mod position;
 mod player_handler;
+mod inventory;
 mod server_behavior;
 mod prelude;
 mod entities;
