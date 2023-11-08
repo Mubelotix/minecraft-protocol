@@ -50,6 +50,8 @@ mod slime;
 pub use slime::*;
 mod block;
 pub use block::*;
+mod particles;
+pub use particles::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -174,6 +176,7 @@ pub enum AnyEntity {
     LlamaSpit(LlamaSpit),
     EyeOfEnder(EyeOfEnder),
     FallingBlock(FallingBlock),
+    AreaEffectCloud(AreaEffectCloud),
 }
 
 #[allow(clippy::single_match)]
@@ -290,6 +293,7 @@ impl AnyEntity {
             AnyEntity::LlamaSpit(llama_spit) => llama_spit.get_entity(),
             AnyEntity::EyeOfEnder(eye_of_ender) => eye_of_ender.get_entity(),
             AnyEntity::FallingBlock(falling_block) => falling_block.get_entity(),
+            AnyEntity::AreaEffectCloud(area_effect_cloud) => area_effect_cloud.get_entity(),
         }   
     }
 
