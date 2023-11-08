@@ -140,6 +140,7 @@ pub enum AnyEntity {
     SpellcasterIllager(SpellcasterIllager),
     Evoker(Evoker),
     Illusioner(Illusioner),
+    Ravager(Ravager),
 }
 
 #[allow(clippy::single_match)]
@@ -230,6 +231,7 @@ impl AnyEntity {
             AnyEntity::SpellcasterIllager(spellcaster_illager) => spellcaster_illager.get_entity(),
             AnyEntity::Evoker(evoker) => evoker.get_entity(),
             AnyEntity::Illusioner(illusioner) => illusioner.get_entity(),
+            AnyEntity::Ravager(ravager) => ravager.get_entity(),
         }
     }
 
