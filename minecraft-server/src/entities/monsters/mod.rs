@@ -34,6 +34,8 @@ mod wither;
 pub use wither::*;
 mod zoglin;
 pub use zoglin::*;
+mod zombies;
+pub use zombies::*;
 
 #[derive(Default)]
 #[inheritable]

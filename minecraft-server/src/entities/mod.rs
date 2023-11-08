@@ -152,6 +152,7 @@ pub enum AnyEntity {
     Warden(Warden),
     Wither(Wither),
     Zoglin(Zoglin),
+    Zombie(Zombie),
 }
 
 #[allow(clippy::single_match)]
@@ -254,6 +255,7 @@ impl AnyEntity {
             AnyEntity::Warden(warden) => warden.get_entity(),
             AnyEntity::Wither(wither) => wither.get_entity(),
             AnyEntity::Zoglin(zoglin) => zoglin.get_entity(),
+            AnyEntity::Zombie(zombie) => zombie.get_entity(),
         }   
     }
 
