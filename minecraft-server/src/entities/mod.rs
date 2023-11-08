@@ -193,6 +193,7 @@ pub enum AnyEntity {
     Painting(Painting),
     ItemEntity(ItemEntity),
     ArmorStand(ArmorStand),
+    Dolphin(Dolphin),
 }
 
 #[allow(clippy::single_match)]
@@ -322,6 +323,7 @@ impl AnyEntity {
             AnyEntity::Painting(painting) => painting.get_entity(),
             AnyEntity::ItemEntity(item_entity) => item_entity.get_entity(),
             AnyEntity::ArmorStand(armor_stand) => armor_stand.get_entity(),
+            AnyEntity::Dolphin(dolphin) => dolphin.get_entity(),
         }   
     }
 
