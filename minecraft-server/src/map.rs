@@ -286,11 +286,13 @@ impl WorldMap {
         shard.entry(position).or_insert_with(|| chunk);
     }
 
-    pub async fn unload(&self, position: ChunkColumnPosition) {
-        let shard = position.shard(self.shard_count);
+    pub async fn unload(&self, _position: ChunkColumnPosition) {
+        // Note: these are not unloaded yet in order to preserve map data
 
-        let mut shard = self.shards[shard].write().await;
-        shard.remove(&position);
+        //let shard = position.shard(self.shard_count);
+
+        //let mut shard = self.shards[shard].write().await;
+        //shard.remove(&position);
         // TODO: write to disk
     }
 }

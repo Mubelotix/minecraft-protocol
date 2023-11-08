@@ -92,7 +92,7 @@ pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut serve
     loop {
         // Select the first event that happens
         enum Event {
-            PacketServerbound(Vec<u8>),
+            PacketServerbound(Result<Vec<u8>, ()>),
             PacketClientbound(Option<Vec<u8>>),
             Message(Result<ServerMessage, BroadcastRecvError>),
             WorldChange(Option<WorldChange>),
@@ -104,7 +104,7 @@ pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut serve
             change = receive_change_fut => Event::WorldChange(change),
         };
         match event {
-            Event::PacketServerbound(packet) => {
+            Event::PacketServerbound(Ok(packet)) => {
                 drop(receive_packet_fut);
                 receive_packet_fut = Box::pin(receive_packet_split(&mut reader_stream).fuse());
 
@@ -137,6 +137,10 @@ pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut serve
             }
             Event::PacketClientbound(None) => {
                 error!("Failed to receive clientbound packet");
+                return Err(());
+            }
+            Event::PacketServerbound(Err(e)) => {
+                error!("Failed to receive serverbound packet: {e:?}");
                 return Err(());
             }
             Event::WorldChange(None) => {

@@ -8,7 +8,7 @@ pub struct LoggedInPlayerInfo {
 
 pub async fn login(stream: &mut TcpStream, addr: SocketAddr) -> Result<LoggedInPlayerInfo, ()> {
     // Receive login start
-    let packet = receive_packet(stream).await;
+    let packet = receive_packet(stream).await?;
     let packet = LoginServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
     let LoginServerbound::LoginStart{ username, player_uuid } = packet else {
         error!("Expected LoginStart packet, got: {packet:?}");
@@ -30,7 +30,7 @@ pub async fn login(stream: &mut TcpStream, addr: SocketAddr) -> Result<LoggedInP
     debug!("LoginSuccess sent");
 
     // Receive login acknowledged
-    let packet = receive_packet(stream).await;
+    let packet = receive_packet(stream).await?;
     let packet = LoginServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
     let LoginServerbound::LoginAcknowledged = packet else {
         error!("Expected LoginAcknowledged packet, got: {packet:?}");
@@ -39,10 +39,10 @@ pub async fn login(stream: &mut TcpStream, addr: SocketAddr) -> Result<LoggedInP
     debug!("LoginAcknowledged received");
 
     // Ignore encryption response if any
-    let packet = receive_packet(stream).await;
+    let packet = receive_packet(stream).await?;
     if let Ok(LoginServerbound::EncryptionResponse { .. }) = LoginServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()) {
         // Ignore for now (TODO)
-        //packet = receive_packet(stream).await;
+        //packet = receive_packet(stream).await?;
     }
     debug!("EncryptionResponse ignored");
 

@@ -7,7 +7,7 @@ pub async fn handle_connection(
     world: Arc<World>,
 ) -> Result<(), ()> {
     // Receive handshake
-    let packet = receive_packet(&mut stream).await;
+    let packet = receive_packet(&mut stream).await?;
     let HandshakeServerbound::Hello { protocol_version, server_address, server_port, next_state } = HandshakeServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
     match next_state {
         ConnectionState::Login => {

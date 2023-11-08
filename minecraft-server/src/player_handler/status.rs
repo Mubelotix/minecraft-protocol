@@ -1,8 +1,8 @@
 use super::*;
 
-pub async fn status(stream: &mut TcpStream) {
+pub async fn status(stream: &mut TcpStream) -> Result<(), ()> {
     loop {
-        let packet = receive_packet(stream).await;
+        let packet = receive_packet(stream).await?;
         match StatusServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap() {
             StatusServerbound::Request => {
                 let response = StatusClientbound::Response {
@@ -18,11 +18,11 @@ pub async fn status(stream: &mut TcpStream) {
                 };
                 send_packet(stream, pong).await;
                 debug!("Pong sent");
-                return;
+                return Ok(());
             },
             _ => {
                 debug!("Unexpected packet: {packet:?}");
             }
-        };    
+        };
     }
 }

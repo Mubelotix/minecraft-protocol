@@ -16,7 +16,7 @@ pub struct PlayerInfo {
 
 pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPlayerInfo, world: Arc<World>) -> Result<(PlayerInfo, MpscReceiver<WorldChange>), ()> {
     // Receive client informations
-    let packet = receive_packet(stream).await;
+    let packet = receive_packet(stream).await?;
     debug!("Packet received");
     let packet = ConfigServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
     let ConfigServerbound::ClientInformations { locale, render_distance, chat_mode, chat_colors, displayed_skin_parts, main_hand, enable_text_filtering, allow_server_listing } = packet else {
@@ -59,7 +59,7 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
     debug!("FinishConfiguration sent");
 
     // Receive finish configuration
-    let packet = receive_packet(stream).await;
+    let packet = receive_packet(stream).await?;
     let packet = ConfigServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
     let ConfigServerbound::FinishConfiguration = packet else {
         error!("Expected FinishConfiguration packet, got: {packet:?}");
@@ -360,7 +360,7 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
     debug!("ChunkBatchFinished sent");
 
     // Get chunk batch acknoledgement
-    let packet = receive_packet(stream).await;
+    let packet = receive_packet(stream).await?;
     let packet = PlayServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
     let PlayServerbound::ChunkBatchReceived { chunks_per_tick } = packet else {
         error!("Expected ChunkBatchAcknoledgement packet, got: {packet:?}");
