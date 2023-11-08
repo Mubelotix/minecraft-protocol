@@ -48,6 +48,8 @@ mod flying;
 pub use flying::*;  
 mod slime;
 pub use slime::*;
+mod block;
+pub use block::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -171,6 +173,7 @@ pub enum AnyEntity {
     Slime(Slime),
     LlamaSpit(LlamaSpit),
     EyeOfEnder(EyeOfEnder),
+    FallingBlock(FallingBlock),
 }
 
 #[allow(clippy::single_match)]
@@ -286,6 +289,7 @@ impl AnyEntity {
             AnyEntity::Slime(slime) => slime.get_entity(),
             AnyEntity::LlamaSpit(llama_spit) => llama_spit.get_entity(),
             AnyEntity::EyeOfEnder(eye_of_ender) => eye_of_ender.get_entity(),
+            AnyEntity::FallingBlock(falling_block) => falling_block.get_entity(),
         }   
     }
 
