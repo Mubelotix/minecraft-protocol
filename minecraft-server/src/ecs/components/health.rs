@@ -37,14 +37,15 @@ impl HealthComponent {
 impl Entities {
     /// Set the health of an entity.
     pub async fn set_health(&self, id: Eid, health: HealthComponent) -> Option<()> {
-        let mut health_components = self.health_components.write().await;
-        health_components.insert(id, health);
-        Some(())
+        //let mut health_components = self.health_components.write().await;
+        //health_components.insert(id, health);
+        //Some(())
+        unimplemented!()
     }
     
     /// Get the health of an entity.
     pub async fn get_health(&self, id: Eid) -> Option<HealthComponent> {
-        self.health_components.read().await.get(&id).cloned()
+        //self.health_components.read().await.get(&id).cloned()
+        unimplemented!()
     }
-
 }

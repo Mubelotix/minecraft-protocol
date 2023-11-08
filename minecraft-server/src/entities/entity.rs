@@ -2,6 +2,7 @@ use super::*;
 
 #[inheritable]
 pub struct Entity {
+    pub position: Position,
     pub is_on_fire: bool,
     pub is_crouching: bool,
     pub is_sprinting: bool,
@@ -21,6 +22,7 @@ pub struct Entity {
 impl Default for Entity {
     fn default() -> Self {
         Entity {
+            position: Position { x: 0.0, y: 0.0, z: 0.0 },
             is_on_fire: false,
             is_crouching: false,
             is_sprinting: false,
