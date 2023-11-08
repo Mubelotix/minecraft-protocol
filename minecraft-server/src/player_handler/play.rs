@@ -146,6 +146,10 @@ impl PlayerHandler {
                 self.on_move().await;
                 // TODO: make sure the movement is allowed
             },
+            SetHeldItem { mut slot } => {
+                slot = slot.clamp(0, 8);
+                self.held_item = slot as usize;
+            }
             DigBlock { status, location, face: _, sequence: _ } => {
                 use minecraft_protocol::components::blocks::DiggingState;
 
