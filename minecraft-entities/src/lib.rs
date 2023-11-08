@@ -33,10 +33,9 @@ pub use fire_entities::*;
 mod item;
 pub use item::*;
 
-pub use minecraft_server_derive::{inherit, inheritable};
-
-pub use crate::prelude::*;
-pub use minecraft_protocol::{
+pub(crate) use minecraft_positions::*;
+pub(crate) use minecraft_server_derive::{inherit, inheritable};
+pub(crate) use minecraft_protocol::{
     components::{
         entity::Pose,
         slots::{Slot, SlotItem, Hand}
@@ -45,6 +44,8 @@ pub use minecraft_protocol::{
     nbt::NbtTag,
     packets::UUID
 };
+
+pub type Eid = u32;
 
 pub enum AnyEntity {
     Entity(Entity),

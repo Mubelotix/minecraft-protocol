@@ -1,3 +1,5 @@
+mod shards;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct BlockPosition {
     pub x: i32,

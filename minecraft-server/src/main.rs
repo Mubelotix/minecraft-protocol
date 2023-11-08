@@ -1,14 +1,11 @@
 #![allow(clippy::uninit_vec)]
 
-mod position;
 mod player_handler;
 mod server_behavior;
 mod prelude;
-mod entities;
 mod map;
 mod ecs;
 
-use std::env;
 use crate::prelude::*;
 
 struct Map {

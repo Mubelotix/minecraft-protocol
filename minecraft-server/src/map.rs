@@ -12,12 +12,6 @@ pub struct WorldMap {
     shards: Vec<RwLock<HashMap<ChunkColumnPosition, ChunkColumn>>>,
 }
 
-impl ChunkColumnPosition {
-    fn shard(&self, shard_count: usize) -> usize {
-        (self.cx + self.cz).unsigned_abs() as usize % shard_count
-    }
-}
-
 #[derive(Clone)]
 struct Chunk {
     data: ChunkData,
