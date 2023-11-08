@@ -26,6 +26,8 @@ mod vex;
 pub use vex::*;
 mod skeleton;
 pub use skeleton::*;
+mod spider;
+pub use spider::*;
 
 #[derive(Default)]
 #[inheritable]
