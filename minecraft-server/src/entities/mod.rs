@@ -153,6 +153,10 @@ pub enum AnyEntity {
     Wither(Wither),
     Zoglin(Zoglin),
     Zombie(Zombie),
+    ZombieVillager(ZombieVillager),
+    Husk(Husk),
+    Drowned(Drowned),
+    ZombifiedPiglin(ZombifiedPiglin),
 }
 
 #[allow(clippy::single_match)]
@@ -256,6 +260,10 @@ impl AnyEntity {
             AnyEntity::Wither(wither) => wither.get_entity(),
             AnyEntity::Zoglin(zoglin) => zoglin.get_entity(),
             AnyEntity::Zombie(zombie) => zombie.get_entity(),
+            AnyEntity::ZombieVillager(zombie_villager) => zombie_villager.get_entity(),
+            AnyEntity::Husk(husk) => husk.get_entity(),
+            AnyEntity::Drowned(drowned) => drowned.get_entity(),
+            AnyEntity::ZombifiedPiglin(zombified_piglin) => zombified_piglin.get_entity(),
         }   
     }
 
