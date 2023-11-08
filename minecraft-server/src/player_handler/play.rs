@@ -10,6 +10,9 @@ struct PlayerHandler {
     on_ground: bool,
     packet_sender: MpscSender<Vec<u8>>,
 
+    inventory: PlayerInventory,
+    held_item: usize,
+
     render_distance: i32,
     loaded_chunks: HashSet<ChunkColumnPosition>,
     center_chunk: ChunkPosition,
@@ -166,6 +169,9 @@ pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut serve
         pitch: 0.0,
         on_ground: false,
         packet_sender,
+
+        inventory: PlayerInventory::new(),
+        held_item: 0,
 
         center_chunk: ChunkPosition { cx: 0, cy: 11, cz: 0 },
         render_distance: player_info.render_distance.clamp(4, 15) as i32,
