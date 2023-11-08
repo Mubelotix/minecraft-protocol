@@ -41,6 +41,7 @@ impl World {
         self.notify(&position.chunk_column(), WorldChange::BlockChange(position, block)).await;
     }
 
+    /// Sets a block without notifying the entity with the given UUID.
     pub async fn set_block_by(&self, position: BlockPosition, block: BlockWithState, uuid: UUID) {
         self.map.set_block(position.clone(), block.clone()).await;
         self.notify_but(&position.chunk_column(), WorldChange::BlockChange(position, block), uuid).await;
@@ -72,10 +73,12 @@ impl World {
         }
     }
 
+    /// Notifies all entities observing the chunk.
     async fn notify(&self, position: &ChunkColumnPosition, change: WorldChange) {
         self.notify_but(position, change, u128::MAX).await;
     }
 
+    /// Notifies all entities observing the chunk except the one with the given UUID.
     async fn notify_but(&self, position: &ChunkColumnPosition, change: WorldChange, uuid_to_skip: UUID) {
         let loading_manager = self.loading_manager.read().await;
         let mut senders = self.change_senders.write().await;
