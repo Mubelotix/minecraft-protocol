@@ -194,7 +194,7 @@ pub enum AnyEntity {
     Dolphin(Dolphin),
     AbstractFish(AbstractFish),
     Cod(Cod),
-    Pufferfish(Pufferfish),
+    PufferFish(PufferFish),
     Salmon(Salmon),
     TropicalFish(TropicalFish),
     Tadpole(Tadpole),
@@ -330,7 +330,7 @@ impl AnyEntity {
             AnyEntity::Dolphin(dolphin) => dolphin.get_entity(),
             AnyEntity::AbstractFish(abstract_fish) => abstract_fish.get_entity(),
             AnyEntity::Cod(cod) => cod.get_entity(),
-            AnyEntity::Pufferfish(pufferfish) => pufferfish.get_entity(),
+            AnyEntity::PufferFish(pufferfish) => pufferfish.get_entity(),
             AnyEntity::Salmon(salmon) => salmon.get_entity(),
         }   
     }
