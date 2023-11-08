@@ -18,6 +18,8 @@ mod silverfish;
 pub use silverfish::*;
 mod raider;
 pub use raider::*;
+mod spellcaster_illager;
+pub use spellcaster_illager::*;
 
 #[derive(Default)]
 #[inheritable]
