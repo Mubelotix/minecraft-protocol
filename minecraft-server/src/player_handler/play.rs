@@ -9,6 +9,10 @@ struct PlayerHandler {
     pitch: f32,
     on_ground: bool,
     packet_sender: MpscSender<Vec<u8>>,
+
+    render_distance: i32,
+    loaded_chunks: HashSet<ChunkColumnPosition>,
+    center_chunk: ChunkPosition,
 }
 
 impl PlayerHandler {
@@ -33,6 +37,81 @@ impl PlayerHandler {
         }).await;
     }
 
+    async fn on_move(&mut self) {
+        let new_center_chunk = self.position.chunk();
+
+        if new_center_chunk == self.center_chunk { return };
+        self.send_packet(PlayClientbound::SetCenterChunk { chunk_x: VarInt(new_center_chunk.cx), chunk_z: VarInt(new_center_chunk.cz) }).await;
+
+        if new_center_chunk.chunk_column() == self.center_chunk.chunk_column() {
+            self.center_chunk = new_center_chunk;
+            return;
+        };
+        let mut loaded_chunks_after = HashSet::new();
+        for cx in (new_center_chunk.cx - self.render_distance)..=(new_center_chunk.cx + self.render_distance) {
+            for cz in (new_center_chunk.cz - self.render_distance)..=(new_center_chunk.cz + self.render_distance) {
+                let dist = (((cx - new_center_chunk.cx).pow(2) + (cz - new_center_chunk.cz).pow(2)) as f32).sqrt();
+                if dist > self.render_distance as f32 { continue };
+                loaded_chunks_after.insert(ChunkColumnPosition { cx, cz });
+            }
+        }
+
+        if loaded_chunks_after == self.loaded_chunks { return };
+
+        let mut newly_loaded_chunks: Vec<_> = loaded_chunks_after.difference(&self.loaded_chunks).cloned().collect();
+        let unloaded_chunks: Vec<_> = self.loaded_chunks.difference(&loaded_chunks_after).cloned().collect();
+        debug!("render distance is {}, should have {} chunks, loading {} (skipped {}) and unloading {}", self.render_distance, loaded_chunks_after.len(), newly_loaded_chunks.len().clamp(0, 50), newly_loaded_chunks.len().saturating_sub(50), unloaded_chunks.len());
+        for skipped in newly_loaded_chunks.iter().skip(50) {
+            loaded_chunks_after.remove(skipped);
+        }
+        newly_loaded_chunks.truncate(50);
+        self.world.update_loaded_chunks(self.info.uuid, loaded_chunks_after.clone()).await;
+
+        let mut heightmaps = HashMap::new();
+        heightmaps.insert(String::from("MOTION_BLOCKING"), NbtTag::LongArray(vec![0; 37]));
+        let heightmaps = NbtTag::Compound(heightmaps);
+        for newly_loaded_chunk in newly_loaded_chunks {
+            let mut column = Vec::new();
+            for cy in -4..20 {
+                let chunk = self.world.get_network_chunk(newly_loaded_chunk.chunk(cy)).await.unwrap_or_else(|| {
+                    error!("Chunk not loaded: {newly_loaded_chunk:?}");
+                    NetworkChunk { // TODO hard error
+                        block_count: 0,
+                        blocks: PalettedData::Single { value: 0 },
+                        biomes: PalettedData::Single { value: 4 },
+                    }
+                });
+                column.push(chunk);
+            }
+            let serialized: Vec<u8> = NetworkChunk::into_data(column).unwrap();
+            let chunk_data = PlayClientbound::ChunkData {
+                value: ChunkData {
+                    chunk_x: newly_loaded_chunk.cx,
+                    chunk_z: newly_loaded_chunk.cz,
+                    heightmaps: heightmaps.clone(),
+                    data: Array::from(serialized.clone()),
+                    block_entities: Array::default(),
+                    sky_light_mask: Array::default(),
+                    block_light_mask: Array::default(),
+                    empty_sky_light_mask: Array::default(),
+                    empty_block_light_mask: Array::default(),
+                    sky_light: Array::default(),
+                    block_light: Array::default(),
+                }
+            };
+            self.send_packet(chunk_data).await;
+        }
+
+        for unloaded_chunk in unloaded_chunks {
+            //self.send_packet(PlayClientbound::UnloadChunk {
+            //    chunk_x: unloaded_chunk.cx,
+            //    chunk_z: unloaded_chunk.cz,
+            //}).await;
+        }
+
+        self.loaded_chunks = loaded_chunks_after;
+    }
+
     async fn on_packet<'a>(&mut self, packet: PlayServerbound<'a>) {
         use PlayServerbound::*;
         match packet {
@@ -41,6 +120,7 @@ impl PlayerHandler {
                 self.position.y = y;
                 self.position.z = z;
                 self.on_ground = on_ground;
+                self.on_move().await;
                 // TODO: make sure the movement is allowed
             },
             SetPlayerRotation { yaw, pitch, on_ground } => {
@@ -55,6 +135,7 @@ impl PlayerHandler {
                 self.yaw = yaw;
                 self.pitch = pitch;
                 self.on_ground = on_ground;
+                self.on_move().await;
                 // TODO: make sure the movement is allowed
             },
             DigBlock { status, location, face: _, sequence: _ } => {
@@ -75,13 +156,24 @@ pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut serve
     let mut handler = PlayerHandler {
         world,
         game_mode: Gamemode::Creative,
-        info: player_info,
         position: Position { x: 0.0, y: 60.0, z: 0.0 },
         yaw: 0.0,
         pitch: 0.0,
         on_ground: false,
         packet_sender,
+
+        center_chunk: ChunkPosition { cx: 0, cy: 11, cz: 0 },
+        render_distance: player_info.render_distance.clamp(4, 15) as i32,
+        loaded_chunks: HashSet::new(),
+
+        info: player_info,
     };
+
+    for cx in -3..=3 {
+        for cz in -3..=3 {
+            handler.loaded_chunks.insert(ChunkColumnPosition { cx, cz });
+        }
+    }
 
     let (mut reader_stream, mut writer_stream) = stream.into_split();
     

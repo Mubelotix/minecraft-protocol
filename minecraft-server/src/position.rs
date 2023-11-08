@@ -158,3 +158,13 @@ pub struct ChunkColumnPosition {
     pub cx: i32,
     pub cz: i32,
 }
+
+impl ChunkColumnPosition {
+    pub fn chunk(&self, cy: i32) -> ChunkPosition {
+        ChunkPosition {
+            cx: self.cx,
+            cy,
+            cz: self.cz,
+        }
+    }
+}
