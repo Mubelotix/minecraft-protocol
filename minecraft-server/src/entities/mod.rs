@@ -144,6 +144,7 @@ pub enum AnyEntity {
     Witch(Witch),
     EvokerFangs(EvokerFangs),
     Vex(Vex),
+    Skeleton(Skeleton),
 }
 
 #[allow(clippy::single_match)]
@@ -238,6 +239,7 @@ impl AnyEntity {
             AnyEntity::Witch(witch) => witch.get_entity(),
             AnyEntity::EvokerFangs(evoker_fangs) => evoker_fangs.get_entity(),
             AnyEntity::Vex(vex) => vex.get_entity(),
+            AnyEntity::Skeleton(skeleton) => skeleton.get_entity(),
         }
     }
 

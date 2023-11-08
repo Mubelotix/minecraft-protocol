@@ -24,6 +24,8 @@ mod witch;
 pub use witch::*;
 mod vex;
 pub use vex::*;
+mod skeleton;
+pub use skeleton::*;
 
 #[derive(Default)]
 #[inheritable]
