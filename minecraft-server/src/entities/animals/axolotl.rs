@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Default)]
 #[inherit(Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity)]
-pub struct Axolot {
+pub struct Axolott {
     pub animal: Animal,
     pub variant: u8,
     pub playing_dead: bool,
