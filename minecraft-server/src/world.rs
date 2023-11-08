@@ -14,21 +14,21 @@ struct WorldLoadingManager {
 
 impl WorldLoadingManager {
     fn update_loaded_chunks(&mut self, uuid: UUID, loaded_chunks: HashSet<ChunkColumnPosition>) {
-        self.loaded_chunks.entry(uuid).and_modify(|f| {
-            for just_unloaded in f.difference(&loaded_chunks) {
-                let mut can_be_removed = false;
-                self.loader_entities.entry(just_unloaded.clone()).and_modify(|f| {
-                    f.remove(&uuid);
-                    if f.is_empty() { can_be_removed = true;}
-                });
-                if can_be_removed {
-                    self.loader_entities.remove(just_unloaded);
-                }
+        let loaded_before = self.loaded_chunks.entry(uuid).or_default();
+        for just_unloaded in loaded_before.difference(&loaded_chunks) {
+            let mut can_be_removed = false;
+            self.loader_entities.entry(just_unloaded.clone()).and_modify(|f| {
+                f.remove(&uuid);
+                if f.is_empty() { can_be_removed = true;}
+            });
+            if can_be_removed {
+                self.loader_entities.remove(just_unloaded);
             }
-            for newly_loaded in loaded_chunks.difference(f).cloned() {
-                self.loader_entities.entry(newly_loaded).or_default().insert(uuid);
-            }
-        }).or_insert(loaded_chunks);
+        }
+        for newly_loaded in loaded_chunks.difference(loaded_before).cloned() {
+            self.loader_entities.entry(newly_loaded).or_default().insert(uuid);
+        }
+        *loaded_before = loaded_chunks;
     }
 
     pub fn get_loaders(&self, position: &ChunkColumnPosition) -> Option<&HashSet<UUID>> {
