@@ -27,3 +27,10 @@ impl Default for Llama {
 pub struct TraderLlama {
     pub llama: Llama,
 }
+
+
+#[derive(Default)]
+#[inherit(Entity)]
+pub struct LlamaSpit {
+    pub entity: Entity,
+}

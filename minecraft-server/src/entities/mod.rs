@@ -169,6 +169,7 @@ pub enum AnyEntity {
     Ghast(Ghast),
     Phantom(Phantom),
     Slime(Slime),
+    LlamaSpit(LlamaSpit),
 }
 
 #[allow(clippy::single_match)]
@@ -282,6 +283,7 @@ impl AnyEntity {
             AnyEntity::Ghast(ghast) => ghast.get_entity(),
             AnyEntity::Phantom(phantom) => phantom.get_entity(),
             AnyEntity::Slime(slime) => slime.get_entity(),
+            AnyEntity::LlamaSpit(llama_spit) => llama_spit.get_entity(),
         }   
     }
 
