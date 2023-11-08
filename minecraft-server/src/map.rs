@@ -281,6 +281,7 @@ impl WorldMap {
         let chunk = ChunkColumn::flat(); // TODO: load from disk
         let shard = position.shard(self.shard_count);
         
+        trace!("Loading chunk column at {:?}", position);
         let mut shard = self.shards[shard].write().await;
         shard.entry(position).or_insert_with(|| chunk);
     }

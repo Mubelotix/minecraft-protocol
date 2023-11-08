@@ -323,10 +323,13 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
         for cz in -3..=3 {
             let mut column = Vec::new();
             for cy in -4..20 {
-                let chunk = world.get_network_chunk(ChunkPosition { cx, cy, cz }).await.unwrap_or(NetworkChunk { // TODO ensure loaded
-                    block_count: 0,
-                    blocks: PalettedData::Single { value: 0 },
-                    biomes: PalettedData::Single { value: 4 },
+                let chunk = world.get_network_chunk(ChunkPosition { cx, cy, cz }).await.unwrap_or_else(|| {
+                    error!("Chunk not loaded: {cx} {cy} {cz}");
+                    NetworkChunk { // TODO hard error
+                        block_count: 0,
+                        blocks: PalettedData::Single { value: 0 },
+                        biomes: PalettedData::Single { value: 4 },
+                    }
                 });
                 column.push(chunk);
             }
