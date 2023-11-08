@@ -46,6 +46,8 @@ mod ender_dragon;
 pub use ender_dragon::*; 
 mod flying;
 pub use flying::*;  
+mod slime;
+pub use slime::*;
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -166,6 +168,7 @@ pub enum AnyEntity {
     Flying(Flying),
     Ghast(Ghast),
     Phantom(Phantom),
+    Slime(Slime),
 }
 
 #[allow(clippy::single_match)]
@@ -278,6 +281,7 @@ impl AnyEntity {
             AnyEntity::Flying(flying) => flying.get_entity(),
             AnyEntity::Ghast(ghast) => ghast.get_entity(),
             AnyEntity::Phantom(phantom) => phantom.get_entity(),
+            AnyEntity::Slime(slime) => slime.get_entity(),
         }   
     }
 
