@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use minecraft_protocol::{components::chunk::{Chunk as ChunkData, PalettedData}, ids::block_states::BlockWithState};
+use minecraft_protocol::components::chunk::{Chunk as ChunkData, PalettedData};
 use tokio::sync::RwLock;
 use crate::prelude::*;
 

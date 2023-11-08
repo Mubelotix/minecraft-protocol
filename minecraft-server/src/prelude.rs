@@ -22,6 +22,7 @@ pub use minecraft_protocol::{
         status::{ClientboundPacket as StatusClientbound, ServerboundPacket as StatusServerbound},
         Array, ConnectionState, Map, RawBytes, VarInt, VarLong,
     },
+    ids::block_states::BlockWithState,
     MinecraftPacketPart,
 };
 pub use std::{

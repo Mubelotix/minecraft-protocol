@@ -14,4 +14,11 @@ struct World {
 }
 
 impl World {
+    pub async fn get_block(&self, position: BlockPosition) -> Option<BlockWithState> {
+        Some(self.map.get_block(position).await)
+    }
+
+    pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
+        self.map.set_block(position, block).await;
+    }
 }
