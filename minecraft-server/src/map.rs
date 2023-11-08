@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, mem::transmute};
 use minecraft_protocol::components::chunk::PalettedData;
 use tokio::sync::RwLock;
 use crate::prelude::*;
@@ -173,7 +173,57 @@ impl Chunk {
     }
 }
 
+struct HeightMap {
+    entry_bit_size: u8,
+    data: Vec<u64>,
+}
+
+impl HeightMap {
+    pub fn from(entry_bit_size: u8) -> Self {
+        assert!(entry_bit_size <= 9);
+        Self {
+            entry_bit_size,
+            data: vec![0; ((16 * 16 * 9usize).div_euclid(entry_bit_size as usize) + 1) * entry_bit_size as usize ],
+        }
+    }
+    pub(self) fn get(&self, position: BlockPositionInChunkColumn) -> i32 {
+        let bits_position = (position.bz as usize * 16 + position.bx as usize) * self.entry_bit_size as usize;
+        let mut data = self.data[bits_position / 64];
+        let bits_position = bits_position % 64;
+        data = data.rotate_right(bits_position as u32);
+        if bits_position + self.entry_bit_size as usize > 64 {
+            let mut data2 = self.data[bits_position / 64 + 1];
+            data2 = data2.rotate_left(64 - bits_position as u32);
+            data |= data2;
+            data &= (1 << self.entry_bit_size) - 1;
+        } 
+        
+        unsafe {
+            transmute::<u64, i64>(data) as i32
+        }
+    }
+
+    fn set(&mut self, position: BlockPositionInChunkColumn, height: i32) {
+        let bits_position = (position.bz as usize * 16 + position.bx as usize) * self.entry_bit_size as usize;
+        let mut data = unsafe {
+            transmute::<i64, u64>(height as i64)
+        };
+        
+        let bits_position = bits_position % 64;
+        if bits_position + self.entry_bit_size as usize > 64 {
+            let mut data2 = self.data[bits_position / 64 + 1];
+            data2 = data2.rotate_left(64 - bits_position as u32);
+        }
+
+        data = data.rotate_left(bits_position as u32);
+        self.data[bits_position / 64] = data;
+
+    }
+}
+
+
 struct ChunkColumn {
+    heightmap: HeightMap,
     chunks: Vec<Chunk>,
 }
 
@@ -200,7 +250,10 @@ impl ChunkColumn {
         for _ in 0..23 {
             chunks.push(empty_chunk.clone());
         }
-        ChunkColumn { chunks }
+        Self { 
+            chunks,
+            heightmap: HeightMap::from(1),
+        }
     }
 
     fn get_block(&self, position: BlockPositionInChunkColumn) -> BlockWithState {
@@ -436,5 +489,10 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn test_heightmap_get_and_set() {
+        
     }
 }
