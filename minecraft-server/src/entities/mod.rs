@@ -42,6 +42,8 @@ mod shulker;
 pub use shulker::*;
 mod monsters;
 pub use monsters::*;
+mod ender_dragon;
+pub use ender_dragon::*; 
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -158,6 +160,7 @@ pub enum AnyEntity {
     Drowned(Drowned),
     ZombifiedPiglin(ZombifiedPiglin),
     Enderman(Enderman),
+    EnderDragon(EnderDragon),
 }
 
 #[allow(clippy::single_match)]
@@ -266,6 +269,7 @@ impl AnyEntity {
             AnyEntity::Drowned(drowned) => drowned.get_entity(),
             AnyEntity::ZombifiedPiglin(zombified_piglin) => zombified_piglin.get_entity(),
             AnyEntity::Enderman(enderman) => enderman.get_entity(),
+            AnyEntity::EnderDragon(ender_dragon) => ender_dragon.get_entity(),
         }   
     }
 

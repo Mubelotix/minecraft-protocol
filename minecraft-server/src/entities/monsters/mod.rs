@@ -36,7 +36,7 @@ mod zoglin;
 pub use zoglin::*;
 mod zombies;
 pub use zombies::*;
-pub mod enderman;
+mod enderman;
 pub use enderman::*;
 
 #[derive(Default)]
