@@ -22,6 +22,8 @@ mod spellcaster_illager;
 pub use spellcaster_illager::*;
 mod witch;
 pub use witch::*;
+mod vex;
+pub use vex::*;
 
 #[derive(Default)]
 #[inheritable]
