@@ -242,7 +242,7 @@ impl AnyEntity {
             AnyEntity::Llama(llama) => llama.get_entity(),
             AnyEntity::TraderLlama(trader_llama) => trader_llama.get_entity(),
             AnyEntity::Mule(mule) => mule.get_entity(),
-            AnyEntity::Axolott(axolotl) => axolotl.get_entity(),
+            AnyEntity::Axolotl(axolotl) => axolotl.get_entity(),
             AnyEntity::Bee(bee) => bee.get_entity(),
             AnyEntity::Fox(fox) => fox.get_entity(),
             AnyEntity::Frog(frog) => frog.get_entity(),
