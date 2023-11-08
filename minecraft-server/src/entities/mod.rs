@@ -192,6 +192,7 @@ pub enum AnyEntity {
     GlowingItemFrame(GlowingItemFrame),
     Painting(Painting),
     ItemEntity(ItemEntity),
+    ArmorStand(ArmorStand),
 }
 
 #[allow(clippy::single_match)]
@@ -320,6 +321,7 @@ impl AnyEntity {
             AnyEntity::GlowingItemFrame(glowing_item_frame) => glowing_item_frame.get_entity(),
             AnyEntity::Painting(painting) => painting.get_entity(),
             AnyEntity::ItemEntity(item_entity) => item_entity.get_entity(),
+            AnyEntity::ArmorStand(armor_stand) => armor_stand.get_entity(),
         }   
     }
 

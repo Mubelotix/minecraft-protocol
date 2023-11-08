@@ -73,6 +73,13 @@ impl std::ops::AddAssign<Position> for Position {
     }
 }
 
+#[derive(Clone, Default)]
+pub struct Rotation {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+}
+
 #[derive(PartialEq, Eq, Hash)]
 pub struct ChunkPosition {
     pub cx: i32,
