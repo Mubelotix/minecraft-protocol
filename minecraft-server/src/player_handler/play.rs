@@ -1,6 +1,8 @@
 use super::*;
 
 struct PlayerHandler {
+    world: Arc<World>,
+    game_mode: Gamemode,
     info: PlayerInfo,
     position: Position,
     yaw: f32,
@@ -55,6 +57,13 @@ impl PlayerHandler {
                 self.on_ground = on_ground;
                 // TODO: make sure the movement is allowed
             },
+            DigBlock { status, location, face: _, sequence: _ } => {
+                use minecraft_protocol::components::blocks::DiggingState;
+
+                if self.game_mode == Gamemode::Creative || status == DiggingState::Finished {
+                    self.world.set_block(location.into(), BlockWithState::Air).await;
+                }
+            }
             packet => warn!("Unsupported packet received: {packet:?}"),
         }
     }
@@ -65,6 +74,8 @@ pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut serve
     let mut change_receiver = world.add_loader(player_info.uuid).await;
     
     let mut handler = PlayerHandler {
+        world,
+        game_mode: Gamemode::Creative,
         info: player_info,
         position: Position { x: 0.0, y: 60.0, z: 0.0 },
         yaw: 0.0,

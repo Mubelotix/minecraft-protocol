@@ -27,7 +27,7 @@ pub enum PartialDiggingState {
 }
 
 /// See [the wiki](https://wiki.vg/Protocol#Player_Digging)
-#[cfg_attr(test, derive(PartialEq))]
+#[derive(PartialEq)]
 #[minecraft_enum(VarInt)]
 #[derive(Debug)]
 pub enum DiggingState {

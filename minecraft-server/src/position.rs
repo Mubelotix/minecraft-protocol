@@ -50,6 +50,16 @@ impl From<BlockPosition> for NetworkPosition {
     }
 }
 
+impl From<NetworkPosition> for BlockPosition {
+    fn from(value: NetworkPosition) -> Self {
+        BlockPosition {
+            x: value.x,
+            y: value.y as i32,
+            z: value.z,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BlockPositionInChunk {
     pub bx: u8,

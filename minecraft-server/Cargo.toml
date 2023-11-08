@@ -13,3 +13,4 @@ futures = "0.3.29"
 minecraft-protocol = { path="../minecraft-protocol" }
 minecraft-server-derive = { path="../minecraft-server-derive" }
 tags-macros = { path = "../tags-macros"}
+rand = "0.8.4"
