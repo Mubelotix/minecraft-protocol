@@ -22,3 +22,11 @@ impl Default for AreaEffectCloud {
         }
     }
 }
+
+#[derive(Default)]
+#[inherit(Entity)]
+pub struct FishingHook{
+    pub entity: Entity,
+    pub hooked_entity: Option<usize>,
+    pub is_catchable: bool,
+}
