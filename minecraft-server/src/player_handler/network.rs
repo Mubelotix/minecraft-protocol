@@ -1,6 +1,6 @@
 use super::*;
 
-pub async fn receive_packet(stream: &mut TcpStream) -> Vec<u8> {
+pub async fn receive_packet(stream: &mut TcpStream) -> Result<Vec<u8>, ()> {
     let mut length: Vec<u8> = Vec::with_capacity(2);
 
     loop {
@@ -8,23 +8,23 @@ pub async fn receive_packet(stream: &mut TcpStream) -> Vec<u8> {
             //return Err("length too long".into());
         }
         let mut byte = [0];
-        stream.read_exact(&mut byte).await.unwrap();
+        stream.read_exact(&mut byte).await.map_err(|_| ())?;
         length.push(byte[0]);
         if byte[0] < 0b1000_0000 {
             break;
         }
     }
 
-    let length = VarInt::deserialize_uncompressed_minecraft_packet(length.as_mut_slice()).unwrap();
+    let length = VarInt::deserialize_uncompressed_minecraft_packet(length.as_mut_slice()).map_err(|_| ())?;
 
     let mut data = Vec::with_capacity(length.0 as usize);
     unsafe { data.set_len(length.0 as usize); }
-    stream.read_exact(&mut data).await.unwrap();
+    stream.read_exact(&mut data).await.map_err(|_| ())?;
 
-    data
+    Ok(data)
 }
 
-pub async fn receive_packet_split(stream: &mut OwnedReadHalf) -> Vec<u8> {
+pub async fn receive_packet_split(stream: &mut OwnedReadHalf) -> Result<Vec<u8>, ()> {
     let mut length: Vec<u8> = Vec::with_capacity(2);
 
     loop {
@@ -32,20 +32,20 @@ pub async fn receive_packet_split(stream: &mut OwnedReadHalf) -> Vec<u8> {
             //return Err("length too long".into());
         }
         let mut byte = [0];
-        stream.read_exact(&mut byte).await.unwrap();
+        stream.read_exact(&mut byte).await.map_err(|_| ())?;
         length.push(byte[0]);
         if byte[0] < 0b1000_0000 {
             break;
         }
     }
 
-    let length = VarInt::deserialize_uncompressed_minecraft_packet(length.as_mut_slice()).unwrap();
+    let length = VarInt::deserialize_uncompressed_minecraft_packet(length.as_mut_slice()).map_err(|_| ())?;
 
     let mut data = Vec::with_capacity(length.0 as usize);
     unsafe { data.set_len(length.0 as usize); }
-    stream.read_exact(&mut data).await.unwrap();
+    stream.read_exact(&mut data).await.map_err(|_| ())?;
 
-    data
+    Ok(data)
 }
 
 pub async fn send_packet_raw(stream: &mut TcpStream, packet: &[u8]) {

@@ -10,6 +10,7 @@ pub enum ServerMessage {
 }
 
 pub struct ServerBehavior {
+    world: Arc<World>,
     player_handlers: Vec<Task>,
     listener: TcpListener,
     message_receiver: BroadcastReceiver<ServerMessage>,
@@ -30,6 +31,7 @@ impl ServerBehavior {
         });
 
         ServerBehavior {
+            world: Arc::new(World::new()),
             listener,
             player_handlers: Vec::new(),
             message_receiver: receiver,
@@ -47,7 +49,7 @@ impl ServerBehavior {
                 } else {
                     debug!("Accepted connection from: {addr}");
                     let server_msg_rcvr = self.message_receiver.resubscribe();
-                    self.player_handlers.push(Box::pin(handle_connection(stream, addr, server_msg_rcvr)));
+                    self.player_handlers.push(Box::pin(handle_connection(stream, addr, server_msg_rcvr, Arc::clone(&self.world))));
                 }
             }
             Ready(Err(e)) => error!("Failed to accept connection: {e}"),

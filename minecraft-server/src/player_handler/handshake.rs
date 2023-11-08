@@ -14,9 +14,9 @@ pub struct PlayerInfo {
     pub(super) allow_server_listing: bool,
 }
 
-pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPlayerInfo) -> Result<PlayerInfo, ()> {
+pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPlayerInfo, world: Arc<World>) -> Result<(PlayerInfo, MpscReceiver<WorldChange>), ()> {
     // Receive client informations
-    let packet = receive_packet(stream).await;
+    let packet = receive_packet(stream).await?;
     debug!("Packet received");
     let packet = ConfigServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
     let ConfigServerbound::ClientInformations { locale, render_distance, chat_mode, chat_colors, displayed_skin_parts, main_hand, enable_text_filtering, allow_server_listing } = packet else {
@@ -59,7 +59,7 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
     debug!("FinishConfiguration sent");
 
     // Receive finish configuration
-    let packet = receive_packet(stream).await;
+    let packet = receive_packet(stream).await?;
     let packet = ConfigServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
     let ConfigServerbound::FinishConfiguration = packet else {
         error!("Expected FinishConfiguration packet, got: {packet:?}");
@@ -306,28 +306,34 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
     send_packet(stream, chunk_data).await;
     debug!("ChunkBatchStart sent");
 
-    let empty_chunk = NetworkChunk {
-        block_count: 0,
-        blocks: PalettedData::Single { value: 0 },
-        biomes: PalettedData::Single { value: 4 },
-    };
-    let dirt_chunk = NetworkChunk {
-        block_count: 4096,
-        blocks: PalettedData::Single { value: minecraft_protocol::ids::blocks::Block::GrassBlock.default_state_id() },
-        biomes: PalettedData::Single { value: 4 },
-    };
-    let mut flat_column = Vec::new();
-    flat_column.push(dirt_chunk);
-    for _ in 0..23 {
-        flat_column.push(empty_chunk.clone());
+    let change_receiver = world.add_loader(logged_in_player_info.uuid).await;
+    let mut loaded_chunks = HashSet::new();
+    for cx in -3..=3 {
+        for cz in -3..=3 {
+            loaded_chunks.insert(ChunkColumnPosition { cx, cz });
+        }
     }
-    let serialized: Vec<u8> = NetworkChunk::into_data(flat_column).unwrap();
+    world.update_loaded_chunks(logged_in_player_info.uuid, loaded_chunks).await;
+
     let mut heightmaps = HashMap::new();
     heightmaps.insert(String::from("MOTION_BLOCKING"), NbtTag::LongArray(vec![0; 37]));
     let heightmaps = NbtTag::Compound(heightmaps);
     
     for cx in -3..=3 {
         for cz in -3..=3 {
+            let mut column = Vec::new();
+            for cy in -4..20 {
+                let chunk = world.get_network_chunk(ChunkPosition { cx, cy, cz }).await.unwrap_or_else(|| {
+                    error!("Chunk not loaded: {cx} {cy} {cz}");
+                    NetworkChunk { // TODO hard error
+                        block_count: 0,
+                        blocks: PalettedData::Single { value: 0 },
+                        biomes: PalettedData::Single { value: 4 },
+                    }
+                });
+                column.push(chunk);
+            }
+            let serialized: Vec<u8> = NetworkChunk::into_data(column).unwrap();
             let chunk_data = PlayClientbound::ChunkData {
                 value: ChunkData {
                     chunk_x: cx,
@@ -354,7 +360,7 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
     debug!("ChunkBatchFinished sent");
 
     // Get chunk batch acknoledgement
-    let packet = receive_packet(stream).await;
+    let packet = receive_packet(stream).await?;
     let packet = PlayServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
     let PlayServerbound::ChunkBatchReceived { chunks_per_tick } = packet else {
         error!("Expected ChunkBatchAcknoledgement packet, got: {packet:?}");
@@ -362,7 +368,7 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
     };
     debug!("ChunkBatchAcknoledgement received");
 
-    Ok(PlayerInfo {
+    Ok((PlayerInfo {
         addr: logged_in_player_info.addr,
         username: logged_in_player_info.username,
         uuid: logged_in_player_info.uuid,
@@ -374,5 +380,5 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
         main_hand,
         enable_text_filtering,
         allow_server_listing,
-    })
+    }, change_receiver))
 }

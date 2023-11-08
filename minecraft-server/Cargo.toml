@@ -14,3 +14,4 @@ minecraft-protocol = { path="../minecraft-protocol" }
 minecraft-entities = { path="../minecraft-entities" }
 minecraft-positions = { path="../minecraft-positions" }
 tags-macros = { path = "../tags-macros"}
+rand = "0.8.4"

@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use minecraft_protocol::{components::chunk::{Chunk as ChunkData, PalettedData}, ids::block_states::BlockWithState};
+use minecraft_protocol::components::chunk::PalettedData;
 use tokio::sync::RwLock;
 use crate::prelude::*;
 
@@ -14,14 +14,14 @@ pub struct WorldMap {
 
 #[derive(Clone)]
 struct Chunk {
-    data: ChunkData,
+    data: NetworkChunk,
     palette_block_counts: Vec<u16>,
 }
 
 impl Chunk {
     fn filled(block: BlockWithState) -> Option<Chunk> {
         Some(Chunk {
-            data: ChunkData {
+            data: NetworkChunk {
                 block_count: 4096,
                 blocks: PalettedData::Single { value: block.block_state_id()? },
                 biomes: PalettedData::Single { value: 0 },
@@ -30,7 +30,7 @@ impl Chunk {
         })
     }
 
-    fn from_chunk_data(data: ChunkData) -> Chunk {
+    fn from_chunk_data(data: NetworkChunk) -> Chunk {
         let mut palette_block_counts = Vec::new();
         if let PalettedData::Paletted { palette, indexed } = &data.blocks {
             palette_block_counts = vec![0; palette.len()];
@@ -46,6 +46,10 @@ impl Chunk {
             data,
             palette_block_counts
         }
+    }
+
+    fn as_network_chunk(&self) -> &NetworkChunk {
+        &self.data
     }
 
     fn get_block(&self, position: BlockPositionInChunk) -> BlockWithState {
@@ -170,7 +174,7 @@ struct ChunkColumn {
 impl ChunkColumn {
     pub fn flat() -> Self {
         let empty_chunk = Chunk {
-            data: ChunkData {
+            data: NetworkChunk {
                 block_count: 0,
                 blocks: PalettedData::Single { value: 0 },
                 biomes: PalettedData::Single { value: 4 },
@@ -178,7 +182,7 @@ impl ChunkColumn {
             palette_block_counts: Vec::new(),
         };
         let dirt_chunk = Chunk {
-            data: ChunkData {
+            data: NetworkChunk {
                 block_count: 4096,
                 blocks: PalettedData::Single { value: minecraft_protocol::ids::blocks::Block::GrassBlock.default_state_id() },
                 biomes: PalettedData::Single { value: 4 },
@@ -240,6 +244,18 @@ impl WorldMap {
         inner_get_block(self, position).await.unwrap_or(BlockWithState::Air)
     }
 
+    pub async fn get_network_chunk(&self, position: ChunkPosition) -> Option<NetworkChunk> {
+        let chunk_column_position = position.chunk_column();
+        let shard = chunk_column_position.shard(self.shard_count);
+        let cy_in_vec: usize = position.cy.saturating_add(4).try_into().ok()?;
+        
+        let shard = self.shards[shard].read().await;
+        let chunk_column = shard.get(&chunk_column_position)?;
+        let chunk = chunk_column.chunks.get(cy_in_vec)?;
+
+        Some(chunk.as_network_chunk().clone())
+    }
+
     pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
         async fn inner_get_block(s: &WorldMap, position: BlockPosition, block: BlockWithState) -> Option<()> {
             let chunk_position = position.chunk();
@@ -259,15 +275,18 @@ impl WorldMap {
         let chunk = ChunkColumn::flat(); // TODO: load from disk
         let shard = position.shard(self.shard_count);
         
+        trace!("Loading chunk column at {:?}", position);
         let mut shard = self.shards[shard].write().await;
         shard.entry(position).or_insert_with(|| chunk);
     }
 
-    pub async fn unload(&self, position: ChunkColumnPosition) {
-        let shard = position.shard(self.shard_count);
+    pub async fn unload(&self, _position: ChunkColumnPosition) {
+        // Note: these are not unloaded yet in order to preserve map data
 
-        let mut shard = self.shards[shard].write().await;
-        shard.remove(&position);
+        //let shard = position.shard(self.shard_count);
+
+        //let mut shard = self.shards[shard].write().await;
+        //shard.remove(&position);
         // TODO: write to disk
     }
 }

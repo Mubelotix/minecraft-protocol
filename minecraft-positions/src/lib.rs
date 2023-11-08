@@ -1,5 +1,7 @@
 mod shards;
 
+pub use minecraft_protocol::packets::Position as NetworkPosition;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct BlockPosition {
     pub x: i32,
@@ -36,6 +38,26 @@ impl BlockPosition {
         ChunkColumnPosition {
             cx: self.x.div_euclid(16),
             cz: self.z.div_euclid(16),
+        }
+    }
+}
+
+impl From<BlockPosition> for NetworkPosition {
+    fn from(value: BlockPosition) -> Self {
+        NetworkPosition {
+            x: value.x,
+            y: value.y as i16,
+            z: value.z,
+        }
+    }
+}
+
+impl From<NetworkPosition> for BlockPosition {
+    fn from(value: NetworkPosition) -> Self {
+        BlockPosition {
+            x: value.x,
+            y: value.y as i32,
+            z: value.z,
         }
     }
 }
@@ -112,7 +134,7 @@ pub struct Rotation {
     pub z: f32,
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Clone)]
 pub struct ChunkPosition {
     pub cx: i32,
     pub cy: i32,
@@ -144,4 +166,14 @@ impl std::ops::Add<BlockPositionInChunk> for ChunkPosition {
 pub struct ChunkColumnPosition {
     pub cx: i32,
     pub cz: i32,
+}
+
+impl ChunkColumnPosition {
+    pub fn chunk(&self, cy: i32) -> ChunkPosition {
+        ChunkPosition {
+            cx: self.cx,
+            cy,
+            cz: self.cz,
+        }
+    }
 }
