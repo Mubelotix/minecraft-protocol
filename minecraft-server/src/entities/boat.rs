@@ -7,7 +7,7 @@ pub struct Boat {
     pub time_since_last_hit: usize,
     pub forward_direction: usize,
     pub damage_taken: f32,
-    /// Type (0=oak, 1=spruce, 2=birch, 3=jungle, 4=acacia, 5=dark oak)	
+    /// Type (0=oak, 1=spruce, 2=birch, 3=jungle, 4=acacia, 5=dark oak)
     pub ty: usize,
     pub is_left_paddle_turning: bool,
     pub is_right_paddle_turning: bool,
@@ -27,4 +27,10 @@ impl Default for Boat {
             splash_timer: 0,
         }
     }
+}
+
+#[derive(Default)]
+#[inherit(Boat, Entity)]
+pub struct ChestBoat {
+    pub boat: Boat,
 }
