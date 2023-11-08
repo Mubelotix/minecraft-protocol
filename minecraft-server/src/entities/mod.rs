@@ -44,6 +44,8 @@ mod monsters;
 pub use monsters::*;
 mod ender_dragon;
 pub use ender_dragon::*; 
+mod flying;
+pub use flying::*;  
 
 pub use minecraft_server_derive::{inherit, inheritable};
 
@@ -161,6 +163,9 @@ pub enum AnyEntity {
     ZombifiedPiglin(ZombifiedPiglin),
     Enderman(Enderman),
     EnderDragon(EnderDragon),
+    Flying(Flying),
+    Ghast(Ghast),
+    Phantom(Phantom),
 }
 
 #[allow(clippy::single_match)]
@@ -270,6 +275,9 @@ impl AnyEntity {
             AnyEntity::ZombifiedPiglin(zombified_piglin) => zombified_piglin.get_entity(),
             AnyEntity::Enderman(enderman) => enderman.get_entity(),
             AnyEntity::EnderDragon(ender_dragon) => ender_dragon.get_entity(),
+            AnyEntity::Flying(flying) => flying.get_entity(),
+            AnyEntity::Ghast(ghast) => ghast.get_entity(),
+            AnyEntity::Phantom(phantom) => phantom.get_entity(),
         }   
     }
 
