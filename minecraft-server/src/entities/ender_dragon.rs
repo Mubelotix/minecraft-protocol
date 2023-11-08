@@ -14,3 +14,21 @@ impl Default for EnderDragon {
         }
     }
 }
+
+#[inherit(Entity)]
+pub struct EndCrystal {
+    pub entity: Entity,
+    pub block_position: Option<BlockPosition>,
+    pub show_bottom: bool,
+}
+
+impl Default for EndCrystal {
+    fn default() -> Self {
+        Self {
+            entity: Entity::default(),
+            block_position: None,
+            show_bottom: true,
+        }
+    }
+    
+}

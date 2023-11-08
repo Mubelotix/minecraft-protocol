@@ -178,6 +178,7 @@ pub enum AnyEntity {
     FallingBlock(FallingBlock),
     AreaEffectCloud(AreaEffectCloud),
     FishingHook(FishingHook),
+    EndCrystal(EndCrystal),
 }
 
 #[allow(clippy::single_match)]
@@ -296,6 +297,7 @@ impl AnyEntity {
             AnyEntity::FallingBlock(falling_block) => falling_block.get_entity(),
             AnyEntity::AreaEffectCloud(area_effect_cloud) => area_effect_cloud.get_entity(),
             AnyEntity::FishingHook(fishing_hook) => fishing_hook.get_entity(),
+            AnyEntity::EndCrystal(end_crystal) => end_crystal.get_entity(),
         }   
     }
 
