@@ -14,3 +14,10 @@ pub struct ItemFrame {
 pub struct GlowingItemFrame {
     pub item_frame: ItemFrame,
 }
+
+#[derive(Default)]
+#[inherit(Entity)]
+pub struct ItemEntity {
+    pub entity: Entity,
+    pub item: Slot,
+}
