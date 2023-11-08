@@ -1,6 +1,7 @@
 
 use crate::prelude::*;
 
+#[derive(Debug, Clone)]
 enum WorldChange {
 
 }
@@ -27,6 +28,10 @@ impl WorldLoadingManager {
                 self.loader_entities.entry(newly_loaded).or_default().insert(uuid);
             }
         }).or_insert(loaded_chunks);
+    }
+
+    pub fn get_loaders(&self, position: ChunkPosition) -> Option<&HashSet<UUID>> {
+        self.loader_entities.get(&position)
     }
 }
 
@@ -58,5 +63,16 @@ impl World {
 
     pub async fn remove_loader(&self, uuid: UUID) {
         self.change_senders.write().await.remove(&uuid);
+    }
+
+    async fn notify(&self, position: ChunkPosition, change: WorldChange) {
+        let loading_manager = self.loading_manager.read().await;
+        let mut senders = self.change_senders.write().await;
+        let Some(loaders) = loading_manager.get_loaders(position) else {return};
+        for loader in loaders {
+            if let Some(sender) = senders.get_mut(loader) {
+                let _ = sender.send(change.clone()).await;
+            }
+        }
     }
 }
