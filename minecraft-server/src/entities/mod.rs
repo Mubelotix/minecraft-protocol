@@ -42,7 +42,8 @@ pub use minecraft_protocol::{
         slots::{Slot, SlotItem, Hand}
     },
     ids::{items::Item, block_states::BlockWithState},
-    nbt::NbtTag
+    nbt::NbtTag,
+    packets::UUID
 };
 
 pub enum AnyEntity {

@@ -2,8 +2,6 @@ use super::*;
 
 mod sniffer;
 pub use sniffer::*;
-mod abstract_horse;
-pub use abstract_horse::*;
 mod horses;
 pub use horses::*;
 mod donkey;
@@ -40,8 +38,6 @@ mod sheep;
 pub use sheep::*;
 mod strider;
 pub use strider::*;
-mod tameable_animal;
-pub use tameable_animal::*;
 mod cat;
 pub use cat::*;
 mod wolf;
@@ -60,4 +56,13 @@ pub use water_animal::*;
 #[inherit(AgeableMob, PathfinderMob, Mob, LivingEntity, Entity)]
 pub struct Animal {
     pub ageable_mob: AgeableMob,
+}
+
+#[derive(Default)]
+#[inheritable]
+#[inherit(Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity)]
+pub struct TameableAnimal {
+    pub animal: Animal,
+    pub action_mask: u8,
+    pub owner: Option<UUID>,
 }
