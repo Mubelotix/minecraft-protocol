@@ -40,9 +40,11 @@ impl PlayerHandler {
     async fn on_move(&mut self) {
         let new_center_chunk = self.position.chunk();
 
+        // Tell the client which chunk he is in
         if new_center_chunk == self.center_chunk { return };
         self.send_packet(PlayClientbound::SetCenterChunk { chunk_x: VarInt(new_center_chunk.cx), chunk_z: VarInt(new_center_chunk.cz) }).await;
 
+        // Find out which chunks should be loaded
         if new_center_chunk.chunk_column() == self.center_chunk.chunk_column() {
             self.center_chunk = new_center_chunk;
             return;
@@ -56,16 +58,19 @@ impl PlayerHandler {
             }
         }
 
+        // Select chunks to load (max 50) and unload
         if loaded_chunks_after == self.loaded_chunks { return };
-
         let mut newly_loaded_chunks: Vec<_> = loaded_chunks_after.difference(&self.loaded_chunks).cloned().collect();
         let unloaded_chunks: Vec<_> = self.loaded_chunks.difference(&loaded_chunks_after).cloned().collect();
         for skipped in newly_loaded_chunks.iter().skip(50) {
             loaded_chunks_after.remove(skipped);
         }
         newly_loaded_chunks.truncate(50);
+
+        // Tell the world about the changes
         self.world.update_loaded_chunks(self.info.uuid, loaded_chunks_after.clone()).await;
 
+        // Send the chunks to the client
         let mut heightmaps = HashMap::new();
         heightmaps.insert(String::from("MOTION_BLOCKING"), NbtTag::LongArray(vec![0; 37]));
         let heightmaps = NbtTag::Compound(heightmaps);
@@ -101,6 +106,7 @@ impl PlayerHandler {
             self.send_packet(chunk_data).await;
         }
 
+        // Tell the client to unload chunks
         for unloaded_chunk in unloaded_chunks {
             self.send_packet(PlayClientbound::UnloadChunk {
                 chunk_x: unloaded_chunk.cx,
