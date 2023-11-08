@@ -50,6 +50,10 @@ mod parrot;
 pub use parrot::*;
 mod goat;
 pub use goat::*;
+mod fishes;
+pub use fishes::*;
+mod water_animal;
+pub use water_animal::*;
 
 #[derive(Default)]
 #[inheritable]

@@ -22,8 +22,6 @@ mod bat;
 pub use bat::*;
 mod pathfinder_mob;
 pub use pathfinder_mob::*;
-mod water_animal;
-pub use water_animal::*;
 mod squid;
 pub use squid::*;
 mod interaction;
@@ -194,6 +192,12 @@ pub enum AnyEntity {
     ItemEntity(ItemEntity),
     ArmorStand(ArmorStand),
     Dolphin(Dolphin),
+    AbstractFish(AbstractFish),
+    Cod(Cod),
+    Pufferfish(Pufferfish),
+    Salmon(Salmon),
+    TropicalFish(TropicalFish),
+    Tadpole(Tadpole),
 }
 
 #[allow(clippy::single_match)]
@@ -324,6 +328,10 @@ impl AnyEntity {
             AnyEntity::ItemEntity(item_entity) => item_entity.get_entity(),
             AnyEntity::ArmorStand(armor_stand) => armor_stand.get_entity(),
             AnyEntity::Dolphin(dolphin) => dolphin.get_entity(),
+            AnyEntity::AbstractFish(abstract_fish) => abstract_fish.get_entity(),
+            AnyEntity::Cod(cod) => cod.get_entity(),
+            AnyEntity::Pufferfish(pufferfish) => pufferfish.get_entity(),
+            AnyEntity::Salmon(salmon) => salmon.get_entity(),
         }   
     }
 
