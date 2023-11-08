@@ -18,10 +18,7 @@ pub async fn handle_connection(
             world.remove_loader(uuid).await;
             r
         },
-        ConnectionState::Status => {
-            status(&mut stream).await;
-            Ok(())
-        },
+        ConnectionState::Status => status(&mut stream).await,
         _ => {
             error!("Unexpected next state: {next_state:?}");
             Err(())
