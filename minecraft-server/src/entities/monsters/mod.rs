@@ -32,6 +32,8 @@ mod warden;
 pub use warden::*;
 mod wither;
 pub use wither::*;
+mod zoglin;
+pub use zoglin::*;
 
 #[derive(Default)]
 #[inheritable]
