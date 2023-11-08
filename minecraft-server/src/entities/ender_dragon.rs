@@ -32,3 +32,9 @@ impl Default for EndCrystal {
     }
     
 }
+
+#[derive(Default)]
+#[inherit(Entity)]
+pub struct DragonFireball {
+    pub entity: Entity,
+}
