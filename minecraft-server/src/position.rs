@@ -1,3 +1,5 @@
+use crate::prelude::*;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BlockPosition {
     pub x: i32,
@@ -34,6 +36,16 @@ impl BlockPosition {
         ChunkColumnPosition {
             cx: self.x.div_euclid(16),
             cz: self.z.div_euclid(16),
+        }
+    }
+}
+
+impl From<BlockPosition> for NetworkPosition {
+    fn from(value: BlockPosition) -> Self {
+        NetworkPosition {
+            x: value.x,
+            y: value.y as i16,
+            z: value.z,
         }
     }
 }

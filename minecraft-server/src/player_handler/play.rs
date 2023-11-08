@@ -24,6 +24,13 @@ impl PlayerHandler {
         }
     }
 
+    async fn on_block_change(&mut self, position: BlockPosition, block: BlockWithState) {
+        self.send_packet(PlayClientbound::BlockUpdate {
+            location: position.into(),
+            block_state: block,
+        }).await;
+    }
+
     async fn on_packet<'a>(&mut self, packet: PlayServerbound<'a>) {
         use PlayServerbound::*;
         match packet {
@@ -53,8 +60,9 @@ impl PlayerHandler {
     }
 }
 
-pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>) -> Result<(), ()> {
+pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>, world: Arc<World>) -> Result<(), ()> {
     let (packet_sender, mut packet_receiver) = mpsc_channel(100);
+    let mut change_receiver = world.add_loader(player_info.uuid).await;
     
     let mut handler = PlayerHandler {
         info: player_info,
@@ -70,17 +78,20 @@ pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut serve
     let mut receive_packet_fut = Box::pin(receive_packet_split(&mut reader_stream).fuse());
     let mut receive_clientbound_fut = Box::pin(packet_receiver.recv().fuse());
     let mut receive_server_message_fut = Box::pin(server_msg_rcvr.recv().fuse());
+    let mut receive_change_fut = Box::pin(change_receiver.recv().fuse());
     loop {
         // Select the first event that happens
         enum Event {
             PacketServerbound(Vec<u8>),
             PacketClientbound(Option<Vec<u8>>),
             Message(Result<ServerMessage, BroadcastRecvError>),
+            WorldChange(Option<WorldChange>),
         }
         let event = futures::select! {
             packet_serverbound = receive_packet_fut => Event::PacketServerbound(packet_serverbound),
             packet_clientbound = receive_clientbound_fut => Event::PacketClientbound(packet_clientbound),
             message = receive_server_message_fut => Event::Message(message),
+            change = receive_change_fut => Event::WorldChange(change),
         };
         match event {
             Event::PacketServerbound(packet) => {
@@ -102,12 +113,24 @@ pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut serve
 
                 handler.on_server_message(message).await;
             },
+            Event::WorldChange(Some(change)) => {
+                drop(receive_change_fut);
+                receive_change_fut = Box::pin(change_receiver.recv().fuse());
+
+                match change {
+                    WorldChange::BlockChange(position, block) => handler.on_block_change(position, block).await,
+                }
+            },
             Event::Message(Err(recv_error)) => {
                 error!("Failed to receive message: {recv_error:?}");
                 return Err(());
             }
             Event::PacketClientbound(None) => {
                 error!("Failed to receive clientbound packet");
+                return Err(());
+            }
+            Event::WorldChange(None) => {
+                error!("Failed to receive world change");
                 return Err(());
             }
         }

@@ -15,6 +15,14 @@ pub struct Entities {
 }
 
 impl Entities {
+    pub fn new() -> Entities {
+        Entities {
+            entities: RwLock::new(HashMap::new()),
+            chunks: RwLock::new(HashMap::new()),
+            uuids: RwLock::new(HashMap::new()),
+        }
+    }
+
     /// Observe an entity through a closure
     pub async fn observe_entity<R>(&self, eid: Eid, observer: impl FnOnce(&AnyEntity) -> R) -> Option<R> {
         self.entities.read().await.get(&eid).map(observer)

@@ -2,10 +2,11 @@
 use crate::prelude::*;
 
 #[derive(Debug, Clone)]
-enum WorldChange {
+pub enum WorldChange {
     BlockChange(BlockPosition, BlockWithState),
 }
 
+#[derive(Default)]
 struct WorldLoadingManager {
     loaded_chunks: HashMap<UUID, HashSet<ChunkPosition>>,
     loader_entities: HashMap<ChunkPosition, HashSet<UUID>>,
@@ -38,7 +39,7 @@ impl WorldLoadingManager {
 /// World is the union of the map and entities.
 /// World handles loaded chunks and entities.
 /// It is responsible for notifying players of changes in the world.
-struct World {
+pub struct World {
     map: WorldMap,
     entities: Entities,
 
@@ -47,6 +48,15 @@ struct World {
 }
 
 impl World {
+    pub fn new() -> World {
+        World {
+            map: WorldMap::new(4),
+            entities: Entities::new(),
+            loading_manager: RwLock::new(WorldLoadingManager::default()),
+            change_senders: RwLock::new(HashMap::new()),
+        }
+    }
+
     pub async fn get_block(&self, position: BlockPosition) -> Option<BlockWithState> {
         Some(self.map.get_block(position).await)
     }

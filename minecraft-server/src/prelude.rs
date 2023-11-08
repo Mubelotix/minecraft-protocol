@@ -20,7 +20,7 @@ pub use minecraft_protocol::{
         play_serverbound::ServerboundPacket as PlayServerbound,
         serializer::*,
         status::{ClientboundPacket as StatusClientbound, ServerboundPacket as StatusServerbound},
-        Array, ConnectionState, Map, RawBytes, VarInt, VarLong, UUID,
+        Array, ConnectionState, Map, RawBytes, VarInt, VarLong, UUID, Position as NetworkPosition
     },
     ids::block_states::BlockWithState,
     MinecraftPacketPart,
