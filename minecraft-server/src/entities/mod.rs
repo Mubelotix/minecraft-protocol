@@ -189,6 +189,7 @@ pub enum AnyEntity {
     WitherSkull(WitherSkull),
     FireworkRocket(FireworkRocket),
     ItemFrame(ItemFrame),
+    GlowingItemFrame(GlowingItemFrame),
 }
 
 #[allow(clippy::single_match)]
@@ -314,6 +315,7 @@ impl AnyEntity {
             AnyEntity::WitherSkull(wither_skull) => wither_skull.get_entity(),
             AnyEntity::FireworkRocket(firework_rocket) => firework_rocket.get_entity(),
             AnyEntity::ItemFrame(item_frame) => item_frame.get_entity(),
+            AnyEntity::GlowingItemFrame(glowing_item_frame) => glowing_item_frame.get_entity(),
         }   
     }
 

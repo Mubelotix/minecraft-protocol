@@ -8,3 +8,10 @@ pub struct ItemFrame {
     pub item: Slot,
     pub rotation: u8,
 }
+
+#[derive(Default)]
+#[inheritable]
+#[inherit(ItemFrame, Entity)]
+pub struct GlowingItemFrame {
+    pub item_frame: ItemFrame,
+}
