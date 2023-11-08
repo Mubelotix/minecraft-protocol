@@ -23,6 +23,9 @@ impl WorldLoadingManager {
             self.loader_entities.entry(newly_loaded).or_default().insert(uuid);
         }
         *loaded_before = loaded_chunks;
+        if loaded_before.is_empty() {
+            self.loaded_chunks.remove(&uuid);
+        }
     }
 
     pub(super) fn get_loaders(&self, position: &ChunkColumnPosition) -> Option<&HashSet<UUID>> {
