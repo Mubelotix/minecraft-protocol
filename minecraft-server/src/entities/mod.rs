@@ -138,6 +138,7 @@ pub enum AnyEntity {
     Vindicator(Vindicator),
     Pillager(Pillager),
     SpellcasterIllager(SpellcasterIllager),
+    Evoker(Evoker),
 }
 
 #[allow(clippy::single_match)]
@@ -226,6 +227,7 @@ impl AnyEntity {
             AnyEntity::Vindicator(vindicator) => vindicator.get_entity(),
             AnyEntity::Pillager(pillager) => pillager.get_entity(),
             AnyEntity::SpellcasterIllager(spellcaster_illager) => spellcaster_illager.get_entity(),
+            AnyEntity::Evoker(evoker) => evoker.get_entity(),
         }
     }
 
