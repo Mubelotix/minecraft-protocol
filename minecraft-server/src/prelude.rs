@@ -1,4 +1,4 @@
-pub use crate::{ecs::*, player_handler::*, position::*, server_behavior::*};
+pub use crate::{ecs::*, player_handler::*, position::*, server_behavior::*, map::*, world::*};
 pub use futures::FutureExt;
 pub use log::{debug, error, info, trace, warn};
 pub use minecraft_protocol::{
