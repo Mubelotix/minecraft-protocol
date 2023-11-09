@@ -88,10 +88,13 @@ impl EntityExt for Handler<Entity> {
 /// Animal:
 /// 
 /// ```
-/// #[inheritable(
-///     on_hit(self, damage: f32);
-///     on_dies(self);
-/// )]
+/// #[
+///     inheritable,
+///     methods(
+///         on_hit(self, damage: f32);
+///         on_dies(self);
+///     )
+/// ]
 /// struct Animal {
 ///    pub entity: Entity,
 /// }

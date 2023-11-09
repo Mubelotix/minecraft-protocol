@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use proc_macro::{TokenStream, TokenTree, Ident, Group};
 use convert_case::{Case, Casing};
+use proc_macro_error::*;
 
 fn replace_idents(token: &mut TokenTree, to_replace: &HashMap<&'static str, Ident>) {
     match token {
@@ -185,4 +186,48 @@ pub fn inheritable(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut final_code = item;
     final_code.extend(code);
     final_code
+}
+
+#[allow(non_snake_case)]
+#[proc_macro_attribute]
+#[proc_macro_error]
+pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
+    println!("{:?}", attr);
+
+    let mut parents = Vec::new();
+    let mut inheritable = false;
+    //let mut defines = Vec::new();
+
+    let mut attrs = attr.into_iter().peekable();
+    while let Some(ident) = attrs.next() {
+        let TokenTree::Ident(ident) = ident else { abort!(ident.span(), "expected ident") };
+        match ident.to_string().as_str() {
+            "parents" => {
+                let Some(token_tree) = attrs.next() else { abort!(ident.span(), "expected group after") };
+                let TokenTree::Group(group) = token_tree else { abort!(token_tree.span(), "expected group") };
+                let mut group_attrs = group.stream().into_iter().peekable();
+                while let Some(ident) = group_attrs.next() {
+                    let TokenTree::Ident(ident) = ident else { abort!(ident.span(), "expected ident") };
+                    parents.push(ident);
+                    if matches!(group_attrs.peek(), Some(TokenTree::Punct(punct)) if punct.as_char() == ',') {
+                        group_attrs.next();
+                    }
+                }
+            }
+            "inheritable" => inheritable = true,
+            "defines" => {
+                let Some(token_tree) = attrs.next() else { abort!(ident.span(), "expected group after") };
+                let TokenTree::Group(group) = token_tree else { abort!(token_tree.span(), "expected group") };
+                
+            }
+            other => abort!(ident.span(), "unrecognized identifier {}", other),
+        }
+        if matches!(attrs.peek(), Some(TokenTree::Punct(punct)) if punct.as_char() == ',') {
+            attrs.next();
+        }
+    }
+
+    println!("{inheritable} {parents:?}");
+
+    item
 }

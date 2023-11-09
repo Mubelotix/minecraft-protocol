@@ -4,6 +4,7 @@ members = [
     "minecraft-protocol-derive",
     "minecraft-server",
     "minecraft-entities",
+    "minecraft-entities-derive",
     "minecraft-positions",
     "tags-macros"
 ]
