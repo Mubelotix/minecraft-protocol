@@ -75,7 +75,7 @@ pub struct Animal {
     parents { Animal, Entity },
     defines {
         Entity.on_spawned(self);
-        Animal.on_hit(self);
+        Animal.on_hit(self, damage: usize);
         on_milked(self);
     }
 )]
