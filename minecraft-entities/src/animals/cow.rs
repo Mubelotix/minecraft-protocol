@@ -87,15 +87,21 @@ trait AnimalExt: Sized + Into<Handler<Animal>> {
     }
 }
 
+impl Handler<Animal> {
+    async fn on_hit(self, damage: f32) {
+        println!("Animal was hit");
+    }
+
+    async fn on_dies(self) {
+        println!("Animal died");
+    }
+}
+
 impl AnimalExt for Handler<Animal> {
     fn methods() -> AnimalMethods {
         AnimalMethods {
-            on_hit: |animal, damage| Box::pin(async {
-                println!("Animal was hit");
-            }),
-            on_dies: |animal, ()| Box::pin(async {
-                println!("Animal died");
-            }),
+            on_hit: |animal, damage| Box::pin(animal.on_hit(damage)),
+            on_dies: |animal, ()| Box::pin(animal.on_dies()),
         }
     }
 }
@@ -109,9 +115,7 @@ impl From<Handler<Animal>> for Handler<Entity> {
 impl EntityExt for Handler<Animal> {
     fn methods() -> EntityMethods {
         EntityMethods {
-            on_jump: |entity, ()| Box::pin(async {
-                println!("Animal jumped");
-            }),
+            on_jump: |entity, ()| Box::pin(entity.assume_other::<Animal>().on_jump()),
         }
     }
 }
@@ -138,12 +142,16 @@ impl From<Handler<Cow>> for Handler<Animal> {
     }
 }
 
+impl Handler<Cow> {
+    async fn on_hit(self, damage: f32) {
+        println!("Cow was hit");
+    }
+}
+
 impl AnimalExt for Handler<Cow> {
     fn methods() -> AnimalMethods {
         AnimalMethods {
-            on_hit: |animal, damage| Box::pin(async {
-                println!("Cow was hit");
-            }),
+            on_hit: |animal, damage| Box::pin(animal.assume_other::<Cow>().on_hit(damage)),
             ..<Handler<Animal> as AnimalExt>::methods()
         }
     }
