@@ -196,14 +196,14 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let mut parents = Vec::new();
     let mut inheritable = false;
-    //let mut defines = Vec::new();
+    let mut defines = Vec::new();
 
     let mut attrs = attr.into_iter().peekable();
     while let Some(ident) = attrs.next() {
         let TokenTree::Ident(ident) = ident else { abort!(ident.span(), "expected ident") };
         match ident.to_string().as_str() {
             "parents" => {
-                let Some(token_tree) = attrs.next() else { abort!(ident.span(), "expected group after") };
+                let Some(token_tree) = attrs.next() else { abort!(ident.span(), "expected group after parents") };
                 let TokenTree::Group(group) = token_tree else { abort!(token_tree.span(), "expected group") };
                 let mut group_attrs = group.stream().into_iter().peekable();
                 while let Some(ident) = group_attrs.next() {
@@ -218,7 +218,22 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
             "defines" => {
                 let Some(token_tree) = attrs.next() else { abort!(ident.span(), "expected group after") };
                 let TokenTree::Group(group) = token_tree else { abort!(token_tree.span(), "expected group") };
-                
+                let mut group_attrs = group.stream().into_iter().peekable();
+                while group_attrs.peek().is_some() {
+                    let TokenTree::Ident(first_ident) = group_attrs.next().unwrap() else { abort!(ident.span(), "expected ident") };
+                    let mut second_ident = None;
+                    if matches!(group_attrs.peek(), Some(TokenTree::Punct(punct)) if punct.as_char() == '.') {
+                        let point = group_attrs.next().unwrap();
+                        let TokenTree::Ident(ident) = group_attrs.next().unwrap() else { abort!(point.span(), "expected method name") };
+                        second_ident = Some(ident);
+                    }
+                    let Some(group) = group_attrs.next() else { abort!(first_ident.span(), "expected group after method name") };
+                    let TokenTree::Group(params) = group else { abort!(group.span(), "expected group") };
+                    defines.push((first_ident, second_ident, params));
+                    if matches!(group_attrs.peek(), Some(TokenTree::Punct(punct)) if punct.as_char() == ';') {
+                        group_attrs.next();
+                    }
+                }
             }
             other => abort!(ident.span(), "unrecognized identifier {}", other),
         }
@@ -227,7 +242,7 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     }
 
-    println!("{inheritable} {parents:?}");
+    println!("{inheritable} {parents:?} {defines:?}");
 
     item
 }
