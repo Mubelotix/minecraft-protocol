@@ -9,3 +9,4 @@ edition = "2021"
 minecraft-protocol = { path = "../minecraft-protocol" }
 minecraft-positions = { path = "../minecraft-positions" }
 minecraft-entities-derive = { path="../minecraft-entities-derive" }
+tokio = { version = "1.33.0", features = ["full"] }
