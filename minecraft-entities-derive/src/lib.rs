@@ -402,8 +402,8 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
     codes.push(code);
 
     // Generate default for methods struct
-    let mut hierarchy_iter = hierarchy.iter().peekable();
-    while let Some(ascendant) = hierarchy_iter.next() {
+    let hierarchy_iter = hierarchy.iter().peekable();
+    for ascendant in hierarchy_iter {
         let code: TokenStream = r#"
             const ASCENDANT_METHODS_FOR_THIS: &AscendantMethods = &AscendantMethods {
 
