@@ -20,13 +20,37 @@ pub struct Mooshroom {
 // Function that returns a pinned boxed future
 type CallBack<O, I> = fn(O, I) -> Pin<Box<dyn Future<Output = ()>>>;
 
+pub struct Handler<T> {
+    uuid: UUID,
+    world: Arc<Mutex<()>>,
+    entity: std::marker::PhantomData<T>,
+}
+
+impl<T> Handler<T> {
+    fn assume(uuid: UUID, world: Arc<Mutex<()>>) -> Self {
+        Self {
+            uuid,
+            world,
+            entity: std::marker::PhantomData,
+        }
+    }
+
+    fn assume_other<V>(self) -> Handler<V> {
+        Handler {
+            uuid: self.uuid,
+            world: self.world,
+            entity: std::marker::PhantomData,
+        }
+    }
+}
+
 // Entity:
 
 pub struct EntityMethods {
-    pub on_jump: CallBack<Entity, ()>,
+    pub on_jump: CallBack<Handler<Entity>, ()>,
 }
 
-trait EntityExt: Sized + EntityDescendant + Into<Entity> {
+trait EntityExt: Sized + Into<Handler<Entity>> {
     fn methods() -> EntityMethods;
 
     fn on_jump(self) -> Pin<Box<dyn Future<Output = ()>>> {
@@ -34,7 +58,7 @@ trait EntityExt: Sized + EntityDescendant + Into<Entity> {
     }
 }
 
-impl EntityExt for Entity {
+impl EntityExt for Handler<Entity> {
     fn methods() -> EntityMethods {
         EntityMethods {
             on_jump: |entity, ()| Box::pin(async {
@@ -47,11 +71,11 @@ impl EntityExt for Entity {
 // Animal:
 
 pub struct AnimalMethods {
-    pub on_hit: CallBack<Animal, f32>,
-    pub on_dies: CallBack<Animal, ()>,
+    pub on_hit: CallBack<Handler<Animal>, f32>,
+    pub on_dies: CallBack<Handler<Animal>, ()>,
 }
 
-trait AnimalExt: Sized + AnimalDescendant + Into<Animal> {
+trait AnimalExt: Sized + Into<Handler<Animal>> {
     fn methods() -> AnimalMethods;
 
     fn on_hit(self, damage: f32) -> Pin<Box<dyn Future<Output = ()>>> {
@@ -63,7 +87,7 @@ trait AnimalExt: Sized + AnimalDescendant + Into<Animal> {
     }
 }
 
-impl AnimalExt for Animal {
+impl AnimalExt for Handler<Animal> {
     fn methods() -> AnimalMethods {
         AnimalMethods {
             on_hit: |animal, damage| Box::pin(async {
@@ -76,13 +100,13 @@ impl AnimalExt for Animal {
     }
 }
 
-impl From<Animal> for Entity {
-    fn from(val: Animal) -> Self {
-        val.ageable_mob.pathfinder_mob.mob.living_entity.entity
+impl From<Handler<Animal>> for Handler<Entity> {
+    fn from(val: Handler<Animal>) -> Self {
+        val.assume_other()
     }
 }
 
-impl EntityExt for Animal {
+impl EntityExt for Handler<Animal> {
     fn methods() -> EntityMethods {
         EntityMethods {
             on_jump: |entity, ()| Box::pin(async {
@@ -94,43 +118,43 @@ impl EntityExt for Animal {
 
 // Cow:
 
-impl From<Cow> for Entity {
-    fn from(val: Cow) -> Self {
-        val.animal.ageable_mob.pathfinder_mob.mob.living_entity.entity
+impl From<Handler<Cow>> for Handler<Entity> {
+    fn from(val: Handler<Cow>) -> Self {
+        val.assume_other()
     }
 }
 
-impl EntityExt for Cow {
+impl EntityExt for Handler<Cow> {
     fn methods() -> EntityMethods {
         EntityMethods {
-            ..<Entity as EntityExt>::methods()
+            ..<Handler<Entity>>::methods()
         }
     }
 }
 
-impl From<Cow> for Animal {
-    fn from(val: Cow) -> Self {
-        val.animal
+impl From<Handler<Cow>> for Handler<Animal> {
+    fn from(val: Handler<Cow>) -> Self {
+        val.assume_other()
     }
 }
 
-impl AnimalExt for Cow {
+impl AnimalExt for Handler<Cow> {
     fn methods() -> AnimalMethods {
         AnimalMethods {
             on_hit: |animal, damage| Box::pin(async {
                 println!("Cow was hit");
             }),
-            ..<Animal as AnimalExt>::methods()
+            ..<Handler<Animal> as AnimalExt>::methods()
         }
     }
 }
 
 #[tokio::test]
 async fn test() {
-    let cow = Cow::default();
+    let cow = Handler::<Cow>::assume(0, Arc::new(Mutex::new(())));
     cow.on_hit(1.0).await;
-    let cow = Cow::default();
+    let cow = Handler::<Cow>::assume(0, Arc::new(Mutex::new(())));
     cow.on_dies().await;
-    let cow = Cow::default();
+    let cow = Handler::<Cow>::assume(0, Arc::new(Mutex::new(())));
     cow.on_jump().await;
 }
