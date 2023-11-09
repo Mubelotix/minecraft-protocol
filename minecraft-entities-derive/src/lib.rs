@@ -196,6 +196,32 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut inheritable = false;
     let mut defines = Vec::new();
     let mut codes = Vec::new();
+        
+    // Get struct name
+    let mut items = item.clone().into_iter();
+    match items.next() {
+        Some(TokenTree::Ident(ident)) if ident.to_string() == "pub" => (),
+        Some(TokenTree::Punct(punct)) if punct.as_char() == '#' => {
+            items.next();
+            match items.next() {
+                Some(TokenTree::Ident(ident)) if ident.to_string() == "pub" => (),
+                Some(other) => abort!(other.span(), "expected struct to be public"),
+                None => panic!("expected public struct, found nothing"),
+            }
+        }
+        Some(other) => abort!(other.span(), "expected struct to be public"),
+        None => panic!("expected public struct, found nothing"),
+    }
+    match items.next() {
+        Some(TokenTree::Ident(ident)) if ident.to_string() == "struct" => (),
+        Some(other) => abort!(other.span(), "expected struct, found {:?}"),
+        None => panic!("expected struct, found nothing"),
+    }
+    let struct_name = match items.next() {
+        Some(TokenTree::Ident(ident)) => ident,
+        Some(other) => abort!(other.span(), "expected struct name, found {:?}"),
+        None => panic!("expected struct name, found nothing"),
+    };
 
     // Parse attributes
     let mut attrs = attr.into_iter().peekable();
@@ -255,7 +281,7 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
                         params.next();
                         args.push((name, ty));
                     }
-                    defines.push((ty, method, args));
+                    defines.push((ty.unwrap_or_else(|| struct_name.clone()), method, args));
                     if matches!(group_attrs.peek(), Some(TokenTree::Punct(punct)) if punct.as_char() == ';') {
                         group_attrs.next();
                     }
@@ -267,32 +293,8 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
             attrs.next();
         }
     }
-        
-    // Get struct name
-    let mut items = item.clone().into_iter();
-    match items.next() {
-        Some(TokenTree::Ident(ident)) if ident.to_string() == "pub" => (),
-        Some(TokenTree::Punct(punct)) if punct.as_char() == '#' => {
-            items.next();
-            match items.next() {
-                Some(TokenTree::Ident(ident)) if ident.to_string() == "pub" => (),
-                Some(other) => abort!(other.span(), "expected struct to be public"),
-                None => panic!("expected public struct, found nothing"),
-            }
-        }
-        Some(other) => abort!(other.span(), "expected struct to be public"),
-        None => panic!("expected public struct, found nothing"),
-    }
-    match items.next() {
-        Some(TokenTree::Ident(ident)) if ident.to_string() == "struct" => (),
-        Some(other) => abort!(other.span(), "expected struct, found {:?}"),
-        None => panic!("expected struct, found nothing"),
-    }
-    let struct_name = match items.next() {
-        Some(TokenTree::Ident(ident)) => ident,
-        Some(other) => abort!(other.span(), "expected struct name, found {:?}"),
-        None => panic!("expected struct name, found nothing"),
-    };
+    let mut hierarchy = inherited.clone();
+    hierarchy.insert(0, struct_name.clone());
 
     let mut to_replace = HashMap::new();
     to_replace.insert("This", struct_name.clone());
@@ -377,7 +379,7 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
         replace_idents(element, &to_replace);
     }
     let mut inner_codes = TokenStream::new();
-    for (_, method, args) in defines.iter().filter(|(ty, _, _)| ty.is_none()) {
+    for (_, method, args) in defines.iter().filter(|(ty, _, _)| ty.to_string() == struct_name.to_string()) {
         let inner_code: TokenStream = match args.len() {
             0 => String::from(r#"pub method: CallBack<Handler<This>>,"#),
             1 => format!(r#"pub method: CallBack1<Handler<This>, {}>,"#, args[0].1),
@@ -387,7 +389,6 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
             _ => abort!(method.span(), "too many arguments"),
         }.parse().unwrap();
         to_replace.insert("method", method.clone());
-        // TODO to_replace.insert("args", args);
         let mut inner_code = inner_code.clone().into_iter().collect::<Vec<_>>();
         for element in &mut inner_code {
             replace_idents(element, &to_replace);
@@ -399,6 +400,63 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
     *group = Group::new(group.delimiter(), group.stream().into_iter().chain(inner_codes.into_iter()).collect());
     let code: TokenStream = code.into_iter().collect();
     codes.push(code);
+
+    // Generate default for methods struct
+    let mut hierarchy_iter = hierarchy.iter().peekable();
+    while let Some(ascendant) = hierarchy_iter.next() {
+        let code: TokenStream = r#"
+            const ASCENDANT_METHODS_FOR_THIS: &AscendantMethods = &AscendantMethods {
+
+            };
+        "#.parse().unwrap();
+        to_replace.insert("ASCENDANT_METHODS_FOR_THIS", Ident::new(&format!("{}_METHODS_FOR_{}", ascendant.to_string().to_case(Case::ScreamingSnake), struct_name.to_string().to_case(Case::ScreamingSnake)), ascendant.span()));
+        to_replace.insert("Ascendant", ascendant.clone());
+        to_replace.insert("AscendantMethods", Ident::new(&format!("{}Methods", ascendant), ascendant.span()));
+        let mut code = code.clone().into_iter().collect::<Vec<_>>();
+        for element in &mut code {
+            replace_idents(element, &to_replace);
+        }    
+        let mut inner_codes = TokenStream::new();
+        for (_, method, args) in defines.iter().filter(|(ty, _, _)| ty.to_string() == ascendant.to_string()) {
+            let inner_code: TokenStream = match args.len() {
+                0 => r#"method: |s| Box::pin(s.assume_other::<Ascendant>().method()),"#,
+                1 => r#"method: |s, arg1| Box::pin(s.assume_other::<Ascendant>().method(arg1)),"#,
+                2 => r#"method: |s, arg1, arg2| Box::pin(s.assume_other::<Ascendant>().method(arg1, arg2)),"#,
+                3 => r#"method: |s, arg1, arg2, arg3| Box::pin(s.assume_other::<Ascendant>().method(arg1, arg2, arg3)),"#,
+                4 => r#"method: |s, arg1, arg2, arg3, arg4| Box::pin(s.assume_other::<Ascendant>().method(arg1, arg2, arg3, arg4)),"#,
+                _ => abort!(method.span(), "too many arguments"),
+            }.parse().unwrap();
+            to_replace.insert("method", method.clone());
+            for (i, (name, _)) in args.iter().enumerate() {
+                to_replace.insert(["arg1", "arg2", "arg3", "arg4"][i], name.clone());
+            }
+            let mut inner_code = inner_code.clone().into_iter().collect::<Vec<_>>();
+            for element in &mut inner_code {
+                replace_idents(element, &to_replace);
+            }
+            let inner_code: TokenStream = inner_code.into_iter().collect();
+            inner_codes.extend(inner_code);
+        }
+        let i = code.len() - 2;
+        let TokenTree::Group(ref mut group) = code.get_mut(i).unwrap() else {unreachable!()};
+        *group = Group::new(group.delimiter(), group.stream().into_iter().chain(inner_codes.into_iter()).collect());
+
+        if ascendant.to_string() != struct_name.to_string() {
+            let inner_code: TokenStream = r#"..*ASCENDANT_METHODS_FOR_PARENT"#.parse().unwrap();
+            to_replace.insert("ASCENDANT_METHODS_FOR_PARENT", Ident::new(&format!("{}_METHODS_FOR_{}", ascendant.to_string().to_case(Case::ScreamingSnake), hierarchy[1].to_string().to_case(Case::ScreamingSnake)), ascendant.span()));
+            let mut inner_code = inner_code.clone().into_iter().collect::<Vec<_>>();
+            for element in &mut inner_code {
+                replace_idents(element, &to_replace);
+            }    
+            let inner_code: TokenStream = inner_code.into_iter().collect();
+            let TokenTree::Group(ref mut group) = code.get_mut(i).unwrap() else {unreachable!()};
+            *group = Group::new(group.delimiter(), group.stream().into_iter().chain(inner_code.into_iter()).collect());
+        }
+
+        let code: TokenStream = code.into_iter().collect();
+        codes.push(code);
+    
+    }
 
     // Generate final code
     let mut final_code = item;
