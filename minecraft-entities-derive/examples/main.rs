@@ -58,6 +58,16 @@ pub struct Entity {
 
 }
 
+impl Handler<Entity> {
+    async fn on_moved(self, from: f32, to: f32) {
+        println!("Entity moved from {} to {}", from, to);
+    }
+
+    async fn on_spawned(self) {
+        println!("Entity spawned");
+    }
+}
+
 #[MinecraftEntity(
     parents { Entity },
     inheritable,
@@ -69,6 +79,16 @@ pub struct Entity {
 )]
 pub struct Animal {
     entity: Entity,
+}
+
+impl Handler<Animal> {
+    async fn on_hit(self, damage: usize) {
+        println!("Animal hit with {} damage", damage);
+    }
+
+    async fn on_jump(self) {
+        println!("Animal jumped");
+    }
 }
 
 #[MinecraftEntity(
@@ -83,7 +103,11 @@ pub struct Cow {
     animal: Animal,
 }
 
-
+impl Handler<Cow> {
+    async fn on_milked(self) {
+        println!("Cow milked");
+    }
+}
 
 fn main() {
 
