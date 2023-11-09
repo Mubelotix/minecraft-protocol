@@ -8,7 +8,7 @@ use minecraft_entities_derive::*;
         on_spawned(self);
     }
 )]
-struct Entity {
+pub struct Entity {
 
 }
 
@@ -21,7 +21,7 @@ struct Entity {
         on_jump(self);
     }
 )]
-struct Animal {
+pub struct Animal {
     entity: Entity,
 }
 
@@ -33,7 +33,7 @@ struct Animal {
         on_milked(self);
     }
 )]
-struct Cow {
+pub struct Cow {
     animal: Animal,
 }
 
