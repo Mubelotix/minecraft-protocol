@@ -531,6 +531,24 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
         codes.push(code);
     }
 
+    // Implement conversion traits
+    for ascendant in hierarchy.iter().peekable() {
+        let code: TokenStream = r#"
+            impl From<Handler<This>> for Handler<Ascendant> {
+                fn from(val: Handler<This>) -> Self {
+                    val.assume_other()
+                }
+            }
+        "#.parse().unwrap();
+        to_replace.insert("Ascendant", ascendant.clone());
+        let mut code = code.clone().into_iter().collect::<Vec<_>>();
+        for element in &mut code {
+            replace_idents(element, &to_replace);
+        }
+        let code: TokenStream = code.into_iter().collect();
+        codes.push(code);
+    }
+
     // Generate final code
     let mut final_code = item;
     for code in codes {
