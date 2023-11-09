@@ -20,6 +20,8 @@ pub struct Mooshroom {
 // Function that returns a pinned boxed future
 type CallBack<O, I> = fn(O, I) -> Pin<Box<dyn Future<Output = ()>>>;
 
+// Entity:
+
 pub struct EntityMethods {
     pub on_jump: CallBack<Entity, ()>,
 }
@@ -31,6 +33,18 @@ trait EntityExt: Sized + EntityDescendant + Into<Entity> {
         (Self::methods().on_jump)(self.into(), ())
     }
 }
+
+impl EntityExt for Entity {
+    fn methods() -> EntityMethods {
+        EntityMethods {
+            on_jump: |entity, ()| Box::pin(async {
+                println!("Entity jumped");
+            }),
+        }
+    }
+}
+
+// Animal:
 
 pub struct AnimalMethods {
     pub on_hit: CallBack<Animal, f32>,
@@ -62,16 +76,6 @@ impl AnimalExt for Animal {
     }
 }
 
-impl EntityExt for Entity {
-    fn methods() -> EntityMethods {
-        EntityMethods {
-            on_jump: |entity, ()| Box::pin(async {
-                println!("Entity jumped");
-            }),
-        }
-    }
-}
-
 impl From<Animal> for Entity {
     fn from(val: Animal) -> Self {
         val.ageable_mob.pathfinder_mob.mob.living_entity.entity
@@ -88,15 +92,25 @@ impl EntityExt for Animal {
     }
 }
 
-impl From<Cow> for Animal {
-    fn from(val: Cow) -> Self {
-        val.animal
-    }
-}
+// Cow:
 
 impl From<Cow> for Entity {
     fn from(val: Cow) -> Self {
         val.animal.ageable_mob.pathfinder_mob.mob.living_entity.entity
+    }
+}
+
+impl EntityExt for Cow {
+    fn methods() -> EntityMethods {
+        EntityMethods {
+            ..<Entity as EntityExt>::methods()
+        }
+    }
+}
+
+impl From<Cow> for Animal {
+    fn from(val: Cow) -> Self {
+        val.animal
     }
 }
 
@@ -107,14 +121,6 @@ impl AnimalExt for Cow {
                 println!("Cow was hit");
             }),
             ..<Animal as AnimalExt>::methods()
-        }
-    }
-}
-
-impl EntityExt for Cow {
-    fn methods() -> EntityMethods {
-        EntityMethods {
-            ..<Entity as EntityExt>::methods()
         }
     }
 }
