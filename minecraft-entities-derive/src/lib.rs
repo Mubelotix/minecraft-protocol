@@ -472,11 +472,11 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
         let mut inner_codes = TokenStream::new();
         for (_, method, args) in defines.iter().filter(|(ty, _, _)| ty.to_string() == ascendant.to_string()) {
             let inner_code: TokenStream = match args.len() {
-                0 => r#"method: |s| Box::pin(s.assume_other::<Ascendant>().method()),"#,
-                1 => r#"method: |s, arg1| Box::pin(s.assume_other::<Ascendant>().method(arg1)),"#,
-                2 => r#"method: |s, arg1, arg2| Box::pin(s.assume_other::<Ascendant>().method(arg1, arg2)),"#,
-                3 => r#"method: |s, arg1, arg2, arg3| Box::pin(s.assume_other::<Ascendant>().method(arg1, arg2, arg3)),"#,
-                4 => r#"method: |s, arg1, arg2, arg3, arg4| Box::pin(s.assume_other::<Ascendant>().method(arg1, arg2, arg3, arg4)),"#,
+                0 => r#"method: |s| Box::pin(s.assume_other::<This>().method()),"#,
+                1 => r#"method: |s, arg1| Box::pin(s.assume_other::<This>().method(arg1)),"#,
+                2 => r#"method: |s, arg1, arg2| Box::pin(s.assume_other::<This>().method(arg1, arg2)),"#,
+                3 => r#"method: |s, arg1, arg2, arg3| Box::pin(s.assume_other::<This>().method(arg1, arg2, arg3)),"#,
+                4 => r#"method: |s, arg1, arg2, arg3, arg4| Box::pin(s.assume_other::<This>().method(arg1, arg2, arg3, arg4)),"#,
                 _ => abort!(method.span(), "too many arguments"),
             }.parse().unwrap();
             to_replace.insert("method", method.clone());

@@ -45,6 +45,7 @@ impl<T> Handler<T> {
     }
 }
 
+// Entity
 
 #[MinecraftEntity(
     parents {  },
@@ -68,6 +69,8 @@ impl Handler<Entity> {
     }
 }
 
+// Animal
+
 #[MinecraftEntity(
     parents { Entity },
     inheritable,
@@ -90,6 +93,8 @@ impl Handler<Animal> {
         println!("Animal jumped");
     }
 }
+
+// Cow
 
 #[MinecraftEntity(
     parents { Animal, Entity },
