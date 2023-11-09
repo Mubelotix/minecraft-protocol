@@ -510,7 +510,26 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
         codes.push(code);
     }
 
-
+    // Implement ext traits
+    for ascendant in hierarchy.iter().peekable() {
+        let code: TokenStream = r#"
+            impl AscendantExt for Handler<This> {
+                fn methods() -> &'static AscendantMethods {
+                    ASCENDANT_METHODS_FOR_THIS
+                }
+            }
+        "#.parse().unwrap();
+        to_replace.insert("ASCENDANT_METHODS_FOR_THIS", Ident::new(&format!("{}_METHODS_FOR_{}", ascendant.to_string().to_case(Case::ScreamingSnake), struct_name.to_string().to_case(Case::ScreamingSnake)), ascendant.span()));
+        to_replace.insert("Ascendant", ascendant.clone());
+        to_replace.insert("AscendantExt", Ident::new(&format!("{}Ext", ascendant), ascendant.span()));
+        to_replace.insert("AscendantMethods", Ident::new(&format!("{}Methods", ascendant), ascendant.span()));
+        let mut code = code.clone().into_iter().collect::<Vec<_>>();
+        for element in &mut code {
+            replace_idents(element, &to_replace);
+        }
+        let code: TokenStream = code.into_iter().collect();
+        codes.push(code);
+    }
 
     // Generate final code
     let mut final_code = item;
