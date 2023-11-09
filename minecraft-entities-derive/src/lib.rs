@@ -300,6 +300,7 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
     to_replace.insert("This", struct_name.clone());
     to_replace.insert("ThisDescendant", Ident::new(&format!("{}Descendant", struct_name), struct_name.span()));
     to_replace.insert("ThisMethods", Ident::new(&format!("{}Methods", struct_name), struct_name.span()));
+    to_replace.insert("ThisExt", Ident::new(&format!("{}Ext", struct_name), struct_name.span()));
     to_replace.insert("get_this", Ident::new(&format!("get_{}", struct_name.to_string().to_case(Case::Snake)), struct_name.span()));
     to_replace.insert("get_this_mut", Ident::new(&format!("get_{}_mut", struct_name.to_string().to_case(Case::Snake)), struct_name.span()));
 
@@ -368,6 +369,59 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
         codes.push(code);
     }
 
+    // Generate ext trait
+    let code: TokenStream = r#"
+        trait ThisExt: Sized + Into<Handler<This>> {
+            fn methods() -> &'static ThisMethods;
+        }
+    "#.parse().unwrap();
+    let mut code = code.clone().into_iter().collect::<Vec<_>>();
+    for element in &mut code {
+        replace_idents(element, &to_replace);
+    }
+    let mut inner_codes = TokenStream::new();
+    for (_, method, args) in defines.iter().filter(|(ty, _, _)| ty.to_string() == struct_name.to_string()) {
+        let inner_code: TokenStream = match args.len() {
+            0 => String::from(r#"
+                fn method(self) -> Pin<Box<dyn Future<Output = ()>>> {{
+                    (Self::methods().method)(self.into())
+                }}
+            "#),
+            1 => format!(r#"
+                fn method(self, arg1: {}) -> Pin<Box<dyn Future<Output = ()>>> {{
+                    (Self::methods().method)(self.into(), arg1)
+                }}
+            "#, args[0].1),
+            2 => format!(r#"
+                fn method(self, arg1: {}, arg2: {}) -> Pin<Box<dyn Future<Output = ()>>> {{
+                    (Self::methods().method)(self.into(), arg1, arg2)
+                }}
+            "#, args[0].1, args[1].1),
+            3 => format!(r#"
+                fn method(self, arg1: {}, arg2: {}, arg3: {}) -> Pin<Box<dyn Future<Output = ()>>> {{
+                    (Self::methods().method)(self.into(), arg1, arg2, arg3)
+                }}
+            "#, args[0].1, args[1].1, args[2].1),
+            4 => format!(r#"
+                fn method(self, arg1: {}, arg2: {}, arg3: {}, arg4: {}) -> Pin<Box<dyn Future<Output = ()>>> {{
+                    (Self::methods().method)(self.into(), arg1, arg2, arg3, arg4)
+                }}
+            "#, args[0].1, args[1].1, args[2].1, args[3].1),
+            _ => abort!(method.span(), "too many arguments"),
+        }.parse().unwrap();
+        to_replace.insert("method", method.clone());
+        let mut inner_code = inner_code.clone().into_iter().collect::<Vec<_>>();
+        for element in &mut inner_code {
+            replace_idents(element, &to_replace);
+        }
+        let inner_code: TokenStream = inner_code.into_iter().collect();
+        inner_codes.extend(inner_code);
+    }
+    let TokenTree::Group(ref mut group) = code.last_mut().unwrap() else {unreachable!()};
+    *group = Group::new(group.delimiter(), group.stream().into_iter().chain(inner_codes.into_iter()).collect());
+    let code: TokenStream = code.into_iter().collect();
+    codes.push(code);
+
     // Generate methods struct
     let code: TokenStream = r#"
         pub struct ThisMethods {
@@ -402,8 +456,7 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
     codes.push(code);
 
     // Generate default for methods struct
-    let hierarchy_iter = hierarchy.iter().peekable();
-    for ascendant in hierarchy_iter {
+    for ascendant in hierarchy.iter().peekable() {
         let code: TokenStream = r#"
             const ASCENDANT_METHODS_FOR_THIS: &AscendantMethods = &AscendantMethods {
 
@@ -455,8 +508,9 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
 
         let code: TokenStream = code.into_iter().collect();
         codes.push(code);
-    
     }
+
+
 
     // Generate final code
     let mut final_code = item;
