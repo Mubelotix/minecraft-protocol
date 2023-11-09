@@ -18,6 +18,7 @@ const BOO2: &Test = {
 use std::{pin::Pin, future::Future, sync::{Mutex, Arc}};
 type CallBack<O> = fn(O) -> Pin<Box<dyn Future<Output = ()>>>;
 type CallBack1<O, I> = fn(O, I) -> Pin<Box<dyn Future<Output = ()>>>;
+type CallBack2<O, I, J> = fn(O, I, J) -> Pin<Box<dyn Future<Output = ()>>>;
 type UUID = u128;
 
 pub struct Handler<T> {
@@ -49,7 +50,7 @@ impl<T> Handler<T> {
     parents {  },
     inheritable,
     defines {
-        on_moved(self, from: Position, to: Position);
+        on_moved(self, from: f32, to: f32);
         on_spawned(self);
     }
 )]

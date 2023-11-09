@@ -242,7 +242,20 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
                     } else {
                         abort!(params.peek().unwrap().span(), "expected self as first parameter");
                     }
-                    defines.push((ty, method, params.into_iter().collect::<TokenStream>()));
+                    let mut args: Vec<(Ident, TokenStream)> = Vec::new();
+                    while params.peek().is_some() {
+                        let TokenTree::Ident(name) = params.next().unwrap() else { abort!(params.peek().unwrap().span(), "expected ident") };
+                        if !matches!(params.next(), Some(TokenTree::Punct(punct)) if punct.as_char() == ':') {
+                            abort!(name.span(), "expected colon after name");
+                        }
+                        let mut ty = TokenStream::new();
+                        while params.peek().is_some() && !matches!(params.peek(), Some(TokenTree::Punct(punct)) if punct.as_char() == ',') {
+                            ty.extend(params.next());
+                        }
+                        params.next();
+                        args.push((name, ty));
+                    }
+                    defines.push((ty, method, args));
                     if matches!(group_attrs.peek(), Some(TokenTree::Punct(punct)) if punct.as_char() == ';') {
                         group_attrs.next();
                     }
@@ -365,7 +378,14 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
     }
     let mut inner_codes = TokenStream::new();
     for (ty, method, args) in defines {
-        let inner_code: TokenStream = r#"pub method: CallBack1<Handler<This>, f32>,"#.parse().unwrap();
+        let inner_code: TokenStream = match args.len() {
+            0 => String::from(r#"pub method: CallBack<Handler<This>>,"#),
+            1 => format!(r#"pub method: CallBack1<Handler<This>, {}>,"#, args[0].1),
+            2 => format!(r#"pub method: CallBack2<Handler<This>, {}, {}>,"#, args[0].1, args[1].1),
+            3 => format!(r#"pub method: CallBack3<Handler<This>, {}, {}, {}>,"#, args[0].1, args[1].1, args[2].1),
+            4 => format!(r#"pub method: CallBack4<Handler<This>, {}, {}, {}, {}>,"#, args[0].1, args[1].1, args[2].1, args[3].1),
+            _ => abort!(method.span(), "too many arguments"),
+        }.parse().unwrap();
         to_replace.insert("method", method);
         // TODO to_replace.insert("args", args);
         let mut inner_code = inner_code.clone().into_iter().collect::<Vec<_>>();
