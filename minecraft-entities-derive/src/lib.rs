@@ -377,7 +377,7 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
         replace_idents(element, &to_replace);
     }
     let mut inner_codes = TokenStream::new();
-    for (ty, method, args) in defines {
+    for (_, method, args) in defines.iter().filter(|(ty, _, _)| ty.is_none()) {
         let inner_code: TokenStream = match args.len() {
             0 => String::from(r#"pub method: CallBack<Handler<This>>,"#),
             1 => format!(r#"pub method: CallBack1<Handler<This>, {}>,"#, args[0].1),
@@ -386,7 +386,7 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
             4 => format!(r#"pub method: CallBack4<Handler<This>, {}, {}, {}, {}>,"#, args[0].1, args[1].1, args[2].1, args[3].1),
             _ => abort!(method.span(), "too many arguments"),
         }.parse().unwrap();
-        to_replace.insert("method", method);
+        to_replace.insert("method", method.clone());
         // TODO to_replace.insert("args", args);
         let mut inner_code = inner_code.clone().into_iter().collect::<Vec<_>>();
         for element in &mut inner_code {
