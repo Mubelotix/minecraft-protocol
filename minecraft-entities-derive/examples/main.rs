@@ -1,5 +1,50 @@
 use minecraft_entities_derive::*;
 
+struct Test {
+    test: fn(u8, u8) -> usize,
+    test2: fn(u8, u8) -> usize,
+}
+
+const BOO: &Test = &Test {
+    test: |a, b| a as usize + b as usize,
+    test2: |a, b| a as usize + b as usize,
+};
+
+const BOO2: &Test = {
+    let mut t1 = BOO;
+    t1
+};
+
+use std::{pin::Pin, future::Future, sync::{Mutex, Arc}};
+type CallBack<O> = fn(O) -> Pin<Box<dyn Future<Output = ()>>>;
+type CallBack1<O, I> = fn(O, I) -> Pin<Box<dyn Future<Output = ()>>>;
+type UUID = u128;
+
+pub struct Handler<T> {
+    uuid: UUID,
+    world: Arc<Mutex<()>>,
+    entity: std::marker::PhantomData<T>,
+}
+
+impl<T> Handler<T> {
+    fn assume(uuid: UUID, world: Arc<Mutex<()>>) -> Self {
+        Self {
+            uuid,
+            world,
+            entity: std::marker::PhantomData,
+        }
+    }
+
+    fn assume_other<V>(self) -> Handler<V> {
+        Handler {
+            uuid: self.uuid,
+            world: self.world,
+            entity: std::marker::PhantomData,
+        }
+    }
+}
+
+
 #[MinecraftEntity(
     parents {  },
     inheritable,

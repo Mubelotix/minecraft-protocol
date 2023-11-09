@@ -176,7 +176,7 @@ impl From<Handler<Cow>> for Handler<Entity> {
 impl EntityExt for Handler<Cow> {
     fn methods() -> EntityMethods {
         EntityMethods {
-            ..<Handler<Entity>>::methods()
+            ..<Handler<Animal> as EntityExt>::methods()
         }
     }
 }

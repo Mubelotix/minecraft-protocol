@@ -220,16 +220,29 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
                 let TokenTree::Group(group) = token_tree else { abort!(token_tree.span(), "expected group") };
                 let mut group_attrs = group.stream().into_iter().peekable();
                 while group_attrs.peek().is_some() {
-                    let TokenTree::Ident(first_ident) = group_attrs.next().unwrap() else { abort!(ident.span(), "expected ident") };
-                    let mut second_ident = None;
+                    let TokenTree::Ident(mut method) = group_attrs.next().unwrap() else { abort!(ident.span(), "expected ident") };
+                    let mut ty = None;
                     if matches!(group_attrs.peek(), Some(TokenTree::Punct(punct)) if punct.as_char() == '.') {
                         let point = group_attrs.next().unwrap();
                         let TokenTree::Ident(ident) = group_attrs.next().unwrap() else { abort!(point.span(), "expected method name") };
-                        second_ident = Some(ident);
+                        ty = Some(method);
+                        method = ident;
                     }
-                    let Some(group) = group_attrs.next() else { abort!(first_ident.span(), "expected group after method name") };
+                    let Some(group) = group_attrs.next() else { abort!(method.span(), "expected group after method name") };
                     let TokenTree::Group(params) = group else { abort!(group.span(), "expected group") };
-                    defines.push((first_ident, second_ident, params));
+                    if params.delimiter() != proc_macro::Delimiter::Parenthesis {
+                        abort!(params.span(), "expected parenthesis");
+                    }
+                    let mut params = params.stream().into_iter().peekable();
+                    if matches!(params.peek(), Some(TokenTree::Ident(ident)) if ident.to_string() == "self") {
+                        params.next();
+                        if matches!(params.peek(), Some(TokenTree::Punct(punct)) if punct.as_char() == ',') {
+                            params.next();
+                        }
+                    } else {
+                        abort!(params.peek().unwrap().span(), "expected self as first parameter");
+                    }
+                    defines.push((ty, method, params.into_iter().collect::<TokenStream>()));
                     if matches!(group_attrs.peek(), Some(TokenTree::Punct(punct)) if punct.as_char() == ';') {
                         group_attrs.next();
                     }
@@ -268,6 +281,13 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
         None => panic!("expected struct name, found nothing"),
     };
 
+    let mut to_replace = HashMap::new();
+    to_replace.insert("This", struct_name.clone());
+    to_replace.insert("ThisDescendant", Ident::new(&format!("{}Descendant", struct_name), struct_name.span()));
+    to_replace.insert("ThisMethods", Ident::new(&format!("{}Methods", struct_name), struct_name.span()));
+    to_replace.insert("get_this", Ident::new(&format!("get_{}", struct_name.to_string().to_case(Case::Snake)), struct_name.span()));
+    to_replace.insert("get_this_mut", Ident::new(&format!("get_{}_mut", struct_name.to_string().to_case(Case::Snake)), struct_name.span()));
+
     if !inherited.is_empty() {
         // Generate code for parent
         let parent = inherited.remove(0);
@@ -277,10 +297,8 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
                 fn get_parent_mut(&mut self) -> &mut Parent { &mut self.parent }
             }
         "#.parse().unwrap();
-        let mut to_replace = HashMap::new();
         to_replace.insert("ParentDescendant", Ident::new(&format!("{}Descendant", parent), parent.span()));
         to_replace.insert("Parent", parent.clone());
-        to_replace.insert("This", struct_name.clone());
         to_replace.insert("get_parent", Ident::new(&format!("get_{}", parent.to_string().to_case(Case::Snake)), parent.span()));
         to_replace.insert("get_parent_mut", Ident::new(&format!("get_{}_mut", parent.to_string().to_case(Case::Snake)), parent.span()));
         to_replace.insert("parent", Ident::new(&parent.to_string().to_case(Case::Snake), parent.span()));
@@ -300,13 +318,10 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         "#.parse().unwrap();
         for inherited in inherited {
-            let mut to_replace = HashMap::new();
             to_replace.insert("InheritedDescendant", Ident::new(&format!("{}Descendant", inherited), inherited.span()));
             to_replace.insert("Inherited", inherited.clone());
-            to_replace.insert("This", struct_name.clone());
             to_replace.insert("get_inherited", Ident::new(&format!("get_{}", inherited.to_string().to_case(Case::Snake)), inherited.span()));
             to_replace.insert("get_inherited_mut", Ident::new(&format!("get_{}_mut", inherited.to_string().to_case(Case::Snake)), inherited.span()));
-            to_replace.insert("parent", Ident::new(&parent.to_string().to_case(Case::Snake), parent.span()));
 
             let mut code = code.clone().into_iter().collect::<Vec<_>>();
             for element in &mut code {
@@ -330,11 +345,6 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
                 fn get_this_mut(&mut self) -> &mut This { self }
             }
         "#.parse().unwrap();
-        let mut to_replace = HashMap::new();
-        to_replace.insert("This", struct_name.clone());
-        to_replace.insert("ThisDescendant", Ident::new(&format!("{}Descendant", struct_name), struct_name.span()));
-        to_replace.insert("get_this", Ident::new(&format!("get_{}", struct_name.to_string().to_case(Case::Snake)), struct_name.span()));
-        to_replace.insert("get_this_mut", Ident::new(&format!("get_{}_mut", struct_name.to_string().to_case(Case::Snake)), struct_name.span()));
         let mut code = code.clone().into_iter().collect::<Vec<_>>();
         for element in &mut code {
             replace_idents(element, &to_replace);
@@ -342,6 +352,33 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
         let code: TokenStream = code.into_iter().collect();
         codes.push(code);
     }
+
+    // Generate methods struct
+    let code: TokenStream = r#"
+        pub struct ThisMethods {
+            
+        }
+    "#.parse().unwrap();
+    let mut code = code.clone().into_iter().collect::<Vec<_>>();
+    for element in &mut code {
+        replace_idents(element, &to_replace);
+    }
+    let mut inner_codes = TokenStream::new();
+    for (ty, method, args) in defines {
+        let inner_code: TokenStream = r#"pub method: CallBack1<Handler<This>, f32>,"#.parse().unwrap();
+        to_replace.insert("method", method);
+        // TODO to_replace.insert("args", args);
+        let mut inner_code = inner_code.clone().into_iter().collect::<Vec<_>>();
+        for element in &mut inner_code {
+            replace_idents(element, &to_replace);
+        }
+        let inner_code: TokenStream = inner_code.into_iter().collect();
+        inner_codes.extend(inner_code);
+    }
+    let TokenTree::Group(ref mut group) = code.last_mut().unwrap() else {unreachable!()};
+    *group = Group::new(group.delimiter(), group.stream().into_iter().chain(inner_codes.into_iter()).collect());
+    let code: TokenStream = code.into_iter().collect();
+    codes.push(code);
 
     // Generate final code
     let mut final_code = item;
