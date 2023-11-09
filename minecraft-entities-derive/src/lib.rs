@@ -532,7 +532,7 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
     }
 
     // Implement conversion traits
-    for ascendant in hierarchy.iter().peekable() {
+    for ascendant in hierarchy.iter().skip(1) {
         let code: TokenStream = r#"
             impl From<Handler<This>> for Handler<Ascendant> {
                 fn from(val: Handler<This>) -> Self {
