@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use minecraft_protocol::components::chunk::PalettedData;
+use minecraft_protocol::{components::chunk::PalettedData, ids::blocks::Block};
 use tokio::sync::RwLock;
 use crate::prelude::*;
 
@@ -296,6 +296,43 @@ struct ChunkColumn {
 }
 
 impl ChunkColumn {
+    const MAX_HEIGHT: i32 = 320; // TODO: adapt to the world height
+    
+    fn init_chunk_heightmap(&mut self){
+        self.heightmap = HeightMap::new(9);
+        if self.chunks.len() != 24 {
+            panic!("Chunk column must have 24 chunks");
+        }
+
+        // Start from the higher chunk
+        for bx in 0..16 {
+            for bz in 0..16 {
+                let mut current_height = Self::MAX_HEIGHT;
+                'chunks: for chunk in self.chunks.iter() {
+                    while current_height >= 0 {
+                        let block: BlockWithState = chunk.get_block(BlockPositionInChunk { bx, by: (current_height % 16) as u8, bz });
+                        // SAFETY: fom_id will get a valid block necessarily 
+                        if Block::from_id(block.block_id()).unwrap().is_air_block() {
+                            break 'chunks;
+                        }
+                        current_height -= 1;
+
+                        if (current_height % 16) <= 0 {
+                            break 'chunks;
+                        }
+                    }          
+                }
+                self.heightmap.set(BlockPositionInChunkColumn { bx, y: current_height, bz });
+            }
+        }
+    }
+
+    pub fn from(chunks: Vec<Chunk>) -> Self {
+        let mut column = Self { chunks, heightmap: HeightMap::new(9) };
+        column.init_chunk_heightmap();
+        column
+    }
+
     pub fn flat() -> Self {
         let empty_chunk = Chunk {
             data: NetworkChunk {
@@ -318,10 +355,7 @@ impl ChunkColumn {
         for _ in 0..23 {
             chunks.push(empty_chunk.clone());
         }
-        Self { 
-            chunks,
-            heightmap: HeightMap::new(1),
-        }
+        Self::from(chunks)
     }
 
     fn get_block(&self, position: BlockPositionInChunkColumn) -> BlockWithState {
@@ -519,6 +553,10 @@ mod tests {
 
         let high_block = flat_column.get_block(BlockPositionInChunkColumn { bx: 0, y: 120, bz: 0 });
         assert_eq!(high_block.block_state_id().unwrap(), BlockWithState::Air.block_state_id().unwrap());
+
+        // Check that the heightmap is correct
+        let heightmap = &flat_column.heightmap;
+        assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 0 }), 120);
     }
 
     #[tokio::test]
@@ -579,4 +617,6 @@ mod tests {
         heightmap.set(BlockPositionInChunkColumn { bx: 0, y: 12, bz: 0 });
         assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 12, bz: 0 }), 12);
     }
+
+    
 }
