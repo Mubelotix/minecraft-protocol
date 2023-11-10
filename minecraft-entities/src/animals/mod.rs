@@ -59,9 +59,10 @@ impl TryAsEntityRef<Animal> for AnyEntity {
             AnyEntity::Animal(animal) => return Some(&animal),
             _ => (),
         }
-        if let Some(tameable_animal) = self.try_as_entity_ref::<TameableAnimal>() {
-            return tameable_animal.animal.try_as_entity_ref();
+        if let Some(tameable_animal) = <Self as TryAsEntityRef<TameableAnimal>>::try_as_entity_ref(self) {
+            return Some(&tameable_animal.animal)
         }
+        None
     }
 
     fn try_as_entity_mut(&mut self) -> Option<&mut Animal> {
@@ -69,9 +70,10 @@ impl TryAsEntityRef<Animal> for AnyEntity {
             AnyEntity::Animal(animal) => return Some(animal),
             _ => (),
         }
-        if let Some(tameable_animal) = self.try_as_entity_mut::<TameableAnimal>() {
-            return tameable_animal.animal.try_as_entity_mut();
+        if let Some(tameable_animal) = <Self as TryAsEntityRef<TameableAnimal>>::try_as_entity_mut(self) {
+            return Some(&mut tameable_animal.animal)
         }
+        None
     }
 }
 

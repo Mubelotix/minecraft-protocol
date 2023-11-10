@@ -40,9 +40,10 @@ impl TryAsEntityRef<LivingEntity> for AnyEntity {
             AnyEntity::Player(player) => return Some(&player.living_entity),
             _ => (),
         }
-        if let Some(mob) = self.try_as_entity_ref::<Mob>() {
-            return mob.living_entity.try_as_entity_ref();
+        if let Some(mob) = <Self as TryAsEntityRef<Mob>>::try_as_entity_ref(self) {
+            return Some(&mob.living_entity)
         }
+        None
     }
 
     fn try_as_entity_mut(&mut self) -> Option<&mut LivingEntity> {
@@ -51,9 +52,10 @@ impl TryAsEntityRef<LivingEntity> for AnyEntity {
             AnyEntity::Player(player) => return Some(&mut player.living_entity),
             _ => (),
         }
-        if let Some(mob) = self.try_as_entity_mut::<Mob>() {
-            return mob.living_entity.try_as_entity_mut();
+        if let Some(mob) = <Self as TryAsEntityRef<Mob>>::try_as_entity_mut(self) {
+            return Some(&mut mob.living_entity)
         }
+        None
     }
 }
 

@@ -30,11 +30,10 @@ impl TryAsEntityRef<Mob> for AnyEntity {
             AnyEntity::Mob(mob) => return Some(&mob),
             _ => (),
         }
-        if let Some(ambient_creature) = self.try_as_entity_ref::<AmbientCreature>() {
-            return ambient_creature.mob.try_as_entity_ref();
-        }
-        if let Some(pathfinder_mob) = self.try_as_entity_ref::<PathfinderMob>() {
-            return pathfinder_mob.mob.try_as_entity_ref();
+        if let Some(ambient_creature) = <Self as TryAsEntityRef<AmbientCreature>>::try_as_entity_ref(self) {
+            return Some(&ambient_creature.mob)
+        } else if let Some(pathfinder_mob) = <Self as TryAsEntityRef<PathfinderMob>>::try_as_entity_ref(self) {
+            return Some(&pathfinder_mob.mob)
         }
         None
     }
@@ -44,13 +43,16 @@ impl TryAsEntityRef<Mob> for AnyEntity {
             AnyEntity::Mob(mob) => return Some(mob),
             _ => (),
         }
-        if let Some(ambient_creature) = self.try_as_entity_mut::<AmbientCreature>() {
-            return ambient_creature.mob.try_as_entity_mut();
-        }
-        if let Some(pathfinder_mob) = self.try_as_entity_mut::<PathfinderMob>() {
-            return pathfinder_mob.mob.try_as_entity_mut();
-        }
-        None
+        let result: Option<&mut Mob> = 
+        if let Some(ambient_creature) = <Self as TryAsEntityRef<AmbientCreature>>::try_as_entity_mut(self) {
+            Some(&mut ambient_creature.mob)
+        } else if let Some(pathfinder_mob) = <Self as TryAsEntityRef<PathfinderMob>>::try_as_entity_mut(self) {
+            Some(&mut pathfinder_mob.mob)
+        } else {
+            None
+        };
+
+    result 
     }
 }
 
@@ -96,8 +98,8 @@ impl TryAsEntityRef<PathfinderMob> for AnyEntity {
             AnyEntity::PathfinderMob(pathfinder_mob) => return Some(&pathfinder_mob),
             _ => (),
         }
-        if let Some(ageable_mob) = self.try_as_entity_ref::<AgeableMob>() {
-            return ageable_mob.pathfinder_mob.try_as_entity_ref();
+        if let Some(ageable_mob) = <Self as TryAsEntityRef<AgeableMob>>::try_as_entity_ref(self) {
+            return Some(&ageable_mob.pathfinder_mob)
         }
         None
     }
@@ -107,8 +109,8 @@ impl TryAsEntityRef<PathfinderMob> for AnyEntity {
             AnyEntity::PathfinderMob(pathfinder_mob) => return Some(pathfinder_mob),
             _ => (),
         }
-        if let Some(ageable_mob) = self.try_as_entity_mut::<AgeableMob>() {
-            return ageable_mob.pathfinder_mob.try_as_entity_mut();
+        if let Some(ageable_mob) = <Self as TryAsEntityRef<AgeableMob>>::try_as_entity_mut(self) {
+            return Some(&mut ageable_mob.pathfinder_mob)
         }
         None
     }
@@ -126,22 +128,22 @@ pub struct AgeableMob {
 impl TryAsEntityRef<AgeableMob> for AnyEntity {
     fn try_as_entity_ref(&self) -> Option<&AgeableMob> {
         match self {
-            AnyEntity::AgeableMob(ageable_mob) => return Some(&ageable_mob),
+            AnyEntity::AgeableMob(ageable_mob) => return Some(ageable_mob),
             _ => (),
         }
-        if let Some(villager) = self.try_as_entity_ref::<AbstractVillager>() {
-            return villager.try_as_entity_ref();
+        if let Some(abstract_villager) = <Self as TryAsEntityRef<AbstractVillager>>::try_as_entity_ref(self) {
+            return Some(&abstract_villager.ageable_mob)
         }
         None
     }
 
     fn try_as_entity_mut(&mut self) -> Option<&mut AgeableMob> {
         match self {
-            AnyEntity::AgeableMob(ageable_mob) => return Some(&mut ageable_mob),
+            AnyEntity::AgeableMob(ageable_mob) => return Some(ageable_mob),
             _ => (),
         }
-        if let Some(villager) = self.try_as_entity_mut::<AbstractVillager>() {
-            return villager.try_as_entity_mut();
+        if let Some(abstract_villager) = <Self as TryAsEntityRef<AbstractVillager>>::try_as_entity_mut(self) {
+            return Some(&mut abstract_villager.ageable_mob)
         }
         None
     }

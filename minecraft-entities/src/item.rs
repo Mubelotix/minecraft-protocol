@@ -11,10 +11,10 @@ pub struct ItemFrame {
 }
 
 impl TryAsEntityRef<ItemFrame> for AnyEntity {
-    fn try_as_entity_ref(&self) -> Option<&Entity> {
+    fn try_as_entity_ref(&self) -> Option<&ItemFrame> {
         match self {
-            AnyEntity::ItemFrame(item_frame) => Some(&item_frame.entity),
-            AnyEntity::GlowingItemFrame(glowing_item_frame) => Some(&glowing_item_frame.item_frame.entity),
+            AnyEntity::ItemFrame(item_frame) => Some(&item_frame),
+            AnyEntity::GlowingItemFrame(glowing_item_frame) => Some(&glowing_item_frame.item_frame),
             _ => None,
         }
     }

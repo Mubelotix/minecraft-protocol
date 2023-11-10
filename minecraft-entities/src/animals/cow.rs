@@ -13,7 +13,15 @@ impl TryAsEntityRef<Cow> for AnyEntity {
         match self {
             AnyEntity::Cow(cow) => return Some(&cow),
             AnyEntity::Mooshroom(mooshroom) => return Some(&mooshroom.cow),
-            _ => (),
+            _ => None,
+        }
+    }
+
+    fn try_as_entity_mut(&mut self) -> Option<&mut Cow> {
+        match self {
+            AnyEntity::Cow(cow) => return Some(cow),
+            AnyEntity::Mooshroom(mooshroom) => return Some(&mut mooshroom.cow),
+            _ => None,
         }
     }
 }

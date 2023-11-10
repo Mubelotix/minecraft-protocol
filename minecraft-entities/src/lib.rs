@@ -87,15 +87,16 @@ impl<T> Handler<T> where AnyEntity: TryAsEntityRef<T> {
     }
 
     pub async fn observe(&self, observer: fn(&T)) {
-        let fut = self.world.observe_entity(self.id, |entity| {
-            
-        });
-        fut.await;
+        //let fut = self.world.observe_entity(self.id, |entity| {
+        //
+        //});
+        //fut.await;
     }
 }
 
 pub enum AnyEntity {
     Entity(Entity),
+    Interaction(Interaction),
     Display(Display),
     BlockDisplay(BlockDisplay),
     ItemDisplay(ItemDisplay),
@@ -232,6 +233,7 @@ impl AnyEntity {
     pub fn as_entity(&self) -> &Entity {
         match self {
             AnyEntity::Entity(entity) => entity,
+            AnyEntity::Interaction(interaction) => interaction.get_entity(),
             AnyEntity::Display(display) => display.get_entity(),
             AnyEntity::BlockDisplay(block_display) => block_display.get_entity(),
             AnyEntity::ItemDisplay(item_display) => item_display.get_entity(),

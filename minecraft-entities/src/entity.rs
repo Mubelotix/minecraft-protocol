@@ -47,6 +47,7 @@ impl TryAsEntityRef<Entity> for AnyEntity {
     fn try_as_entity_ref(&self) -> Option<&Entity> {
         Some(match self {
             AnyEntity::Entity(entity) => entity,
+            AnyEntity::Interaction(interaction) => interaction.get_entity(),
             AnyEntity::Display(display) => display.get_entity(),
             AnyEntity::BlockDisplay(block_display) => block_display.get_entity(),
             AnyEntity::ItemDisplay(item_display) => item_display.get_entity(),
@@ -182,6 +183,7 @@ impl TryAsEntityRef<Entity> for AnyEntity {
     fn try_as_entity_mut(&mut self) -> Option<&mut Entity> {
         Some(match self {
             AnyEntity::Entity(entity) => entity,
+            AnyEntity::Interaction(interaction) => interaction.get_entity_mut(),
             AnyEntity::Display(display) => display.get_entity_mut(),
             AnyEntity::BlockDisplay(block_display) => block_display.get_entity_mut(),
             AnyEntity::ItemDisplay(item_display) => item_display.get_entity_mut(),

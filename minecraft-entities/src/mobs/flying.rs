@@ -12,8 +12,8 @@ impl TryAsEntityRef<Flying> for AnyEntity {
     fn try_as_entity_ref(&self) -> Option<&Flying> {
         match self {
             AnyEntity::Flying(flying) => Some(&flying),
-            AnyEntity::Bat(bat) => Some(&bat.flying),
             AnyEntity::Ghast(ghast) => Some(&ghast.flying),
+            AnyEntity::Phantom(phantom) => Some(&phantom.flying),
             _ => None,
         }
     }
@@ -21,8 +21,8 @@ impl TryAsEntityRef<Flying> for AnyEntity {
     fn try_as_entity_mut(&mut self) -> Option<&mut Flying> {
         match self {
             AnyEntity::Flying(flying) => Some(flying),
-            AnyEntity::Bat(bat) => Some(&mut bat.flying),
             AnyEntity::Ghast(ghast) => Some(&mut ghast.flying),
+            AnyEntity::Phantom(phantom) => Some(&mut phantom.flying),
             _ => None,
         }
     }

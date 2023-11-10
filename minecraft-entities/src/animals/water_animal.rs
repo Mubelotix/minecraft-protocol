@@ -16,8 +16,8 @@ impl TryAsEntityRef<WaterAnimal> for AnyEntity {
             AnyEntity::Squid(squid) => return Some(&squid.water_animal),
             _ => (),
         }
-        if let Some(fish) = self.try_as_entity_ref::<AbstractFish>() {
-            return Some(fish.get_water_animal())
+        if let Some(fish) = <Self as TryAsEntityRef<AbstractFish>>::try_as_entity_ref(self) {
+            return Some(&fish.water_animal)
         }
         None
     }
@@ -29,8 +29,8 @@ impl TryAsEntityRef<WaterAnimal> for AnyEntity {
             AnyEntity::Squid(squid) => return Some(&mut squid.water_animal),
             _ => (),
         }
-        if let Some(fish) = self.try_as_entity_mut::<AbstractFish>() {
-            return Some(fish.get_water_animal_mut())
+        if let Some(fish) = <Self as TryAsEntityRef<AbstractFish>>::try_as_entity_mut(self) {
+            return Some(&mut fish.water_animal)
         }
         None
     }

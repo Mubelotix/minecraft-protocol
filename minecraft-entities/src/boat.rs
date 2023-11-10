@@ -31,10 +31,10 @@ impl Default for Boat {
 }
 
 impl TryAsEntityRef<Boat> for AnyEntity {
-    fn try_as_entity_ref(&self) -> Option<&Entity> {
+    fn try_as_entity_ref(&self) -> Option<&Boat> {
         match self {
-            AnyEntity::Boat(boat) => Some(&boat.entity),
-            AnyEntity::ChestBoat(chest_boat) => Some(&chest_boat.boat.entity),
+            AnyEntity::Boat(boat) => Some(boat),
+            AnyEntity::ChestBoat(chest_boat) => Some(&chest_boat.boat),
             _ => None,
         }
     }
