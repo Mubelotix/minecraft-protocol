@@ -21,6 +21,14 @@ pub struct Dolphin {
 
 #[derive(Default)]
 #[MinecraftEntity(
+    parents { WaterAnimal, PathfinderMob, Mob, LivingEntity, Entity },
+)]
+pub struct Squid {
+    pub water_animal: WaterAnimal,
+}
+
+#[derive(Default)]
+#[MinecraftEntity(
     inheritable, parents { WaterAnimal, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct AbstractFish {

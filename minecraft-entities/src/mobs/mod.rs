@@ -1,7 +1,5 @@
 use super::*;
 
-mod squid;
-pub use squid::*;
 mod villagers;
 pub use villagers::*;
 mod golems;
@@ -42,7 +40,6 @@ pub struct PathfinderMob {
     pub mob: Mob,
 }
 
-#[derive(Default)]
 #[derive(Default)]
 #[MinecraftEntity(
     inheritable, parents { PathfinderMob, Mob, LivingEntity, Entity },

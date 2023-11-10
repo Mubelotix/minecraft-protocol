@@ -1,8 +1,9 @@
 use super::*;
 
 #[derive(Default)]
-#[inheritable]
-#[inherit(Monster, PathfinderMob, Mob, LivingEntity, Entity)]
+#[MinecraftEntity(
+    inheritable, parents { Monster, PathfinderMob, Mob, LivingEntity, Entity },
+)]
 pub struct Zombie {
     pub monster: Monster,
     pub is_baby: bool,
@@ -11,7 +12,9 @@ pub struct Zombie {
 }
 
 #[derive(Default)]
-#[inherit(Zombie, Monster, PathfinderMob, Mob, LivingEntity, Entity)]
+#[MinecraftEntity(
+    parents { Zombie, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+)]
 pub struct ZombieVillager {
     pub zombie: Zombie,
     pub is_converting: bool,
@@ -19,19 +22,25 @@ pub struct ZombieVillager {
 }
 
 #[derive(Default)]
-#[inherit(Zombie, Monster, PathfinderMob, Mob, LivingEntity, Entity)]
+#[MinecraftEntity(
+    parents { Zombie, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+)]
 pub struct Husk {
     pub zombie: Zombie,
 }
 
 #[derive(Default)]
-#[inherit(Zombie, Monster, PathfinderMob, Mob, LivingEntity, Entity)]
+#[MinecraftEntity(
+    parents { Zombie, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+)]
 pub struct Drowned {
     pub zombie: Zombie,
 }
 
 #[derive(Default)]
-#[inherit(Zombie, Monster, PathfinderMob, Mob, LivingEntity, Entity)]
+#[MinecraftEntity(
+    parents { Zombie, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+)]
 pub struct ZombifiedPiglin {
     pub zombie: Zombie,
 }

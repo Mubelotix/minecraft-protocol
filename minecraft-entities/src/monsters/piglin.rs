@@ -1,7 +1,18 @@
 use super::*;
 
 #[derive(Default)]
-#[inherit(BasePiglin, Monster, PathfinderMob, Mob, LivingEntity, Entity)]
+#[MinecraftEntity(
+    inheritable, parents { Monster, PathfinderMob, Mob, LivingEntity, Entity },
+)]
+pub struct BasePiglin {
+    pub monster: Monster,
+    pub is_immune: bool,
+}
+
+#[derive(Default)]
+#[MinecraftEntity(
+    parents { BasePiglin, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+)]
 pub struct Piglin {
     pub base_piglin: BasePiglin,
     pub is_baby: bool,
@@ -10,7 +21,9 @@ pub struct Piglin {
 }
 
 #[derive(Default)]
-#[inherit(BasePiglin, Monster, PathfinderMob, Mob, LivingEntity, Entity)]
+#[MinecraftEntity(
+    parents { BasePiglin, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+)]
 pub struct PiglinBrute {
     pub base_piglin: BasePiglin,
 }

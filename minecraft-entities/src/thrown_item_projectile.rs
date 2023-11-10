@@ -1,7 +1,7 @@
 use super::*;
 
 #[MinecraftEntity(
-    inheritable, parents { LivingEntity, Entity },
+    inheritable, parents { Entity },
 )]
 pub struct ThrownItemProjectile {
     pub entity: Entity,

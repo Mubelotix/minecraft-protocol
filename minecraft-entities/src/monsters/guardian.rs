@@ -1,8 +1,9 @@
 use super::*;
 
 #[derive(Default)]
-#[inheritable]
-#[inherit(Monster, PathfinderMob, Mob, LivingEntity, Entity)]
+#[MinecraftEntity(
+    inheritable, parents { Monster, PathfinderMob, Mob, LivingEntity, Entity },
+)]
 pub struct Guardian {
     pub monster: Monster,
     pub is_retracting_spikes: bool,
@@ -10,8 +11,9 @@ pub struct Guardian {
 }
 
 #[derive(Default)]
-#[inheritable]
-#[inherit(Guardian, Monster, PathfinderMob, Mob, LivingEntity, Entity)]
+#[MinecraftEntity(
+    parents { Guardian, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+)]
 pub struct ElderGuardian {
     pub guardian: Guardian,
 }

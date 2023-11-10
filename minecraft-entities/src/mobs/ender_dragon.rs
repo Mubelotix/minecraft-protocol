@@ -1,6 +1,8 @@
 use super::*;
 
-#[inherit(Mob, LivingEntity, Entity)]
+#[MinecraftEntity(
+    parents { Mob, LivingEntity, Entity },
+)]
 pub struct EnderDragon {
     pub mob: Mob,
     pub phase: usize,
@@ -15,7 +17,9 @@ impl Default for EnderDragon {
     }
 }
 
-#[inherit(Entity)]
+#[MinecraftEntity(
+    parents { Entity },
+)]
 pub struct EndCrystal {
     pub entity: Entity,
     pub block_position: Option<BlockPosition>,

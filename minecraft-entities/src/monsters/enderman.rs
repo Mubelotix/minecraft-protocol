@@ -2,7 +2,9 @@ use minecraft_protocol::ids::blocks::Block;
 
 use super::*;
 
-#[inherit(Monster, PathfinderMob, Mob, LivingEntity, Entity)]
+#[MinecraftEntity(
+    parents { Monster, PathfinderMob, Mob, LivingEntity, Entity },
+)]
 pub struct Enderman {
     pub monster: Monster,
     pub block_id: Option<Block>,
