@@ -33,9 +33,6 @@ pub use fire_entities::*;
 mod item;
 pub use item::*;
 
-mod ecs;
-pub use ecs::*;
-
 pub(crate) use minecraft_positions::*;
 pub(crate) use minecraft_entities_derive::MinecraftEntity;
 pub(crate) use minecraft_protocol::{
@@ -56,27 +53,48 @@ type CallBack<O> = fn(O) -> Pin<Box<dyn Future<Output = ()>>>;
 type CallBack1<O, I> = fn(O, I) -> Pin<Box<dyn Future<Output = ()>>>;
 type CallBack2<O, I, J> = fn(O, I, J) -> Pin<Box<dyn Future<Output = ()>>>;
 
-pub struct Handler<T> {
-    uuid: UUID,
-    world: Arc<Mutex<()>>,
+trait TryAsEntityRef<T> {
+    fn try_as_entity_ref(&self) -> Option<&T> {
+        None
+    }
+    fn try_as_entity_mut(&mut self) -> Option<&mut T> {
+        None
+    }
+}
+
+trait WorldTest {
+    fn observe_entity(&self, eid: Eid, observer: fn(&AnyEntity)) -> dyn std::future::Future<Output = ()>;
+    fn mutate_entity(&self, eid: Eid, mutator: fn(&mut AnyEntity)) -> dyn std::future::Future<Output = ()>;
+}
+
+pub struct Handler<T> where AnyEntity: TryAsEntityRef<T> {
+    id: Eid,
+    world: &'static dyn WorldTest,
     entity: std::marker::PhantomData<T>,
 }
 
-impl<T> Handler<T> {
-    fn assume(uuid: UUID, world: Arc<Mutex<()>>) -> Self {
+impl<T> Handler<T> where AnyEntity: TryAsEntityRef<T> {
+    pub fn assume(id: Eid, world: &'static dyn WorldTest) -> Self {
         Self {
-            uuid,
+            id,
             world,
             entity: std::marker::PhantomData,
         }
     }
 
-    fn assume_other<V>(self) -> Handler<V> {
+    fn assume_other<V>(self) -> Handler<V> where AnyEntity: TryAsEntityRef<V> {
         Handler {
-            uuid: self.uuid,
+            id: self.id,
             world: self.world,
             entity: std::marker::PhantomData,
         }
+    }
+
+    pub async fn observe(&self, observer: fn(&T)) {
+        let fut = self.world.observe_entity(self.id, |entity| {
+            
+        });
+        fut.await;
     }
 }
 
