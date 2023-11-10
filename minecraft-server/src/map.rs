@@ -186,39 +186,85 @@ impl HeightMap {
             data: vec![0; ((16 * 16 * 9usize).div_euclid(entry_bit_size as usize) + 1) * entry_bit_size as usize ],
         }
     }
-    pub(self) fn get(&self, position: BlockPositionInChunkColumn) -> i32 {
-        let bits_position = (position.bz as usize * 16 + position.bx as usize) * self.entry_bit_size as usize;
-        let mut data = self.data[bits_position / 64];
-        let bits_position = bits_position % 64;
-        data = data.rotate_right(bits_position as u32);
-        if bits_position + self.entry_bit_size as usize > 64 {
-            let mut data2 = self.data[bits_position / 64 + 1];
-            data2 = data2.rotate_left(64 - bits_position as u32);
-            data |= data2;
-            data &= (1 << self.entry_bit_size) - 1;
-        } 
-        
-        unsafe {
-            transmute::<u64, i64>(data) as i32
-        }
-    }
 
-    fn set(&mut self, position: BlockPositionInChunkColumn, height: i32) {
-        let bits_position = (position.bz as usize * 16 + position.bx as usize) * self.entry_bit_size as usize;
-        let mut data = unsafe {
-            transmute::<i64, u64>(height as i64)
+    /// Set the height of the highest block at the given position.
+    pub fn set(&mut self, position: BlockPositionInChunkColumn) {
+        let (x, z) = (position.bx, position.bz);
+        let height = position.y;
+
+        let index = (x * 16 + z) as usize; // assuming a 16x16 chunk column
+        let bits_per_entry = self.entry_bit_size as usize;
+        let bit_pos = index * bits_per_entry;
+        let data_index = bit_pos / 64;
+        let bit_offset = bit_pos % 64;
+
+        // Ensure we don't shift beyond the limits of the data type.
+        if bits_per_entry >= 64 {
+            panic!("entry_bit_size too large for u64 storage");
+        }
+
+        // Calculate the signed height ensuring it doesn't overflow.
+        let signed_height = if bits_per_entry < 64 {
+            ((height as u64) << (64 - bits_per_entry)) >> (64 - bits_per_entry)
+        } else {
+            height as u64
         };
-        
-        let bits_position = bits_position % 64;
-        if bits_position + self.entry_bit_size as usize > 64 {
-            let mut data2 = self.data[bits_position / 64 + 1];
-            data2 = data2.rotate_left(64 - bits_position as u32);
+
+        // Prepare the mask to clear the bits at the position.
+        let mask = ((1 << bits_per_entry) - 1) << bit_offset;
+        // Clear the bits at the target position.
+        self.data[data_index] &= !mask;
+        // Set the new height with the sign.
+        self.data[data_index] |= signed_height << bit_offset;
+        // Check if the entry spills over to the next u64.
+        if bit_offset + bits_per_entry > 64 {
+            // Calculate how many bits spill over.
+            let spill_over_bits = bit_offset + bits_per_entry - 64;
+            // Prepare the mask to clear the spill over bits.
+            let spill_over_mask = (1 << spill_over_bits) - 1;
+            // Clear the spill over bits in the next entry.
+            self.data[data_index + 1] &= !spill_over_mask;
+            // Set the spill over bits.
+            self.data[data_index + 1] |= signed_height >> (64 - bit_offset);
+        }
+    }
+    
+    /// Get the height of the highest block at the given position.
+    pub fn get(&self, position: BlockPositionInChunkColumn) -> i32 {
+        let (x, z) = (position.bx, position.bz);
+
+        let index = (x * 16 + z) as usize; // assuming a 16x16 chunk column
+        let bits_per_entry = self.entry_bit_size as usize;
+        let bit_pos = index * bits_per_entry;
+        let data_index = bit_pos / 64;
+        let bit_offset = bit_pos % 64;
+
+        // Prepare the mask to get the bits at the position.
+        let mask = ((1u64 << bits_per_entry) - 1) << bit_offset;
+        // Retrieve the bits.
+        let mut value = (self.data[data_index] & mask) >> bit_offset;
+
+        // Check if the entry spills over to the next u64 and retrieve the remaining bits.
+        if bit_offset + bits_per_entry > 64 {
+            // Calculate how many bits spill over.
+            let spill_over_bits = bit_offset + bits_per_entry - 64;
+            // Prepare the mask to get the spill over bits.
+            let spill_over_mask = (1u64 << spill_over_bits) - 1;
+            // Retrieve the spill over bits from the next entry.
+            value |= (self.data[data_index + 1] & spill_over_mask) << (64 - bit_offset);
         }
 
-        data = data.rotate_left(bits_position as u32);
-        self.data[bits_position / 64] = data;
+        // Perform sign extension if the value is negative.
+        let sign_bit = 1u64 << (bits_per_entry - 1);
+        if value & sign_bit != 0 {
+            // If the sign bit is set, extend the sign to the rest of the i64.
+            value |= !((1u64 << bits_per_entry) - 1);
+        }
 
+        // Cast to i32 with sign extension.
+        value as i32
     }
+ 
 }
 
 
@@ -493,6 +539,22 @@ mod tests {
 
     #[test]
     fn test_heightmap_get_and_set() {
-        
+        let mut heightmap = HeightMap::from(9);
+        heightmap.set(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 0 });
+        heightmap.set(BlockPositionInChunkColumn { bx: 0, y: -2, bz: 1 });
+        heightmap.set(BlockPositionInChunkColumn { bx: 0, y: 3, bz: 2 });
+        heightmap.set(BlockPositionInChunkColumn { bx: 0, y: -4, bz: 3 });
+        heightmap.set(BlockPositionInChunkColumn { bx: 0, y: -4, bz: 7 });
+
+        // Test get
+        assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 0 }), 0);
+        assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 1 }), -2);
+        assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 2 }), 3);
+        assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 3 }), -4);
+        assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 7 }), -4);
+
+        // Test erase
+        heightmap.set(BlockPositionInChunkColumn { bx: 0, y: 12, bz: 0 });
+        assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 12, bz: 0 }), 12);
     }
 }
