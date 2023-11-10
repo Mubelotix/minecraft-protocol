@@ -5,8 +5,7 @@ members = [
     "minecraft-server",
     "minecraft-entities",
     "minecraft-entities-derive",
-    "minecraft-positions",
-    "tags-macros"
+    "minecraft-positions"
 ]
 
 workspace.resolver = "2"
