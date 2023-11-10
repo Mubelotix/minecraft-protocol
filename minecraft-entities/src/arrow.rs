@@ -21,6 +21,28 @@ impl Default for AbstractArrow {
     }
 }
 
+impl TryAsEntityRef<AbstractArrow> for AnyEntity {
+    fn try_as_entity_ref(&self) -> Option<&AbstractArrow> {
+        match self {
+            AnyEntity::AbstractArrow(abstract_arrow) => Some(abstract_arrow),
+            AnyEntity::Arrow(arrow) => Some(&arrow.abstract_arrow),
+            AnyEntity::SpectralArrow(spectral_arrow) => Some(&spectral_arrow.abstract_arrow),
+            AnyEntity::ThrownTrident(thrown_trident) => Some(&thrown_trident.abstract_arrow),
+            _ => None,
+        }
+    }
+
+    fn try_as_entity_mut(&mut self) -> Option<&mut AbstractArrow> {
+        match self {
+            AnyEntity::AbstractArrow(abstract_arrow) => Some(abstract_arrow),
+            AnyEntity::Arrow(arrow) => Some(&mut arrow.abstract_arrow),
+            AnyEntity::SpectralArrow(spectral_arrow) => Some(&mut spectral_arrow.abstract_arrow),
+            AnyEntity::ThrownTrident(thrown_trident) => Some(&mut thrown_trident.abstract_arrow),
+            _ => None,
+        }
+    }
+}
+
 #[MinecraftEntity(
     parents { AbstractArrow, Entity },
 )]

@@ -33,6 +33,30 @@ impl Default for LivingEntity {
     }
 }
 
+impl TryAsEntityRef<LivingEntity> for AnyEntity {
+    fn try_as_entity_ref(&self) -> Option<&LivingEntity> {
+        match self {
+            AnyEntity::LivingEntity(living_entity) => return Some(living_entity),
+            AnyEntity::Player(player) => return Some(&player.living_entity),
+            _ => (),
+        }
+        if let Some(mob) = self.try_as_entity_ref::<Mob>() {
+            return mob.living_entity.try_as_entity_ref();
+        }
+    }
+
+    fn try_as_entity_mut(&mut self) -> Option<&mut LivingEntity> {
+        match self {
+            AnyEntity::LivingEntity(living_entity) => return Some(living_entity),
+            AnyEntity::Player(player) => return Some(&mut player.living_entity),
+            _ => (),
+        }
+        if let Some(mob) = self.try_as_entity_mut::<Mob>() {
+            return mob.living_entity.try_as_entity_mut();
+        }
+    }
+}
+
 #[MinecraftEntity(
     parents { LivingEntity, Entity },
 )]

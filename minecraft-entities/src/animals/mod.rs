@@ -53,6 +53,28 @@ pub struct Animal {
     pub ageable_mob: AgeableMob,
 }
 
+impl TryAsEntityRef<Animal> for AnyEntity {
+    fn try_as_entity_ref(&self) -> Option<&Animal> {
+        match self {
+            AnyEntity::Animal(animal) => return Some(&animal),
+            _ => (),
+        }
+        if let Some(tameable_animal) = self.try_as_entity_ref::<TameableAnimal>() {
+            return tameable_animal.animal.try_as_entity_ref();
+        }
+    }
+
+    fn try_as_entity_mut(&mut self) -> Option<&mut Animal> {
+        match self {
+            AnyEntity::Animal(animal) => return Some(animal),
+            _ => (),
+        }
+        if let Some(tameable_animal) = self.try_as_entity_mut::<TameableAnimal>() {
+            return tameable_animal.animal.try_as_entity_mut();
+        }
+    }
+}
+
 #[derive(Default)]
 #[MinecraftEntity(
     inheritable, parents { Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },

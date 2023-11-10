@@ -10,6 +10,24 @@ pub struct ItemFrame {
     pub rotation: u8,
 }
 
+impl TryAsEntityRef<ItemFrame> for AnyEntity {
+    fn try_as_entity_ref(&self) -> Option<&Entity> {
+        match self {
+            AnyEntity::ItemFrame(item_frame) => Some(&item_frame.entity),
+            AnyEntity::GlowingItemFrame(glowing_item_frame) => Some(&glowing_item_frame.item_frame.entity),
+            _ => None,
+        }
+    }
+
+    fn try_as_entity_mut(&mut self) -> Option<&mut ItemFrame> {
+        match self {
+            AnyEntity::ItemFrame(item_frame) => Some(item_frame),
+            AnyEntity::GlowingItemFrame(glowing_item_frame) => Some(&mut glowing_item_frame.item_frame),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Default)]
 #[MinecraftEntity(
     parents { ItemFrame, Entity },

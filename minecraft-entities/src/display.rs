@@ -52,6 +52,28 @@ impl Default for Display {
     }
 }
 
+impl TryAsEntityRef<Display> for AnyEntity {
+    fn try_as_entity_ref(&self) -> Option<&Entity> {
+        match self {
+            AnyEntity::Display(display) => Some(&display.entity),
+            AnyEntity::BlockDisplay(block_display) => Some(&block_display.display.entity),
+            AnyEntity::ItemDisplay(item_display) => Some(&item_display.display.entity),
+            AnyEntity::TextDisplay(text_display) => Some(&text_display.display.entity),
+            _ => None,
+        }
+    }
+
+    fn try_as_entity_mut(&mut self) -> Option<&mut Display> {
+        match self {
+            AnyEntity::Display(display) => Some(display),
+            AnyEntity::BlockDisplay(block_display) => Some(&mut block_display.display),
+            AnyEntity::ItemDisplay(item_display) => Some(&mut item_display.display),
+            AnyEntity::TextDisplay(text_display) => Some(&mut text_display.display),
+            _ => None,
+        }
+    }
+}
+
 #[MinecraftEntity(
     parents { Display, Entity },
 )]

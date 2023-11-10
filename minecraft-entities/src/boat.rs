@@ -30,6 +30,24 @@ impl Default for Boat {
     }
 }
 
+impl TryAsEntityRef<Boat> for AnyEntity {
+    fn try_as_entity_ref(&self) -> Option<&Entity> {
+        match self {
+            AnyEntity::Boat(boat) => Some(&boat.entity),
+            AnyEntity::ChestBoat(chest_boat) => Some(&chest_boat.boat.entity),
+            _ => None,
+        }
+    }
+
+    fn try_as_entity_mut(&mut self) -> Option<&mut Boat> {
+        match self {
+            AnyEntity::Boat(boat) => Some(boat),
+            AnyEntity::ChestBoat(chest_boat) => Some(&mut chest_boat.boat),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Default)]
 #[MinecraftEntity(
     parents { Boat, Entity },

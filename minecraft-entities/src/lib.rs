@@ -54,12 +54,8 @@ type CallBack1<O, I> = fn(O, I) -> Pin<Box<dyn Future<Output = ()>>>;
 type CallBack2<O, I, J> = fn(O, I, J) -> Pin<Box<dyn Future<Output = ()>>>;
 
 trait TryAsEntityRef<T> {
-    fn try_as_entity_ref(&self) -> Option<&T> {
-        None
-    }
-    fn try_as_entity_mut(&mut self) -> Option<&mut T> {
-        None
-    }
+    fn try_as_entity_ref(&self) -> Option<&T>;
+    fn try_as_entity_mut(&mut self) -> Option<&mut T>;
 }
 
 trait WorldTest {

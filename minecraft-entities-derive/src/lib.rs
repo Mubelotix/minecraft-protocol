@@ -202,6 +202,31 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
         let code: TokenStream = code.into_iter().collect();
         codes.push(code);
+    } else {
+        // Implement TryAsEntityRef for this struct
+        let code: TokenStream = r#"
+            impl TryAsEntityRef<This> for AnyEntity {
+                fn try_as_entity_ref(&self) -> Option<&This> {
+                    match self {
+                        AnyEntity::This(ref val) => Some(val),
+                        _ => None,
+                    }
+                }
+            
+                fn try_as_entity_mut(&mut self) -> Option<&mut This> {
+                    match self {
+                        AnyEntity::This(ref mut val) => Some(val),
+                        _ => None,
+                    }
+                }
+            }
+        "#.parse().unwrap();
+        let mut code = code.clone().into_iter().collect::<Vec<_>>();
+        for element in &mut code {
+            replace_idents(element, &to_replace);
+        }
+        let code: TokenStream = code.into_iter().collect();
+        codes.push(code);
     }
 
     // Generate ext trait
