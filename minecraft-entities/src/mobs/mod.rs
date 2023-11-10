@@ -43,16 +43,13 @@ impl TryAsEntityRef<Mob> for AnyEntity {
             AnyEntity::Mob(mob) => return Some(mob),
             _ => (),
         }
-        let result: Option<&mut Mob> = 
-        if let Some(ambient_creature) = <Self as TryAsEntityRef<AmbientCreature>>::try_as_entity_mut(self) {
-            Some(&mut ambient_creature.mob)
-        } else if let Some(pathfinder_mob) = <Self as TryAsEntityRef<PathfinderMob>>::try_as_entity_mut(self) {
-            Some(&mut pathfinder_mob.mob)
-        } else {
-            None
-        };
-
-    result 
+        if <Self as TryAsEntityRef<AmbientCreature>>::try_as_entity_ref(self).is_some() {
+            return <Self as TryAsEntityRef<AmbientCreature>>::try_as_entity_mut(self).map(|ambient_creature| &mut ambient_creature.mob)
+        }
+        if <Self as TryAsEntityRef<PathfinderMob>>::try_as_entity_ref(self).is_some() {
+            return <Self as TryAsEntityRef<PathfinderMob>>::try_as_entity_mut(self).map(|pathfinder_mob| &mut pathfinder_mob.mob)
+        }
+        None
     }
 }
 
@@ -67,7 +64,7 @@ pub struct AmbientCreature {
 impl TryAsEntityRef<AmbientCreature> for AnyEntity {
     fn try_as_entity_ref(&self) -> Option<&AmbientCreature> {
         match self {
-            AnyEntity::AmbientCreature(ambient_creature) => return Some(&ambient_creature),
+            AnyEntity::AmbientCreature(ambient_creature) => return Some(ambient_creature),
             AnyEntity::Bat(bat) => return Some(&bat.ambient_creature),
             _ => (),
         }

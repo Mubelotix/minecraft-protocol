@@ -63,11 +63,11 @@ impl TryAsEntityRef<Monster> for AnyEntity {
             AnyEntity::Monster(monster) => return Some(monster),
             _ => (),
         }
-        if let Some(base_piglin) = <Self as TryAsEntityRef<BasePiglin>>::try_as_entity_mut(self) {
-            return Some(&mut base_piglin.monster)
+        if <Self as TryAsEntityRef<BasePiglin>>::try_as_entity_ref(self).is_some() {
+            return <Self as TryAsEntityRef<BasePiglin>>::try_as_entity_mut(self).map(|piglin| &mut piglin.monster)
         }
-        if let Some(guardian) = <Self as TryAsEntityRef<Guardian>>::try_as_entity_mut(self) {
-            return Some(&mut guardian.monster)
+        if <Self as TryAsEntityRef<Guardian>>::try_as_entity_ref(self).is_some() {
+            return <Self as TryAsEntityRef<Guardian>>::try_as_entity_mut(self).map(|guardian| &mut guardian.monster)
         }
         None
     }
