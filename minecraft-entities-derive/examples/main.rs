@@ -92,6 +92,10 @@ impl Handler<Animal> {
     async fn on_jump(self) {
         println!("Animal jumped");
     }
+
+    async fn on_spawned(self) {
+        println!("Animal spawned");
+    }
 }
 
 // Cow
@@ -112,8 +116,15 @@ impl Handler<Cow> {
     async fn on_milked(self) {
         println!("Cow milked");
     }
+
+    async fn on_hit(self, damage: usize) {
+        println!("Cow hit with {} damage", damage);
+    }
+
+    async fn on_spawned(self) {
+        println!("Cow spawned");
+    }
 }
 
 fn main() {
-
 }
