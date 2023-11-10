@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    parents { Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Sheep {
     pub animal: Animal,

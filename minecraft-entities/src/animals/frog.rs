@@ -1,4 +1,3 @@
-use minecraft_protocol::packets::UUID;
 use super::*;
 
 #[derive(Default)]

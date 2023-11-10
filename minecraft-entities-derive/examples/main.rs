@@ -1,34 +1,35 @@
 use minecraft_entities_derive::*;
 
-struct Test {
-    test: fn(u8, u8) -> usize,
-    test2: fn(u8, u8) -> usize,
-}
-
-const BOO: &Test = &Test {
-    test: |a, b| a as usize + b as usize,
-    test2: |a, b| a as usize + b as usize,
-};
-
-const BOO2: &Test = {
-    let mut t1 = BOO;
-    t1
-};
-
 use std::{pin::Pin, future::Future, sync::{Mutex, Arc}};
 type CallBack<O> = fn(O) -> Pin<Box<dyn Future<Output = ()>>>;
 type CallBack1<O, I> = fn(O, I) -> Pin<Box<dyn Future<Output = ()>>>;
 type CallBack2<O, I, J> = fn(O, I, J) -> Pin<Box<dyn Future<Output = ()>>>;
-type UUID = u128;
+type Eid = u32;
+
+trait TryAsEntityRef<T> {
+    fn try_as_entity_ref(&self) -> Option<&T>;
+    fn try_as_entity_mut(&mut self) -> Option<&mut T>;
+}
+
+trait WorldTest {
+    fn observe_entity(&self, eid: Eid, observer: fn(&AnyEntity)) -> dyn std::future::Future<Output = ()>;
+    fn mutate_entity(&self, eid: Eid, mutator: fn(&mut AnyEntity)) -> dyn std::future::Future<Output = ()>;
+}
+
+enum AnyEntity {
+    Entity(Entity),
+    Animal(Animal),
+    Cow(Cow),
+}
 
 pub struct Handler<T> {
-    uuid: UUID,
+    uuid: Eid,
     world: Arc<Mutex<()>>,
     entity: std::marker::PhantomData<T>,
 }
 
 impl<T> Handler<T> {
-    fn assume(uuid: UUID, world: Arc<Mutex<()>>) -> Self {
+    fn assume(uuid: Eid, world: Arc<Mutex<()>>) -> Self {
         Self {
             uuid,
             world,

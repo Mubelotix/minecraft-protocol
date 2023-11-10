@@ -84,3 +84,21 @@ pub struct TameableAnimal {
     pub action_mask: u8,
     pub owner: Option<UUID>,
 }
+
+impl TryAsEntityRef<TameableAnimal> for AnyEntity {
+    fn try_as_entity_ref(&self) -> Option<&TameableAnimal> {
+        match self {
+            AnyEntity::TameableAnimal(tameable_animal) => return Some(&tameable_animal),
+            _ => (),
+        }
+        None
+    }
+
+    fn try_as_entity_mut(&mut self) -> Option<&mut TameableAnimal> {
+        match self {
+            AnyEntity::TameableAnimal(tameable_animal) => return Some(tameable_animal),
+            _ => (),
+        }
+        None
+    }
+}

@@ -1,7 +1,7 @@
 use super::*;
 
 #[MinecraftEntity(
-    inheritable, parents {},
+    inheritable
 )]
 pub struct Entity {
     pub position: Position,
