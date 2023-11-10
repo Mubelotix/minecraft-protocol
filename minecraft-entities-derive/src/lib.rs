@@ -456,9 +456,10 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
     codes.push(code);
 
     // Generate default for methods struct
+    let mut mod_codes = Vec::new();
     for ascendant in hierarchy.iter().peekable() {
         let code: TokenStream = r#"
-            const ASCENDANT_METHODS_FOR_THIS: &AscendantMethods = &AscendantMethods {
+            pub(super) const ASCENDANT_METHODS_FOR_THIS: &AscendantMethods = &AscendantMethods {
 
             };
         "#.parse().unwrap();
@@ -507,18 +508,29 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         let code: TokenStream = code.into_iter().collect();
-        codes.push(code);
+        mod_codes.push(code);
     }
+    let mod_codes: TokenStream = mod_codes.into_iter().collect();
+    let mod_code: TokenStream = format!(r#"
+        mod {struct_name}_methods {{
+            use super::{{ {} }};
+        }}
+    "#, hierarchy.iter().map(|i| format!("{i}, {i}Methods")).chain(hierarchy.iter().skip(1).map(|i| format!("{i}_methods::*"))).collect::<Vec<_>>().join(","),
+    ).parse().unwrap();
+    let mut mod_code = mod_code.into_iter().collect::<Vec<_>>();
+    let TokenTree::Group(ref mut group) = mod_code.last_mut().unwrap() else {unreachable!()};
+    *group = Group::new(group.delimiter(), group.stream().into_iter().chain(mod_codes.into_iter()).collect());
+    codes.push(mod_code.into_iter().collect());
 
     // Implement ext traits
     for ascendant in hierarchy.iter().peekable() {
-        let code: TokenStream = r#"
-            impl AscendantExt for Handler<This> {
-                fn methods() -> &'static AscendantMethods {
-                    ASCENDANT_METHODS_FOR_THIS
-                }
-            }
-        "#.parse().unwrap();
+        let code: TokenStream = format!(r#"
+            impl AscendantExt for Handler<This> {{
+                fn methods() -> &'static AscendantMethods {{
+                    {struct_name}_methods::ASCENDANT_METHODS_FOR_THIS
+                }}
+            }}
+        "#).parse().unwrap();
         to_replace.insert("ASCENDANT_METHODS_FOR_THIS", Ident::new(&format!("{}_METHODS_FOR_{}", ascendant.to_string().to_case(Case::ScreamingSnake), struct_name.to_string().to_case(Case::ScreamingSnake)), ascendant.span()));
         to_replace.insert("Ascendant", ascendant.clone());
         to_replace.insert("AscendantExt", Ident::new(&format!("{}Ext", ascendant), ascendant.span()));
