@@ -1,4 +1,4 @@
-use std::{collections::HashMap, mem::transmute};
+use std::collections::HashMap;
 use minecraft_protocol::components::chunk::PalettedData;
 use tokio::sync::RwLock;
 use crate::prelude::*;
@@ -174,33 +174,55 @@ impl Chunk {
 }
 
 struct HeightMap {
-    entry_bit_size: u8,
+    base: u8,
     data: Vec<u64>,
+    max_height: Option<i32>,
 }
 
 impl HeightMap {
-    pub fn from(entry_bit_size: u8) -> Self {
-        assert!(entry_bit_size <= 9);
+    pub fn new(base: u8) -> Self {
+        assert!(base <= 9);
         Self {
-            entry_bit_size,
-            data: vec![0; ((16 * 16 * 9usize).div_euclid(entry_bit_size as usize) + 1) * entry_bit_size as usize ],
+            base,
+            data: vec![0; ((16 * 16 * 9usize).div_euclid(base as usize) + 1) * base as usize ],
+            max_height: None
         }
     }
+    
+    /// Update the current base of the heightmap.
+    fn new_base(&mut self, base: u8) {
+        
+    }
 
+    fn get_need_base(&self, height: i32) -> u8 {
+        32 - ((height + 1).leading_zeros() as u8)
+    }
     /// Set the height of the highest block at the given position.
     pub fn set(&mut self, position: BlockPositionInChunkColumn) {
         let (x, z) = (position.bx, position.bz);
         let height = position.y;
 
+        // Check if the height is higher than the current max height.
+        if let Some(max_height) = self.max_height {
+            if height < max_height {        // Calculate the new base for the data.
+                let new_base = self.get_need_base(height);
+                // Update the base & max height.
+                self.max_height = Some(height);
+            }
+        } else {
+            // Set the max height.
+            self.max_height = Some(height);
+        }
+        
         let index = (x * 16 + z) as usize; // assuming a 16x16 chunk column
-        let bits_per_entry = self.entry_bit_size as usize;
+        let bits_per_entry = self.base as usize;
         let bit_pos = index * bits_per_entry;
         let data_index = bit_pos / 64;
         let bit_offset = bit_pos % 64;
 
         // Ensure we don't shift beyond the limits of the data type.
         if bits_per_entry >= 64 {
-            panic!("entry_bit_size too large for u64 storage");
+            panic!("base too large for u64 storage");
         }
 
         // Calculate the signed height ensuring it doesn't overflow.
@@ -234,7 +256,7 @@ impl HeightMap {
         let (x, z) = (position.bx, position.bz);
 
         let index = (x * 16 + z) as usize; // assuming a 16x16 chunk column
-        let bits_per_entry = self.entry_bit_size as usize;
+        let bits_per_entry = self.base as usize;
         let bit_pos = index * bits_per_entry;
         let data_index = bit_pos / 64;
         let bit_offset = bit_pos % 64;
@@ -298,7 +320,7 @@ impl ChunkColumn {
         }
         Self { 
             chunks,
-            heightmap: HeightMap::from(1),
+            heightmap: HeightMap::new(1),
         }
     }
 
@@ -539,7 +561,7 @@ mod tests {
 
     #[test]
     fn test_heightmap_get_and_set() {
-        let mut heightmap = HeightMap::from(9);
+        let mut heightmap = HeightMap::new(9);
         heightmap.set(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 0 });
         heightmap.set(BlockPositionInChunkColumn { bx: 0, y: -2, bz: 1 });
         heightmap.set(BlockPositionInChunkColumn { bx: 0, y: 3, bz: 2 });
