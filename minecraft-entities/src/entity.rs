@@ -1,6 +1,8 @@
 use super::*;
 
-#[inheritable]
+#[MinecraftEntity(
+    inheritable, parents {},
+)]
 pub struct Entity {
     pub position: Position,
     pub is_on_fire: bool,

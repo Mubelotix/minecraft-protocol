@@ -1,7 +1,8 @@
 use super::*;
 
-#[inheritable]
-#[inherit(Entity)]
+#[MinecraftEntity(
+    inheritable, parents { LivingEntity, Entity },
+)]
 pub struct ThrownItemProjectile {
     pub entity: Entity,
     pub item: Slot,
@@ -16,7 +17,9 @@ impl Default for ThrownItemProjectile {
     }
 }
 
-#[inherit(ThrownItemProjectile, Entity)]
+#[MinecraftEntity(
+    parents { ThrownItemProjectile, Entity },
+)]
 pub struct ThrownEgg {
     pub thrown_item_projectile: ThrownItemProjectile,
 }
@@ -36,7 +39,9 @@ impl Default for ThrownEgg {
     }
 }
 
-#[inherit(ThrownItemProjectile, Entity)]
+#[MinecraftEntity(
+    parents { ThrownItemProjectile, Entity },
+)]
 pub struct ThrownEnderPearl {
     pub thrown_item_projectile: ThrownItemProjectile,
 }
@@ -56,7 +61,9 @@ impl Default for ThrownEnderPearl {
     }
 }
 
-#[inherit(ThrownItemProjectile, Entity)]
+#[MinecraftEntity(
+    parents { ThrownItemProjectile, Entity },
+)]
 pub struct ThrownExperienceBottle {
     pub thrown_item_projectile: ThrownItemProjectile,
 }
@@ -76,7 +83,9 @@ impl Default for ThrownExperienceBottle {
     }
 }
 
-#[inherit(ThrownItemProjectile, Entity)]
+#[MinecraftEntity(
+    parents { ThrownItemProjectile, Entity },
+)]
 pub struct ThrownPotion {
     pub thrown_item_projectile: ThrownItemProjectile,
 }
@@ -96,7 +105,9 @@ impl Default for ThrownPotion {
     }
 }
 
-#[inherit(ThrownItemProjectile, Entity)]
+#[MinecraftEntity(
+    parents { ThrownItemProjectile, Entity },
+)]
 pub struct Snowball {
     pub thrown_item_projectile: ThrownItemProjectile,
 }
@@ -117,7 +128,9 @@ impl Default for Snowball {
 }
 
 #[derive(Default)]
-#[inherit(Entity)]
+#[MinecraftEntity(
+    parents { Entity },
+)]
 pub struct EyeOfEnder {
     pub entity: Entity,
     pub item: Slot,

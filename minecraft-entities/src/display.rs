@@ -1,8 +1,9 @@
 use super::*;
 use minecraft_protocol::components::paintings::Painting as PaintingType;
 
-#[inherit(Entity)]
-#[inheritable]
+#[MinecraftEntity(
+    inheritable, parents { Entity },
+)]
 pub struct Display {
     pub entity: Entity,
     pub interpolation_delay: u32,
@@ -51,7 +52,9 @@ impl Default for Display {
     }
 }
 
-#[inherit(Display, Entity)]
+#[MinecraftEntity(
+    parents { Display, Entity },
+)]
 pub struct BlockDisplay {
     pub display: Display,
     pub block: BlockWithState,
@@ -66,7 +69,9 @@ impl Default for BlockDisplay {
     }
 }
 
-#[inherit(Display, Entity)]
+#[MinecraftEntity(
+    parents { Display, Entity },
+)]
 pub struct ItemDisplay {
     pub display: Display,
     pub item: Slot,
@@ -83,7 +88,9 @@ impl Default for ItemDisplay {
     }
 }
 
-#[inherit(Display, Entity)]
+#[MinecraftEntity(
+    parents { Display, Entity },
+)]
 pub struct TextDisplay {
     pub display: Display,
     pub text: String,
@@ -113,7 +120,9 @@ impl Default for TextDisplay {
 }
 
 #[derive(Default)]
-#[inherit(Entity)]
+#[MinecraftEntity(
+    parents { Entity },
+)]
 pub struct Painting {
     pub entity: Entity,
     pub painting_type: PaintingType,

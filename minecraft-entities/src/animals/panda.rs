@@ -2,7 +2,9 @@ use minecraft_protocol::packets::UUID;
 use super::*;
 
 #[derive(Default)]
-#[inherit(Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity)]
+#[MinecraftEntity(
+    parents { Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+)]
 pub struct Panda {
     pub animal: Animal,
     pub breed_timer: u16,

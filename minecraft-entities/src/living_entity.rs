@@ -1,7 +1,8 @@
 use super::*;
 
-#[inheritable]
-#[inherit(Entity)]
+#[MinecraftEntity(
+    inheritable, parents { Entity },
+)]
 pub struct LivingEntity {
     pub entity: Entity,
     pub is_hand_active: bool,
@@ -32,7 +33,9 @@ impl Default for LivingEntity {
     }
 }
 
-#[inherit(LivingEntity, Entity)]
+#[MinecraftEntity(
+    parents { LivingEntity, Entity },
+)]
 pub struct ArmorStand {
     pub living_entity: LivingEntity,
     pub apparence_mask: u8,

@@ -1,8 +1,9 @@
 use minecraft_protocol::components::particle::Particle;
-
 use super::*;
 
-#[inherit(Entity)]
+#[MinecraftEntity(
+    parents { Entity },
+)]
 pub struct AreaEffectCloud {
     pub entity: Entity,
     pub radius: f32,
@@ -24,7 +25,9 @@ impl Default for AreaEffectCloud {
 }
 
 #[derive(Default)]
-#[inherit(Entity)]
+#[MinecraftEntity(
+    parents { Entity },
+)]
 pub struct FishingHook{
     pub entity: Entity,
     pub hooked_entity: Option<usize>,

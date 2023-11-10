@@ -1,6 +1,8 @@
 use super::*;
 
-#[inherit(LivingEntity, Entity)]
+#[MinecraftEntity(
+    parents { LivingEntity, Entity },
+)]
 pub struct Player {
     pub living_entity: LivingEntity,
     pub additional_hearts: f32,

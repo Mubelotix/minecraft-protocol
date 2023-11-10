@@ -4,10 +4,6 @@ mod sniffer;
 pub use sniffer::*;
 mod horses;
 pub use horses::*;
-mod donkey;
-pub use donkey::*;
-mod llama;
-pub use llama::*;
 mod axolotl;
 pub use axolotl::*;
 mod bee;
@@ -46,21 +42,21 @@ mod parrot;
 pub use parrot::*;
 mod goat;
 pub use goat::*;
-mod fishes;
-pub use fishes::*;
 mod water_animal;
 pub use water_animal::*;
 
 #[derive(Default)]
-#[inheritable]
-#[inherit(AgeableMob, PathfinderMob, Mob, LivingEntity, Entity)]
+#[MinecraftEntity(
+    inheritable, parents { AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+)]
 pub struct Animal {
     pub ageable_mob: AgeableMob,
 }
 
 #[derive(Default)]
-#[inheritable]
-#[inherit(Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity)]
+#[MinecraftEntity(
+    inheritable, parents { Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+)]
 pub struct TameableAnimal {
     pub animal: Animal,
     pub action_mask: u8,

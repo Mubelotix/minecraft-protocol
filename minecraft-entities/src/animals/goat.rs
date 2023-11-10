@@ -1,6 +1,8 @@
 use super::*;
 
-#[inherit(Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity)]
+#[MinecraftEntity(
+    parents { Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+)]
 pub struct Goat {
     pub animal: Animal,
     pub is_screaming: bool,

@@ -1,7 +1,8 @@
 use super::*;
 
-#[inheritable]
-#[inherit(Entity)]
+#[MinecraftEntity(
+    inheritable, parents { Entity },
+)]
 pub struct Boat {
     pub entity: Entity,
     pub time_since_last_hit: usize,
@@ -30,7 +31,9 @@ impl Default for Boat {
 }
 
 #[derive(Default)]
-#[inherit(Boat, Entity)]
+#[MinecraftEntity(
+    parents { Boat, Entity },
+)]
 pub struct ChestBoat {
     pub boat: Boat,
 }

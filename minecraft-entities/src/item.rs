@@ -1,8 +1,9 @@
 use super::*;
 
 #[derive(Default)]
-#[inheritable]
-#[inherit(Entity)]
+#[MinecraftEntity(
+    inheritable, parents { Entity },
+)]
 pub struct ItemFrame {
     pub entity: Entity,
     pub item: Slot,
@@ -10,13 +11,17 @@ pub struct ItemFrame {
 }
 
 #[derive(Default)]
-#[inherit(ItemFrame, Entity)]
+#[MinecraftEntity(
+    parents { ItemFrame, Entity },
+)]
 pub struct GlowingItemFrame {
     pub item_frame: ItemFrame,
 }
 
 #[derive(Default)]
-#[inherit(Entity)]
+#[MinecraftEntity(
+    parents { Entity },
+)]
 pub struct ItemEntity {
     pub entity: Entity,
     pub item: Slot,

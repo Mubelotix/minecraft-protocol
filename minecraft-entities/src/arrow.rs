@@ -1,7 +1,8 @@
 use super::*;
 
-#[inheritable]
-#[inherit(Entity)]
+#[MinecraftEntity(
+    inheritable, parents { Entity },
+)]
 pub struct AbstractArrow {
     pub entity: Entity,
     pub is_critical: bool,
@@ -20,7 +21,9 @@ impl Default for AbstractArrow {
     }
 }
 
-#[inherit(AbstractArrow, Entity)]
+#[MinecraftEntity(
+    parents { AbstractArrow, Entity },
+)]
 pub struct Arrow {
     pub abstract_arrow: AbstractArrow,
     pub color: isize,
@@ -35,7 +38,9 @@ impl Default for Arrow {
     }
 }
 
-#[inherit(AbstractArrow, Entity)]
+#[MinecraftEntity(
+    parents { AbstractArrow, Entity },
+)]
 pub struct SpectralArrow {
     pub abstract_arrow: AbstractArrow,
     pub loyalty_level: isize,
@@ -52,7 +57,9 @@ impl Default for SpectralArrow {
     }
 }
 
-#[inherit(AbstractArrow, Entity)]
+#[MinecraftEntity(
+    parents { AbstractArrow, Entity },
+)]
 pub struct ThrownTrident {
     pub abstract_arrow: AbstractArrow,
     pub loyalty_level: isize,

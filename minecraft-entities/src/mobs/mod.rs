@@ -16,8 +16,9 @@ mod bat;
 pub use bat::*;
 
 #[derive(Default)]
-#[inheritable]
-#[inherit(LivingEntity, Entity)]
+#[MinecraftEntity(
+    inheritable, parents { LivingEntity, Entity },
+)]
 pub struct Mob {
     pub living_entity: LivingEntity,
     pub no_ai: bool,
@@ -26,22 +27,26 @@ pub struct Mob {
 }
 
 #[derive(Default)]
-#[inheritable]
-#[inherit(Mob, LivingEntity, Entity)]
+#[MinecraftEntity(
+    inheritable, parents { Mob, LivingEntity, Entity },
+)]
 pub struct AmbientCreature {
     pub mob: Mob,
 }
 
 #[derive(Default)]
-#[inheritable]
-#[inherit(Mob, LivingEntity, Entity)]
+#[MinecraftEntity(
+    inheritable, parents { Mob, LivingEntity, Entity },
+)]
 pub struct PathfinderMob {
     pub mob: Mob,
 }
 
 #[derive(Default)]
-#[inheritable]
-#[inherit(PathfinderMob, Mob, LivingEntity, Entity)]
+#[derive(Default)]
+#[MinecraftEntity(
+    inheritable, parents { PathfinderMob, Mob, LivingEntity, Entity },
+)]
 pub struct AgeableMob {
     pub pathfinder_mob: PathfinderMob,
     pub is_baby: bool,

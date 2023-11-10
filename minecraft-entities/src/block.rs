@@ -1,7 +1,9 @@
 use super::*;
 
 #[derive(Default)]
-#[inherit(Entity)]
+#[MinecraftEntity(
+    parents { Entity },
+)]
 pub struct FallingBlock {
     pub entity: Entity,
     pub spawn_position: BlockPosition,

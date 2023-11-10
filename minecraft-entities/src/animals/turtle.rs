@@ -1,7 +1,9 @@
 use super::*;
 
 #[derive(Default)]
-#[inherit(Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity)]
+#[MinecraftEntity(
+    parents { Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+)]
 pub struct Turtle {
     pub animal: Animal,
     pub block_position: BlockPosition,

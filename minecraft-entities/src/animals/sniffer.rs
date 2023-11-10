@@ -1,8 +1,9 @@
 use super::*;
 
 #[derive(Default)]
-#[inheritable]
-#[inherit(Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity)]
+#[MinecraftEntity(
+    parents { Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+)]
 pub struct Sniffer {
     pub animal: Animal,
     pub sniffer_state: u8,

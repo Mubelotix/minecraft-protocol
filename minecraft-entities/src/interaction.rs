@@ -1,6 +1,8 @@
 use super::*;
 
-#[inherit(Entity)]
+#[MinecraftEntity(
+    parents { Entity },
+)]
 pub struct Interaction {
     pub entity: Entity,
     pub width: f32,

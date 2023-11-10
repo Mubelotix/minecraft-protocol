@@ -33,8 +33,11 @@ pub use fire_entities::*;
 mod item;
 pub use item::*;
 
+mod ecs;
+pub use ecs::*;
+
 pub(crate) use minecraft_positions::*;
-pub(crate) use minecraft_entities_derive::{inherit, inheritable};
+pub(crate) use minecraft_entities_derive::MinecraftEntity;
 pub(crate) use minecraft_protocol::{
     components::{
         entity::Pose,
@@ -46,6 +49,36 @@ pub(crate) use minecraft_protocol::{
 };
 
 pub type Eid = u32;
+
+
+use std::{pin::Pin, future::Future, sync::{Mutex, Arc}};
+type CallBack<O> = fn(O) -> Pin<Box<dyn Future<Output = ()>>>;
+type CallBack1<O, I> = fn(O, I) -> Pin<Box<dyn Future<Output = ()>>>;
+type CallBack2<O, I, J> = fn(O, I, J) -> Pin<Box<dyn Future<Output = ()>>>;
+
+pub struct Handler<T> {
+    uuid: UUID,
+    world: Arc<Mutex<()>>,
+    entity: std::marker::PhantomData<T>,
+}
+
+impl<T> Handler<T> {
+    fn assume(uuid: UUID, world: Arc<Mutex<()>>) -> Self {
+        Self {
+            uuid,
+            world,
+            entity: std::marker::PhantomData,
+        }
+    }
+
+    fn assume_other<V>(self) -> Handler<V> {
+        Handler {
+            uuid: self.uuid,
+            world: self.world,
+            entity: std::marker::PhantomData,
+        }
+    }
+}
 
 pub enum AnyEntity {
     Entity(Entity),
