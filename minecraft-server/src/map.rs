@@ -176,12 +176,12 @@ impl Chunk {
 struct HeightMap {
     base: u8,
     data: Vec<u64>,
-    max_height: Option<i32>,
+    max_height: Option<u32>,
 }
 
 impl HeightMap {
     pub fn new(base: u8) -> Self {
-        assert!(base <= 9);
+        assert!(base <= 9, "base must be <= 9 because the max height is 320 + 64"); 
         Self {
             base,
             data: vec![0; ((16 * 16 * 9usize).div_euclid(base as usize) + 1) * base as usize ],
@@ -191,16 +191,15 @@ impl HeightMap {
     
     /// Update the current base of the heightmap.
     fn new_base(&mut self, base: u8) {
-        
+        unimplemented!();
     }
 
-    fn get_need_base(&self, height: i32) -> u8 {
+    fn get_need_base(&self, height: u32) -> u8 {
         32 - ((height + 1).leading_zeros() as u8)
     }
     /// Set the height of the highest block at the given position.
-    pub fn set(&mut self, position: BlockPositionInChunkColumn) {
+    pub fn set(&mut self, position: BlockPositionInChunkColumn, height: u32) {
         let (x, z) = (position.bx, position.bz);
-        let height = position.y;
 
         // Check if the height is higher than the current max height.
         if let Some(max_height) = self.max_height {
@@ -225,19 +224,15 @@ impl HeightMap {
             panic!("base too large for u64 storage");
         }
 
-        // Calculate the signed height ensuring it doesn't overflow.
-        let signed_height = if bits_per_entry < 64 {
-            ((height as u64) << (64 - bits_per_entry)) >> (64 - bits_per_entry)
-        } else {
-            height as u64
-        };
+        // Cast the height to u64 
+        let height = height as u64;
 
         // Prepare the mask to clear the bits at the position.
         let mask = ((1 << bits_per_entry) - 1) << bit_offset;
         // Clear the bits at the target position.
         self.data[data_index] &= !mask;
         // Set the new height with the sign.
-        self.data[data_index] |= signed_height << bit_offset;
+        self.data[data_index] |= height << bit_offset;
         // Check if the entry spills over to the next u64.
         if bit_offset + bits_per_entry > 64 {
             // Calculate how many bits spill over.
@@ -247,12 +242,12 @@ impl HeightMap {
             // Clear the spill over bits in the next entry.
             self.data[data_index + 1] &= !spill_over_mask;
             // Set the spill over bits.
-            self.data[data_index + 1] |= signed_height >> (64 - bit_offset);
+            self.data[data_index + 1] |= height >> (64 - bit_offset);
         }
     }
     
     /// Get the height of the highest block at the given position.
-    pub fn get(&self, position: BlockPositionInChunkColumn) -> i32 {
+    pub fn get(&self, position: BlockPositionInChunkColumn) -> u32 {
         let (x, z) = (position.bx, position.bz);
 
         let index = (x * 16 + z) as usize; // assuming a 16x16 chunk column
@@ -284,7 +279,7 @@ impl HeightMap {
         }
 
         // Cast to i32 with sign extension.
-        value as i32
+        value as u32
     }
  
 }
@@ -296,33 +291,29 @@ struct ChunkColumn {
 }
 
 impl ChunkColumn {
-    const MAX_HEIGHT: i32 = 320; // TODO: adapt to the world height
+    const MAX_HEIGHT: u32 = 320 + 64; // TODO: adapt to the world height
     
     fn init_chunk_heightmap(&mut self){
         self.heightmap = HeightMap::new(9);
         if self.chunks.len() != 24 {
-            panic!("Chunk column must have 24 chunks");
+            panic!("Chunk column must have 24 chunks (change it for other world heights)");
         }
 
         // Start from the higher chunk
         for bx in 0..16 {
             for bz in 0..16 {
                 let mut current_height = Self::MAX_HEIGHT;
-                'chunks: for chunk in self.chunks.iter() {
-                    while current_height >= 0 {
-                        let block: BlockWithState = chunk.get_block(BlockPositionInChunk { bx, by: (current_height % 16) as u8, bz });
+                'chunks: for chunk in self.chunks.iter().rev() {
+                    for by in (0..16).rev() {
+                        let block: BlockWithState = chunk.get_block(BlockPositionInChunk { bx, by, bz });
                         // SAFETY: fom_id will get a valid block necessarily 
-                        if Block::from_id(block.block_id()).unwrap().is_air_block() {
+                        if !Block::from_id(block.block_id()).unwrap().is_air_block() {
                             break 'chunks;
                         }
                         current_height -= 1;
-
-                        if (current_height % 16) <= 0 {
-                            break 'chunks;
-                        }
                     }          
                 }
-                self.heightmap.set(BlockPositionInChunkColumn { bx, y: current_height, bz });
+                self.heightmap.set(BlockPositionInChunkColumn { bx, y: 0, bz }, current_height );
             }
         }
     }
@@ -555,8 +546,10 @@ mod tests {
         assert_eq!(high_block.block_state_id().unwrap(), BlockWithState::Air.block_state_id().unwrap());
 
         // Check that the heightmap is correct
+        flat_column.set_block(BlockPositionInChunkColumn { bx: 0, y: 2, bz: 0 }, BlockWithState::Grass);
+        flat_column.init_chunk_heightmap();
         let heightmap = &flat_column.heightmap;
-        assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 0 }), 120);
+        assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 0 }), 16);
     }
 
     #[tokio::test]
@@ -600,21 +593,21 @@ mod tests {
     #[test]
     fn test_heightmap_get_and_set() {
         let mut heightmap = HeightMap::new(9);
-        heightmap.set(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 0 });
-        heightmap.set(BlockPositionInChunkColumn { bx: 0, y: -2, bz: 1 });
-        heightmap.set(BlockPositionInChunkColumn { bx: 0, y: 3, bz: 2 });
-        heightmap.set(BlockPositionInChunkColumn { bx: 0, y: -4, bz: 3 });
-        heightmap.set(BlockPositionInChunkColumn { bx: 0, y: -4, bz: 7 });
+        heightmap.set(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 0 }, 0);
+        heightmap.set(BlockPositionInChunkColumn { bx: 0, y: -2, bz: 1 }, 2);
+        heightmap.set(BlockPositionInChunkColumn { bx: 0, y: 3, bz: 2 }, 3);
+        heightmap.set(BlockPositionInChunkColumn { bx: 0, y: -4, bz: 3 }, 4);
+        heightmap.set(BlockPositionInChunkColumn { bx: 0, y: -4, bz: 7 }, 5);
 
         // Test get
         assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 0 }), 0);
-        assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 1 }), -2);
+        assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 1 }), 2);
         assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 2 }), 3);
-        assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 3 }), -4);
-        assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 7 }), -4);
+        assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 3 }), 4);
+        assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 7 }), 5);
 
         // Test erase
-        heightmap.set(BlockPositionInChunkColumn { bx: 0, y: 12, bz: 0 });
+        heightmap.set(BlockPositionInChunkColumn { bx: 0, y: 12, bz: 0 }, 12);
         assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 12, bz: 0 }), 12);
     }
 
