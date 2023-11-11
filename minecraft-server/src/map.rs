@@ -336,6 +336,10 @@ impl ChunkColumn {
         current_height
     }
 
+    pub(super) fn get_highest_block(&self) -> u32 {
+        self.heightmap.max_height.unwrap_or(0) as u32
+    }
+
     pub fn from(chunks: Vec<Chunk>) -> Self {
         let mut column = Self { 
             chunks, 

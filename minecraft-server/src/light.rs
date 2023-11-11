@@ -1,3 +1,5 @@
+use std::{collections::BinaryHeap, cmp::Ordering};
+
 use crate::prelude::*;
 
 
@@ -10,8 +12,8 @@ impl SectionLightData {
     }
 
     /// Get the light level at the given position.
-    pub fn get(&self, postion: ChunkPosition) -> u8 {
-        let (x, y, z) = (postion.cx as usize, postion.cy as usize, postion.cz as usize);
+    pub fn get(&self, postion: BlockPositionInChunk) -> u8 {
+        let (x, y, z) = (postion.bx as usize, postion.by as usize, postion.bz as usize);
         let index = (y << 4) | (z << 4) | x;
         let byte_index = index >> 1;
 
@@ -25,8 +27,8 @@ impl SectionLightData {
     }
 
     /// Set the light level at the given position.
-    pub fn set(&mut self, postion: ChunkPosition, level: u8) {
-        let (x, y, z) = (postion.cx as usize, postion.cy as usize, postion.cz as usize);
+    pub fn set(&mut self, postion: BlockPositionInChunk, level: u8) {
+        let (x, y, z) = (postion.bx as usize, postion.by as usize, postion.bz as usize);
         let index = (y << 4) | (z << 4) | x;
         let byte_index = index >> 1;
 
@@ -34,6 +36,19 @@ impl SectionLightData {
             self.0[byte_index] = (self.0[byte_index] & 0xF0) | (level & 0x0F);
         } else {
             self.0[byte_index] = (self.0[byte_index] & 0x0F) | ((level & 0x0F) << 4);
+        }
+    }
+    
+    /// Set the light level at the given slice to the given level.
+    pub(super) fn set_slice(&mut self, slice: u8 , level: u8) {
+        let slice_index = (slice as usize) << 4;
+        let level_byte = level << 4 | level;
+        for z in 0..16 {
+            let z_index = slice_index | (z << 4);
+            for x in 0..8 {
+                let index = z_index | x;
+                self.0[index] = level_byte;
+            }
         }
     }
 }
@@ -67,8 +82,28 @@ impl Light {
     }
 }
 
-impl ChunkColumn {
-    pub fn propagate_light_inside(&mut self) {
-        
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_section_light_data() {
+        let mut data = SectionLightData::new();
+
+        data.set(BlockPositionInChunk { bx: 0, by: 0, bz: 0 }, 15);
+        assert_eq!(data.get(BlockPositionInChunk { bx: 0, by: 0, bz: 0 }), 15);
+
+        data.set(BlockPositionInChunk { bx: 0, by: 0, bz: 0 }, 0);
+        assert_eq!(data.get(BlockPositionInChunk { bx: 0, by: 0, bz: 0 }), 0);
+
+        data.set(BlockPositionInChunk { bx: 0, by: 0, bz: 1 }, 1);
+        assert_eq!(data.get(BlockPositionInChunk { bx: 0, by: 0, bz: 1 }), 1);
+
+        data.set(BlockPositionInChunk { bx: 0, by: 1, bz: 1 }, 15);
+        assert_eq!(data.get(BlockPositionInChunk { bx: 0, by: 1, bz: 1 }), 15);
+
+        data.set(BlockPositionInChunk { bx: 1, by: 1, bz: 1 }, 1);
+        assert_eq!(data.get(BlockPositionInChunk { bx: 1, by: 1, bz: 1 }), 1);
+
     }
 }
