@@ -327,7 +327,7 @@ impl ChunkColumn {
             for by in (0..((((current_height) % 16) + 1) as u8)).rev() {
                 let block: BlockWithState = chunk.get_block(BlockPositionInChunk { bx: position.bx, by, bz: position.bz });
                 // SAFETY: fom_id will get a valid block necessarily 
-                if !Block::from_id(block.block_id()).unwrap().is_air_block() {
+                if !Block::from_id(block.block_id()).unwrap().is_transparent() {
                     return current_height + 1;
                 }
                 current_height = current_height.saturating_sub(1);
@@ -393,7 +393,7 @@ impl ChunkColumn {
         }
 
         let last_height = self.heightmap.get(&position);
-        let filter_sunlight = Block::from_id(block.block_id()).unwrap().is_air_block(); // TODO: check if the block is transparent
+        let filter_sunlight = Block::from_id(block.block_id()).unwrap().is_transparent(); // TODO: check if the block is transparent
 
         // Get the height of the placed block
         let block_height = (position.y - Self::MIN_Y).max(0) as u16;
