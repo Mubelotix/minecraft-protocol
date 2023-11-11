@@ -168,6 +168,13 @@ impl PlayerHandler {
                     self.world.set_block(location.into(), BlockWithState::Air).await;
                 }
             }
+            ChatMessage { message, .. } => {
+                if message == "summon" {
+                    let mut zombie = Zombie::default();
+                    zombie.get_entity_mut().position = self.position.clone();
+                    self.world.spawn_entity(AnyEntity::Zombie(zombie)).await;
+                }
+            }
             packet => warn!("Unsupported packet received: {packet:?}"),
         }
     }
