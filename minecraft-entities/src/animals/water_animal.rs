@@ -33,7 +33,7 @@ pub struct Squid {
 #[MinecraftEntity(
     inheritable,
     ancestors { WaterAnimal, PathfinderMob, Mob, LivingEntity, Entity },
-    descendants { Cod, PufferFish, Salmon, TropicalFish, Tadpole... },
+    descendants { Cod, Pufferfish, Salmon, TropicalFish, Tadpole... },
 )]
 pub struct AbstractFish {
     pub water_animal: WaterAnimal,
@@ -52,7 +52,7 @@ pub struct Cod {
 #[MinecraftEntity(
     ancestors { AbstractFish, WaterAnimal, PathfinderMob, Mob, LivingEntity, Entity },
 )]
-pub struct PufferFish {
+pub struct Pufferfish {
     pub abstract_fish: AbstractFish,
     pub puff_state: usize,
 }
