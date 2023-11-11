@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, cmp::Ordering};
 use minecraft_protocol::{components::chunk::PalettedData, ids::blocks::Block};
 use tokio::sync::RwLock;
 use crate::prelude::*;
@@ -190,13 +190,21 @@ impl HeightMap {
     }
     
     /// Update the current base of the heightmap.
-    fn new_base(&mut self, base: u8) {
+    fn new_base(&mut self, new_base: u8) {
+        assert!(new_base <= 9, "base must be <= 9 because the max height is 320 + 64");
+
+        let old_base = self.base as usize;
+
         unimplemented!();
+
+        self.base = new_base as u8;
     }
+
 
     fn get_need_base(&self, height: u32) -> u8 {
         32 - ((height + 1).leading_zeros() as u8)
     }
+
     /// Set the height of the highest block at the given position.
     pub fn set(&mut self, position: BlockPositionInChunkColumn, height: u32) {
         let (x, z) = (position.bx, position.bz);
@@ -369,6 +377,23 @@ impl ChunkColumn {
             chunk.set_block(position, block);
             Some(())
         }
+
+        let mut last_height = self.heightmap.get(position.clone());
+
+        // Get the height of the placed block
+        let mut block_height = (position.y + 1) as u32;
+        match block_height.cmp(&last_height) {
+            Ordering::Less => {
+                self.heightmap.set(position.clone(), block_height);
+            },
+            Ordering::Greater => {
+                // Downward propagation
+                
+                
+            },
+            Ordering::Equal => {}   
+        }
+
         set_block_innter(self, position, block);
     }
 }
@@ -592,7 +617,7 @@ mod tests {
 
     #[test]
     fn test_heightmap_get_and_set() {
-        let mut heightmap = HeightMap::new(9);
+        let mut heightmap = HeightMap::new(5);
         heightmap.set(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 0 }, 0);
         heightmap.set(BlockPositionInChunkColumn { bx: 0, y: -2, bz: 1 }, 2);
         heightmap.set(BlockPositionInChunkColumn { bx: 0, y: 3, bz: 2 }, 3);
@@ -609,6 +634,14 @@ mod tests {
         // Test erase
         heightmap.set(BlockPositionInChunkColumn { bx: 0, y: 12, bz: 0 }, 12);
         assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 12, bz: 0 }), 12);
+
+        // Test new base
+        heightmap.new_base(8);
+        assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 0 }), 0);
+        assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 1 }), 2);
+        assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 2 }), 3);
+        assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 3 }), 4);
+        assert_eq!(heightmap.get(BlockPositionInChunkColumn { bx: 0, y: 0, bz: 7 }), 5);
     }
 
     
