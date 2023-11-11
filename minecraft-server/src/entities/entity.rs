@@ -3,6 +3,9 @@ use super::*;
 #[MinecraftEntity(
     inheritable,
     descendants { AbstractArrow..., Boat..., Display, FallingBlock, LlamaSpit, Painting, DragonFireball, Fireball..., FireworkRocket, SmallFireball, Interaction..., ItemEntity, ItemFrame..., LivingEntity... EndCrystal, EvokerFangs, WitherSkull, AreaEffectCloud, FishingHook, EyeOfEnder, ThrownItemProjectile... },
+    defines {
+        init(self);
+    }
 )]
 pub struct Entity {
     pub position: Position,
@@ -22,6 +25,12 @@ pub struct Entity {
     pub has_no_gravity: bool,
     pub pose: Pose,
     pub ticks_frozen: u32,
+}
+
+impl Handler<Entity> {
+    async fn init(self) {
+        println!("Entity initialized");
+    }
 }
 
 impl Default for Entity {

@@ -66,8 +66,8 @@ pub trait TryAsEntityRef<T> {
 }
 
 pub struct Handler<T> where AnyEntity: TryAsEntityRef<T> {
-    eid: Eid,
-    world: &'static World,
+    pub eid: Eid,
+    pub world: &'static World,
     entity: std::marker::PhantomData<T>,
 }
 

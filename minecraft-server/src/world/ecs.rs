@@ -29,12 +29,12 @@ impl Entities {
     }
 
     /// Observe an entity through a closure
-    pub async fn observe_entity<R>(&self, eid: Eid, observer: impl FnOnce(&AnyEntity) -> R) -> Option<R> {
+    pub(super) async fn observe_entity<R>(&self, eid: Eid, observer: impl FnOnce(&AnyEntity) -> R) -> Option<R> {
         self.entities.read().await.get(&eid).map(observer)
     }
 
     /// Mutate an entity through a closure
-    pub async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> R) -> Option<R> {
+    pub(super) async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> R) -> Option<R> {
         let mut entities = self.entities.write().await;
 
         if let Some(entity) = entities.get_mut(&eid) {
@@ -54,7 +54,7 @@ impl Entities {
         }
     }
 
-    pub async fn spawn_entity(&self, entity: AnyEntity) -> (Eid, UUID) {
+    pub(super) async fn spawn_entity(&self, entity: AnyEntity) -> (Eid, UUID) {
         let eid = self.eid_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         let uuid = self.uuid_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u128;
         let mut entities = self.entities.write().await;
@@ -66,8 +66,12 @@ impl Entities {
         (eid, uuid)
     }
 
+    pub async fn insert_entity_task(&self, eid: Eid, name: &'static str, task: EntityTask) {
+        self.entity_tasks.write().await.entry(eid).or_insert(HashMap::new()).insert(name, task);
+    }
+
     /// Remove an entity
-    pub async fn remove_entity(&self, eid: Eid) -> Option<AnyEntity> {
+    pub(super) async fn remove_entity(&self, eid: Eid) -> Option<AnyEntity> {
         let entity = self.entities.write().await.remove(&eid);
         let mut chunks = self.chunks.write().await;
         chunks.values_mut().for_each(|set| { set.remove(&eid); });
@@ -76,5 +80,11 @@ impl Entities {
         self.uuids.write().await.retain(|_,v| *v != eid);
         self.entity_tasks.write().await.remove(&eid);
         entity
+    }
+}
+
+impl<T> Handler<T> where AnyEntity: TryAsEntityRef<T> {
+    async fn insert_task(&self, name: &'static str, task: EntityTask) {
+        self.world.entities.insert_entity_task(self.eid, name, task).await;
     }
 }
