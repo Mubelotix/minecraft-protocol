@@ -91,6 +91,15 @@ impl World {
         eid
     }
 
+    pub async fn observe_entity<R>(&self, eid: Eid, observer: impl FnOnce(&AnyEntity) -> R) -> Option<R> {
+        self.entities.observe_entity(eid, observer).await
+    }
+
+    pub async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> R) -> Option<R> {
+        // TODO change events
+        self.entities.mutate_entity(eid, mutator).await
+    }
+
     async fn notify(&self, position: &ChunkColumnPosition, change: WorldChange) {
         let loading_manager = self.loading_manager.read().await;
         let mut senders = self.change_senders.write().await;
@@ -100,20 +109,6 @@ impl World {
                 let _ = sender.send(change.clone()).await;
             }
         }
-    }
-}
-
-impl EntityWorldInterface for World {    
-    fn observe_entity(&'static self, eid: Eid, observer: Box<dyn FnOnce(&AnyEntity)>) -> Pin<Box<dyn std::future::Future<Output = ()>>> {
-        Box::pin(async move {
-            self.entities.observe_entity(eid, observer).await;
-        })
-    }
-
-    fn mutate_entity(&'static self, eid: Eid, mutator: Box<dyn FnOnce(&mut AnyEntity)>) -> Pin<Box<dyn std::future::Future<Output = ()>>> {
-        Box::pin(async move {
-            self.entities.mutate_entity(eid, mutator).await;
-        })
     }
 }
 

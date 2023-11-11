@@ -33,9 +33,9 @@ pub use fire_entities::*;
 mod item;
 pub use item::*;
 
-pub(crate) use minecraft_positions::*;
-pub(crate) use minecraft_entities_derive::MinecraftEntity;
-pub(crate) use minecraft_protocol::{
+pub use minecraft_positions::*;
+pub use minecraft_entities_derive::MinecraftEntity;
+pub use minecraft_protocol::{
     components::{
         entity::Pose,
         slots::{Slot, SlotItem, Hand}
@@ -44,6 +44,7 @@ pub(crate) use minecraft_protocol::{
     nbt::NbtTag,
     packets::UUID
 };
+pub use crate::prelude::*;
 use std::{pin::Pin, future::Future};
 
 pub type Eid = u32;
@@ -64,20 +65,14 @@ pub trait TryAsEntityRef<T> {
     fn try_as_entity_mut(&mut self) -> Option<&mut T>;
 }
 
-
-pub trait EntityWorldInterface {
-    fn observe_entity(&'static self, eid: Eid, observer: Box<dyn FnOnce(&AnyEntity)>) -> Pin<Box<dyn std::future::Future<Output = ()>>>;
-    fn mutate_entity(&'static self, eid: Eid, mutator: Box<dyn FnOnce(&mut AnyEntity)>) -> Pin<Box<dyn std::future::Future<Output = ()>>>;
-}
-
 pub struct Handler<T> where AnyEntity: TryAsEntityRef<T> {
     eid: Eid,
-    world: &'static dyn EntityWorldInterface,
+    world: &'static World,
     entity: std::marker::PhantomData<T>,
 }
 
 impl<T: 'static> Handler<T> where AnyEntity: TryAsEntityRef<T> {
-    pub fn assume(id: Eid, world: &'static dyn EntityWorldInterface) -> Self {
+    pub fn assume(id: Eid, world: &'static World) -> Self {
         Self {
             eid: id,
             world,
@@ -93,16 +88,16 @@ impl<T: 'static> Handler<T> where AnyEntity: TryAsEntityRef<T> {
         }
     }
 
-    pub async fn observe(&self, observer: impl FnOnce(&T) + 'static) {
-        self.world.observe_entity(self.eid, Box::new(move |entity| {
+    pub async fn observe<R>(&self, observer: impl FnOnce(&T) -> R) -> Option<R> {
+        self.world.observe_entity(self.eid, move |entity| {
             observer(entity.try_as_entity_ref().unwrap())
-        })).await;
+        }).await
     }
 
-    pub async fn mutate(&self, mutator: impl FnOnce(&mut T) + 'static) {
-        self.world.mutate_entity(self.eid, Box::new(move |entity| {
+    pub async fn mutate<R>(&self, mutator: impl FnOnce(&mut T) -> R) -> Option<R> {
+        self.world.mutate_entity(self.eid, move |entity| {
             mutator(entity.try_as_entity_mut().unwrap())
-        })).await;
+        }).await
     }
 }
 
