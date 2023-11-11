@@ -192,7 +192,6 @@ pub fn MinecraftEntity(attr: proc_macro::TokenStream, item: proc_macro::TokenStr
             replace_idents(element, &to_replace);
         }
         let code: TokenStream = code.into_iter().collect();
-        println!("{}", code);
         codes.push(code);
 
         let code = quote! {
