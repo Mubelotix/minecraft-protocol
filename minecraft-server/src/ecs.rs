@@ -3,7 +3,9 @@ use crate::*;
 use minecraft_protocol::packets::UUID;
 use tokio::sync::RwLock;
 
-pub struct Entities {    
+pub struct Entities {
+    eid_counter: std::sync::atomic::AtomicU32,
+    uuid_counter: std::sync::atomic::AtomicU64, 
     pub entities: RwLock<HashMap<Eid, AnyEntity>>,
 
     /// A hashmap of chunk positions to get a list of entities in a chunk
@@ -16,6 +18,8 @@ pub struct Entities {
 impl Entities {
     pub fn new() -> Entities {
         Entities {
+            eid_counter: std::sync::atomic::AtomicU32::new(0),
+            uuid_counter: std::sync::atomic::AtomicU64::new(0),
             entities: RwLock::new(HashMap::new()),
             chunks: RwLock::new(HashMap::new()),
             uuids: RwLock::new(HashMap::new()),
@@ -45,7 +49,19 @@ impl Entities {
             Some(r)
         } else {
             None
-      }
+        }
+    }
+
+    pub async fn spawn(&self, entity: AnyEntity) -> Eid {
+        let eid = self.eid_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        let uid = self.uuid_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u128;
+        let mut entities = self.entities.write().await;
+        let mut chunks = self.chunks.write().await;
+        let mut uuids = self.uuids.write().await;
+        chunks.entry(entity.as_entity().position.chunk()).or_insert(HashSet::new()).insert(eid);
+        entities.insert(eid, entity);
+        uuids.insert(uid, eid);
+        eid
     }
 
     /// Remove an entity
