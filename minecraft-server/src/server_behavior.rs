@@ -31,7 +31,7 @@ impl ServerBehavior {
         });
 
         ServerBehavior {
-            world: Box::leak(Box::new(World::new())),
+            world: Box::leak(Box::new(World::new(receiver.resubscribe()))),
             listener,
             player_handlers: Vec::new(),
             message_receiver: receiver,

@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
-mod change_event;
-pub use change_event::*;
+mod change;
+pub use change::*;
 mod loading_manager;
 use loading_manager::*;
 mod map;
@@ -18,15 +18,17 @@ pub struct World {
 
     loading_manager: RwLock<WorldLoadingManager>,
     change_senders: RwLock<HashMap<UUID, MpscSender<WorldChange>>>,
+    receiver: BroadcastReceiver<ServerMessage>,
 }
 
 impl World {
-    pub fn new() -> World {
+    pub fn new(receiver: BroadcastReceiver<ServerMessage>) -> World {
         World {
             map: WorldMap::new(4),
             entities: Entities::new(),
             loading_manager: RwLock::new(WorldLoadingManager::default()),
             change_senders: RwLock::new(HashMap::new()),
+            receiver,
         }
     }
 
@@ -69,13 +71,14 @@ impl World {
         }
     }
 
-    pub async fn spawn_entity(&self, entity: AnyEntity) -> Eid {
+    pub async fn spawn_entity(&'static self, entity: AnyEntity) -> Eid {
         let position = entity.as_entity().position.clone();
+        let velocity = entity.as_entity().velocity.clone();
         let ty = entity.to_network().unwrap(); // TODO: error handling
         let pitch = entity.as_entity().pitch;
         let yaw = entity.as_entity().yaw;
         let head_yaw = entity.as_other::<LivingEntity>().map(|e| e.head_yaw).unwrap_or(0.0);
-        let (eid, uuid) = self.entities.spawn_entity(entity).await;
+        let (eid, uuid) = self.entities.spawn_entity(entity, self, self.receiver.resubscribe()).await;
         self.notify(&position.chunk_column(), WorldChange::EntitySpawned {
             eid,
             uuid,
@@ -85,7 +88,7 @@ impl World {
             yaw,
             head_yaw,
             data: 0,
-            velocity: (),
+            velocity,
             metadata: (),
         }).await;
         eid
@@ -95,9 +98,41 @@ impl World {
         self.entities.observe_entity(eid, observer).await
     }
 
-    pub async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> R) -> Option<R> {
+    pub async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> (R, EntityChanges)) -> Option<R> {
         // TODO change events
-        self.entities.mutate_entity(eid, mutator).await
+        match self.entities.mutate_entity(eid, mutator).await {
+            Some((r, changes)) => {
+                // TODO: make only one lookup and group into a single message with optional fields
+                let position = self.entities.observe_entity(eid, |e| e.as_entity().position.clone()).await?;
+                if changes.has_position_changed() {
+                    self.notify(&position.chunk_column(), WorldChange::EntityPosition {
+                        eid,
+                        position: position.clone(),
+                    }).await;
+                }
+                if changes.has_velocity_changed() {
+                    let velocity = self.entities.observe_entity(eid, |e| e.as_entity().velocity.clone()).await?;
+                    self.notify(&position.chunk_column(), WorldChange::EntityVelocity {
+                        eid,
+                        velocity,
+                    }).await;
+                }
+                if changes.has_pitch_changed() {
+                    let (pitch, yaw, head_yaw) = self.entities.observe_entity(eid, |e| (e.as_entity().pitch, e.as_entity().yaw, e.as_other::<LivingEntity>().map(|e| e.head_yaw).unwrap_or(0.0))).await?;
+                    self.notify(&position.chunk_column(), WorldChange::EntityPitch {
+                        eid,
+                        pitch,
+                        yaw,
+                        head_yaw,
+                    }).await;
+                }
+                if changes.has_metadata_changed() {
+                    todo!()
+                }
+                Some(r)
+            },
+            None => None,
+        }
     }
 
     async fn notify(&self, position: &ChunkColumnPosition, change: WorldChange) {
@@ -119,7 +154,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_world_notifications() {
-        let world = World::new();
+        let world = World::new(broadcast_channel(100).1);
 
         let mut receiver1 = world.add_loader(1).await;
         let mut receiver2 = world.add_loader(2).await;

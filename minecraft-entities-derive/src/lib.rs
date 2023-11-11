@@ -267,27 +267,27 @@ pub fn MinecraftEntity(attr: proc_macro::TokenStream, item: proc_macro::TokenStr
     for (_, method, args) in defines.iter().filter(|(ty, _, _)| ty == &struct_name) {
         let inner_code: TokenStream = match args.len() {
             0 => String::from(r#"
-                fn method(self) -> Pin<Box<dyn Future<Output = ()>>> {{
+                fn method(self) -> Pin<Box<dyn Future<Output = ()> + Sync + Send>> {{
                     (Self::methods().method)(self.into())
                 }}
             "#),
             1 => format!(r#"
-                fn method(self, arg1: {}) -> Pin<Box<dyn Future<Output = ()>>> {{
+                fn method(self, arg1: {}) -> Pin<Box<dyn Future<Output = ()> + Sync + Send>> {{
                     (Self::methods().method)(self.into(), arg1)
                 }}
             "#, args[0].1),
             2 => format!(r#"
-                fn method(self, arg1: {}, arg2: {}) -> Pin<Box<dyn Future<Output = ()>>> {{
+                fn method(self, arg1: {}, arg2: {}) -> Pin<Box<dyn Future<Output = ()> + Sync + Send>> {{
                     (Self::methods().method)(self.into(), arg1, arg2)
                 }}
             "#, args[0].1, args[1].1),
             3 => format!(r#"
-                fn method(self, arg1: {}, arg2: {}, arg3: {}) -> Pin<Box<dyn Future<Output = ()>>> {{
+                fn method(self, arg1: {}, arg2: {}, arg3: {}) -> Pin<Box<dyn Future<Output = ()> + Sync + Send>> {{
                     (Self::methods().method)(self.into(), arg1, arg2, arg3)
                 }}
             "#, args[0].1, args[1].1, args[2].1),
             4 => format!(r#"
-                fn method(self, arg1: {}, arg2: {}, arg3: {}, arg4: {}) -> Pin<Box<dyn Future<Output = ()>>> {{
+                fn method(self, arg1: {}, arg2: {}, arg3: {}, arg4: {}) -> Pin<Box<dyn Future<Output = ()> + Sync + Send>> {{
                     (Self::methods().method)(self.into(), arg1, arg2, arg3, arg4)
                 }}
             "#, args[0].1, args[1].1, args[2].1, args[3].1),

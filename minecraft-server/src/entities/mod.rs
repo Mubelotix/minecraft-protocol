@@ -33,6 +33,9 @@ pub use fire_entities::*;
 mod item;
 pub use item::*;
 
+mod tasks;
+pub use tasks::*;
+
 pub use minecraft_positions::*;
 pub use minecraft_entities_derive::MinecraftEntity;
 pub use minecraft_protocol::{
@@ -50,15 +53,15 @@ use std::{pin::Pin, future::Future};
 pub type Eid = u32;
 
 #[allow(dead_code)]
-type CallBack<O> = fn(O) -> Pin<Box<dyn Future<Output = ()>>>;
+type CallBack<O> = fn(O) -> Pin<Box<dyn Future<Output = ()> + Sync + Send>>;
 #[allow(dead_code)]
-type CallBack1<O, I> = fn(O, I) -> Pin<Box<dyn Future<Output = ()>>>;
+type CallBack1<O, I> = fn(O, I) -> Pin<Box<dyn Future<Output = ()> + Sync + Send>>;
 #[allow(dead_code)]
-type CallBack2<O, I, J> = fn(O, I, J) -> Pin<Box<dyn Future<Output = ()>>>;
+type CallBack2<O, I, J> = fn(O, I, J) -> Pin<Box<dyn Future<Output = ()> + Sync + Send>>;
 #[allow(dead_code)]
-type CallBack3<O, I, J> = fn(O, I, J) -> Pin<Box<dyn Future<Output = ()>>>;
+type CallBack3<O, I, J> = fn(O, I, J) -> Pin<Box<dyn Future<Output = ()> + Sync + Send>>;
 #[allow(dead_code)]
-type CallBack4<O, I, J> = fn(O, I, J) -> Pin<Box<dyn Future<Output = ()>>>;
+type CallBack4<O, I, J> = fn(O, I, J) -> Pin<Box<dyn Future<Output = ()> + Sync + Send>>;
 
 pub trait TryAsEntityRef<T> {
     fn try_as_entity_ref(&self) -> Option<&T>;
@@ -71,7 +74,17 @@ pub struct Handler<T> where AnyEntity: TryAsEntityRef<T> {
     entity: std::marker::PhantomData<T>,
 }
 
-impl<T: 'static> Handler<T> where AnyEntity: TryAsEntityRef<T> {
+impl<T> Clone for Handler<T> where AnyEntity: TryAsEntityRef<T> {
+    fn clone(&self) -> Self {
+        Self {
+            eid: self.eid,
+            world: self.world,
+            entity: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<T> Handler<T> where AnyEntity: TryAsEntityRef<T> {
     pub fn assume(id: Eid, world: &'static World) -> Self {
         Self {
             eid: id,
@@ -94,7 +107,7 @@ impl<T: 'static> Handler<T> where AnyEntity: TryAsEntityRef<T> {
         }).await
     }
 
-    pub async fn mutate<R>(&self, mutator: impl FnOnce(&mut T) -> R) -> Option<R> {
+    pub async fn mutate<R>(&self, mutator: impl FnOnce(&mut T) -> (R, EntityChanges)) -> Option<R> {
         self.world.mutate_entity(self.eid, move |entity| {
             mutator(entity.try_as_entity_mut().unwrap())
         }).await

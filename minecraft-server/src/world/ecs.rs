@@ -4,6 +4,7 @@ use minecraft_protocol::packets::UUID;
 use tokio::sync::RwLock;
 
 pub type EntityTask = Pin<Box<dyn Future<Output = ()> + Send + Sync + 'static>>;
+pub type EntityTaskHandle = tokio::task::JoinHandle<()>;
 
 pub struct Entities {
     eid_counter: std::sync::atomic::AtomicU32,
@@ -13,7 +14,7 @@ pub struct Entities {
     /// A hashmap of chunk positions to get a list of entities in a chunk
     pub chunks: RwLock<HashMap<ChunkPosition, HashSet<Eid>>>,
     pub uuids: RwLock<HashMap<UUID, Eid>>,
-    pub entity_tasks: RwLock<HashMap<Eid, HashMap<&'static str, EntityTask>>>,
+    pub entity_tasks: RwLock<HashMap<Eid, HashMap<&'static str, EntityTaskHandle>>>,
 }
 
 impl Entities {
@@ -34,7 +35,7 @@ impl Entities {
     }
 
     /// Mutate an entity through a closure
-    pub(super) async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> R) -> Option<R> {
+    pub(super) async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> (R, EntityChanges)) -> Option<(R, EntityChanges)> {
         let mut entities = self.entities.write().await;
 
         if let Some(entity) = entities.get_mut(&eid) {
@@ -45,8 +46,8 @@ impl Entities {
                 let new_chunk = entity.as_entity().position.chunk();
                 drop(entities);
                 let mut chunks = self.chunks.write().await;
-                chunks.get_mut(&old_chunk).unwrap().remove(&eid);
-                chunks.get_mut(&new_chunk).unwrap().insert(eid);
+                chunks.entry(old_chunk).and_modify(|set| { set.remove(&eid); }); // TODO: ensure it gets removed
+                chunks.entry(new_chunk).or_insert(HashSet::new()).insert(eid);
             }
             Some(r)
         } else {
@@ -54,7 +55,7 @@ impl Entities {
         }
     }
 
-    pub(super) async fn spawn_entity(&self, entity: AnyEntity) -> (Eid, UUID) {
+    pub(super) async fn spawn_entity(&self, entity: AnyEntity, world: &'static World, receiver: BroadcastReceiver<ServerMessage>) -> (Eid, UUID) {
         let eid = self.eid_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         let uuid = self.uuid_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u128;
         let mut entities = self.entities.write().await;
@@ -63,11 +64,20 @@ impl Entities {
         chunks.entry(entity.as_entity().position.chunk()).or_insert(HashSet::new()).insert(eid);
         entities.insert(eid, entity);
         uuids.insert(uuid, eid);
+        drop(entities);
+        drop(chunks);
+        drop(uuids);
+        let h = Handler::<Zombie>::assume(eid, world); // TODO other than zombie
+        h.init(receiver).await;
         (eid, uuid)
     }
 
-    pub async fn insert_entity_task(&self, eid: Eid, name: &'static str, task: EntityTask) {
-        self.entity_tasks.write().await.entry(eid).or_insert(HashMap::new()).insert(name, task);
+    pub(super) async fn insert_entity_task(&self, eid: Eid, name: &'static str, handle: EntityTaskHandle) {
+        let mut entity_tasks = self.entity_tasks.write().await;
+        let old = entity_tasks.entry(eid).or_insert(HashMap::new()).insert(name, handle);
+        if let Some(old) = old {
+            old.abort();
+        }
     }
 
     /// Remove an entity
@@ -84,7 +94,7 @@ impl Entities {
 }
 
 impl<T> Handler<T> where AnyEntity: TryAsEntityRef<T> {
-    async fn insert_task(&self, name: &'static str, task: EntityTask) {
-        self.world.entities.insert_entity_task(self.eid, name, task).await;
+    pub async fn insert_task(&self, name: &'static str, handle: EntityTaskHandle) {
+        self.world.entities.insert_entity_task(self.eid, name, handle).await;
     }
 }

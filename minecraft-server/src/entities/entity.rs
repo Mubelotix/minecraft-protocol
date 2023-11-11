@@ -4,11 +4,12 @@ use super::*;
     inheritable,
     descendants { AbstractArrow..., Boat..., Display, FallingBlock, LlamaSpit, Painting, DragonFireball, Fireball..., FireworkRocket, SmallFireball, Interaction..., ItemEntity, ItemFrame..., LivingEntity... EndCrystal, EvokerFangs, WitherSkull, AreaEffectCloud, FishingHook, EyeOfEnder, ThrownItemProjectile... },
     defines {
-        init(self);
+        init(self, server_msg_rcvr: BroadcastReceiver<ServerMessage>);
     }
 )]
 pub struct Entity {
     pub position: Position,
+    pub velocity: Position,
     pub pitch: f32,
     pub yaw: f32,
     pub is_on_fire: bool,
@@ -28,8 +29,8 @@ pub struct Entity {
 }
 
 impl Handler<Entity> {
-    async fn init(self) {
-        println!("Entity initialized");
+    async fn init(self, server_msg_rcvr: BroadcastReceiver<ServerMessage>) {
+        self.insert_task("gravity", tokio::spawn(gravity_task(self.clone(), server_msg_rcvr))).await;
     }
 }
 
@@ -37,6 +38,7 @@ impl Default for Entity {
     fn default() -> Self {
         Entity {
             position: Position { x: 0.0, y: 0.0, z: 0.0 },
+            velocity: Position { x: 0.0, y: 0.0, z: 0.0 },
             pitch: 0.0,
             yaw: 0.0,
             is_on_fire: false,

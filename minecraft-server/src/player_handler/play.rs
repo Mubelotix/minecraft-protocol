@@ -10,6 +10,9 @@ struct PlayerHandler {
     on_ground: bool,
     packet_sender: MpscSender<Vec<u8>>,
 
+    // TODO: make this a hashmap
+    entity_prev_positions: HashMap<Eid, Position>,
+
     render_distance: i32,
     loaded_chunks: HashSet<ChunkColumnPosition>,
     center_chunk: ChunkPosition,
@@ -37,7 +40,8 @@ impl PlayerHandler {
         }).await;
     }
 
-    async fn on_entity_spawned(&mut self, eid: Eid, uuid: UUID, ty: NetworkEntity, position: Position, pitch: f32, yaw: f32, head_yaw: f32, data: u32, velocity: (), metadata: ()) {
+    async fn on_entity_spawned(&mut self, eid: Eid, uuid: UUID, ty: NetworkEntity, position: Position, pitch: f32, yaw: f32, head_yaw: f32, data: u32, velocity: Position, metadata: ()) {
+        self.entity_prev_positions.insert(eid, position.clone());
         self.send_packet(PlayClientbound::SpawnEntity {
             id: VarInt(eid as i32),
             uuid,
@@ -49,9 +53,29 @@ impl PlayerHandler {
             yaw: (yaw * (256.0 / 360.0)) as u8,
             head_yaw: (head_yaw * (256.0 / 360.0)) as u8,
             data: VarInt(data as i32),
-            velocity_x: 0,
-            velocity_y: 0,
-            velocity_z: 0,
+            velocity_x: (velocity.x * 8000.0) as i16,
+            velocity_y: (velocity.y * 8000.0) as i16,
+            velocity_z: (velocity.z * 8000.0) as i16,
+        }).await;
+    }
+
+    async fn on_entity_moved(&mut self, eid: Eid, position: Position) {
+        let prev_position = self.entity_prev_positions.insert(eid, position.clone()).unwrap_or_else(|| position.clone());
+        self.send_packet(PlayClientbound::UpdateEntityPosition {
+            entity_id: VarInt(eid as i32),
+            delta_x: (position.x * 4096.0 - prev_position.x * 4096.0) as i16,
+            delta_y: (position.y * 4096.0 - prev_position.y * 4096.0) as i16,
+            delta_z: (position.z * 4096.0 - prev_position.z * 4096.0) as i16,
+            on_ground: true, // TODO
+        }).await;
+    }
+
+    async fn on_entity_velocity_changes(&mut self, eid: Eid, velocity: Position) {
+        self.send_packet(PlayClientbound::SetEntityVelocity {
+            entity_id: VarInt(eid as i32),
+            velocity_x: (velocity.x * 8000.0) as i16,
+            velocity_y: (velocity.y * 8000.0) as i16,
+            velocity_z: (velocity.z * 8000.0) as i16,
         }).await;
     }
 
@@ -171,7 +195,9 @@ impl PlayerHandler {
             ChatMessage { message, .. } => {
                 if message == "summon" {
                     let mut zombie = Zombie::default();
-                    zombie.get_entity_mut().position = self.position.clone();
+                    let mut position = self.position.clone();
+                    position.y += 20.0;
+                    zombie.get_entity_mut().position = position;
                     self.world.spawn_entity(AnyEntity::Zombie(zombie)).await;
                 }
             }
@@ -191,6 +217,8 @@ pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut serve
         pitch: 0.0,
         on_ground: false,
         packet_sender,
+
+        entity_prev_positions: HashMap::new(),
 
         center_chunk: ChunkPosition { cx: 0, cy: 11, cz: 0 },
         render_distance: player_info.render_distance.clamp(4, 15) as i32,
@@ -254,7 +282,9 @@ pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut serve
                     WorldChange::EntitySpawned { eid, uuid: uid, ty, position, pitch, yaw, head_yaw, data, velocity, metadata } => handler.on_entity_spawned(eid, uid, ty, position, pitch, yaw, head_yaw, data, velocity, metadata).await,
                     WorldChange::EntityDispawned { eid } => todo!(),
                     WorldChange::EntityMetadata { eid, metadata } => todo!(),
-                    WorldChange::EntityMoved { eid, position, pitch, yaw, head_yaw } => todo!(),
+                    WorldChange::EntityPosition { eid, position } => handler.on_entity_moved(eid, position).await,
+                    WorldChange::EntityVelocity { eid, velocity } => handler.on_entity_velocity_changes(eid, velocity).await,
+                    WorldChange::EntityPitch { eid, pitch, yaw, head_yaw } => todo!(),
                 }
             },
             Event::Message(Err(recv_error)) => {
