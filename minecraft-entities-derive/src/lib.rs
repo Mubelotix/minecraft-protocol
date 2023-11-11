@@ -27,7 +27,8 @@ fn replace_idents(token: &mut TokenTree, to_replace: &HashMap<&'static str, Iden
 #[proc_macro_attribute]
 #[proc_macro_error]
 pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
-    let mut inherited = Vec::new();
+    let mut ancestors = Vec::new();
+    let mut descendants = Vec::new();
     let mut inheritable = false;
     let mut defines = Vec::new();
     let mut codes = Vec::new();
@@ -63,13 +64,36 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
     while let Some(ident) = attrs.next() {
         let TokenTree::Ident(ident) = ident else { abort!(ident.span(), "expected ident") };
         match ident.to_string().as_str() {
-            "parents" => {
+            "ancestors" => {
                 let Some(token_tree) = attrs.next() else { abort!(ident.span(), "expected group after parents") };
                 let TokenTree::Group(group) = token_tree else { abort!(token_tree.span(), "expected group") };
                 let mut group_attrs = group.stream().into_iter().peekable();
                 while let Some(ident) = group_attrs.next() {
                     let TokenTree::Ident(ident) = ident else { abort!(ident.span(), "expected ident") };
-                    inherited.push(ident);
+                    ancestors.push(ident);
+                    if matches!(group_attrs.peek(), Some(TokenTree::Punct(punct)) if punct.as_char() == ',') {
+                        group_attrs.next();
+                    }
+                }
+            }
+            "descendants" => {
+                let Some(token_tree) = attrs.next() else { abort!(ident.span(), "expected group after parents") };
+                let TokenTree::Group(group) = token_tree else { abort!(token_tree.span(), "expected group") };
+                let mut group_attrs = group.stream().into_iter().peekable();
+                while let Some(ident) = group_attrs.next() {
+                    let TokenTree::Ident(ident) = ident else { abort!(ident.span(), "expected ident") };
+                    let mut generic = false;
+                    if matches!(group_attrs.peek(), Some(TokenTree::Punct(punct)) if punct.as_char() == '.') {
+                        let dot = group_attrs.next().unwrap();
+                        if !matches!(group_attrs.next(), Some(TokenTree::Punct(punct)) if punct.as_char() == '.') {
+                            abort!(dot.span(), "this dot needs to come with two other dots");
+                        }
+                        if !matches!(group_attrs.next(), Some(TokenTree::Punct(punct)) if punct.as_char() == '.') {
+                            abort!(dot.span(), "this dot needs to come with two other dots");
+                        }
+                        generic = true;
+                    }
+                    descendants.push((ident, generic));
                     if matches!(group_attrs.peek(), Some(TokenTree::Punct(punct)) if punct.as_char() == ',') {
                         group_attrs.next();
                     }
@@ -128,7 +152,7 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
             attrs.next();
         }
     }
-    let mut hierarchy = inherited.clone();
+    let mut hierarchy = ancestors.clone();
     hierarchy.insert(0, struct_name.clone());
 
     let mut to_replace = HashMap::new();
@@ -139,9 +163,9 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
     to_replace.insert("get_this", Ident::new(&format!("get_{}", struct_name.to_string().to_case(Case::Snake)), struct_name.span()));
     to_replace.insert("get_this_mut", Ident::new(&format!("get_{}_mut", struct_name.to_string().to_case(Case::Snake)), struct_name.span()));
 
-    if !inherited.is_empty() {
+    if !ancestors.is_empty() {
         // Generate code for parent
-        let parent = inherited.remove(0);
+        let parent = ancestors.remove(0);
         let code: TokenStream = r#"
             #[automatically_derived]
             impl ParentDescendant for This {
@@ -171,7 +195,7 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
             fn get_inherited_mut(&mut self) -> &mut Inherited { self.parent.get_inherited_mut() }
         }
     "#.parse().unwrap();
-    for inherited in inherited {
+    for inherited in ancestors {
         to_replace.insert("InheritedDescendant", Ident::new(&format!("{}Descendant", inherited), inherited.span()));
         to_replace.insert("Inherited", inherited.clone());
         to_replace.insert("get_inherited", Ident::new(&format!("get_{}", inherited.to_string().to_case(Case::Snake)), inherited.span()));
