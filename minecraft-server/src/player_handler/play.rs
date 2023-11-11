@@ -1,7 +1,7 @@
 use super::*;
 
 struct PlayerHandler {
-    world: Arc<World>,
+    world: &'static World,
     game_mode: Gamemode,
     info: PlayerInfo,
     position: Position,
@@ -155,7 +155,7 @@ impl PlayerHandler {
     }
 }
 
-pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>, world: Arc<World>, mut change_receiver: MpscReceiver<WorldChange>) -> Result<(), ()> {
+pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>, world: &'static World, mut change_receiver: MpscReceiver<WorldChange>) -> Result<(), ()> {
     let (packet_sender, mut packet_receiver) = mpsc_channel(100);
     
     let mut handler = PlayerHandler {
