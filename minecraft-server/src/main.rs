@@ -3,7 +3,6 @@
 mod player_handler;
 mod server_behavior;
 mod prelude;
-mod ecs;
 mod world;
 
 use crate::prelude::*;
