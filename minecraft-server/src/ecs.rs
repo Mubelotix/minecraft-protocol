@@ -53,13 +53,3 @@ impl Entities {
         self.entities.write().await.remove(&eid)
     }
 }
-
-impl EntityWorldInterface for World {
-    fn observe_entity(&self, eid: Eid, observer: &dyn FnOnce(&AnyEntity)) -> Pin<Box<dyn std::future::Future<Output = ()>>> {
-        todo!()
-    }
-
-    fn mutate_entity(&self, eid: Eid, mutator: &dyn FnOnce(&mut AnyEntity)) -> Pin<Box<dyn std::future::Future<Output = ()>>> {
-        todo!()
-    }
-}

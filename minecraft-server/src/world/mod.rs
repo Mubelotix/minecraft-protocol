@@ -79,6 +79,20 @@ impl World {
     }
 }
 
+impl EntityWorldInterface for World {    
+    fn observe_entity(&'static self, eid: Eid, observer: Box<dyn FnOnce(&AnyEntity)>) -> Pin<Box<dyn std::future::Future<Output = ()>>> {
+        Box::pin(async move {
+            self.entities.observe_entity(eid, observer).await;
+        })
+    }
+
+    fn mutate_entity(&'static self, eid: Eid, mutator: Box<dyn FnOnce(&mut AnyEntity)>) -> Pin<Box<dyn std::future::Future<Output = ()>>> {
+        Box::pin(async move {
+            self.entities.mutate_entity(eid, mutator).await;
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

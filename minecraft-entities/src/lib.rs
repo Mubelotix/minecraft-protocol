@@ -66,8 +66,8 @@ pub trait TryAsEntityRef<T> {
 
 
 pub trait EntityWorldInterface {
-    fn observe_entity(&self, eid: Eid, observer: &dyn FnOnce(&AnyEntity)) -> Pin<Box<dyn std::future::Future<Output = ()>>>;
-    fn mutate_entity(&self, eid: Eid, mutator: &dyn FnOnce(&mut AnyEntity)) -> Pin<Box<dyn std::future::Future<Output = ()>>>;
+    fn observe_entity(&'static self, eid: Eid, observer: Box<dyn FnOnce(&AnyEntity)>) -> Pin<Box<dyn std::future::Future<Output = ()>>>;
+    fn mutate_entity(&'static self, eid: Eid, mutator: Box<dyn FnOnce(&mut AnyEntity)>) -> Pin<Box<dyn std::future::Future<Output = ()>>>;
 }
 
 pub struct Handler<T> where AnyEntity: TryAsEntityRef<T> {
@@ -76,7 +76,7 @@ pub struct Handler<T> where AnyEntity: TryAsEntityRef<T> {
     entity: std::marker::PhantomData<T>,
 }
 
-impl<T> Handler<T> where AnyEntity: TryAsEntityRef<T> {
+impl<T: 'static> Handler<T> where AnyEntity: TryAsEntityRef<T> {
     pub fn assume(id: Eid, world: &'static dyn EntityWorldInterface) -> Self {
         Self {
             eid: id,
@@ -93,16 +93,16 @@ impl<T> Handler<T> where AnyEntity: TryAsEntityRef<T> {
         }
     }
 
-    pub async fn observe(&self, observer: fn(&T)) {
-        self.world.observe_entity(self.eid, &|entity| {
+    pub async fn observe(&self, observer: impl FnOnce(&T) + 'static) {
+        self.world.observe_entity(self.eid, Box::new(move |entity| {
             observer(entity.try_as_entity_ref().unwrap())
-        }).await;
+        })).await;
     }
 
-    pub async fn mutate(&self, mutator: fn(&mut T)) {
-        self.world.mutate_entity(self.eid, &|entity| {
+    pub async fn mutate(&self, mutator: impl FnOnce(&mut T) + 'static) {
+        self.world.mutate_entity(self.eid, Box::new(move |entity| {
             mutator(entity.try_as_entity_mut().unwrap())
-        }).await;
+        })).await;
     }
 }
 
