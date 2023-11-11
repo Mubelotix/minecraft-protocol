@@ -143,6 +143,7 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
         // Generate code for parent
         let parent = inherited.remove(0);
         let code: TokenStream = r#"
+            #[automatically_derived]
             impl ParentDescendant for This {
                 fn get_parent(&self) -> &Parent { &self.parent }
                 fn get_parent_mut(&mut self) -> &mut Parent { &mut self.parent }
@@ -164,6 +165,7 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     // Generate code for higher inheritance levels
     let code: TokenStream = r#"
+        #[automatically_derived]
         impl InheritedDescendant for This {
             fn get_inherited(&self) -> &Inherited { self.parent.get_inherited() }
             fn get_inherited_mut(&mut self) -> &mut Inherited { self.parent.get_inherited_mut() }
@@ -186,11 +188,13 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
     if inheritable {
         // Generate descendant trait
         let code: TokenStream = r#"
+            #[automatically_derived]
             pub trait ThisDescendant {
                 fn get_this(&self) -> &This;
                 fn get_this_mut(&mut self) -> &mut This;
             }
             
+            #[automatically_derived]
             impl ThisDescendant for This {
                 fn get_this(&self) -> &This { self }
                 fn get_this_mut(&mut self) -> &mut This { self }
@@ -205,6 +209,7 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
     } else {
         // Implement TryAsEntityRef for this struct
         let code: TokenStream = r#"
+            #[automatically_derived]
             impl TryAsEntityRef<This> for AnyEntity {
                 fn try_as_entity_ref(&self) -> Option<&This> {
                     match self {
@@ -231,6 +236,7 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     // Generate ext trait
     let code: TokenStream = r#"
+        #[automatically_derived]
         pub trait ThisExt: Sized + Into<Handler<This>> {
             fn methods() -> &'static ThisMethods;
         }
@@ -284,6 +290,7 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     // Generate methods struct
     let code: TokenStream = r#"
+        #[automatically_derived]
         pub struct ThisMethods {
             
         }
@@ -372,6 +379,8 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
     }
     let mod_codes: TokenStream = mod_codes.into_iter().collect();
     let mod_code: TokenStream = format!(r#"
+        #[allow(clippy::needless_update)]
+        #[automatically_derived]
         pub mod {struct_name}_methods {{
             use super::{{ {} }};
         }}
@@ -385,6 +394,7 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
     // Implement ext traits
     for ascendant in hierarchy.iter().peekable() {
         let code: TokenStream = format!(r#"
+            #[automatically_derived]
             impl AscendantExt for Handler<This> {{
                 fn methods() -> &'static AscendantMethods {{
                     {struct_name}_methods::ASCENDANT_METHODS_FOR_THIS
@@ -406,6 +416,7 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
     // Implement conversion traits
     for ascendant in hierarchy.iter().skip(1) {
         let code: TokenStream = r#"
+            #[automatically_derived]
             impl From<Handler<This>> for Handler<Ascendant> {
                 fn from(val: Handler<This>) -> Self {
                     val.assume_other()

@@ -13,7 +13,7 @@ pub struct Guardian {
 impl TryAsEntityRef<Guardian> for AnyEntity {
     fn try_as_entity_ref(&self) -> Option<&Guardian> {
         match self {
-            AnyEntity::Guardian(guardian) => Some(&guardian),
+            AnyEntity::Guardian(guardian) => Some(guardian),
             AnyEntity::ElderGuardian(elder_guardian) => Some(&elder_guardian.guardian),
             _ => None,
         }

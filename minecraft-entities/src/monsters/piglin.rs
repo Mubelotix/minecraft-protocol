@@ -12,7 +12,7 @@ pub struct BasePiglin {
 impl TryAsEntityRef<BasePiglin> for AnyEntity {
     fn try_as_entity_ref(&self) -> Option<&BasePiglin> {
         match self {
-            AnyEntity::BasePiglin(base_piglin) => Some(&base_piglin),
+            AnyEntity::BasePiglin(base_piglin) => Some(base_piglin),
             AnyEntity::Piglin(piglin) => Some(&piglin.base_piglin),
             AnyEntity::PiglinBrute(piglin_brute) => Some(&piglin_brute.base_piglin),
             _ => None,

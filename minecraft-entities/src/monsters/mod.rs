@@ -16,8 +16,6 @@ mod silverfish;
 pub use silverfish::*;
 mod raider;
 pub use raider::*;
-mod witch;
-pub use witch::*;
 mod vex;
 pub use vex::*;
 mod skeleton;

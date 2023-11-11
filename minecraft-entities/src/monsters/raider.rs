@@ -12,7 +12,7 @@ pub struct Raider {
 impl TryAsEntityRef<Raider> for AnyEntity {
     fn try_as_entity_ref(&self) -> Option<&Raider> {
         match self {
-            AnyEntity::Raider(raider) => return Some(&raider),
+            AnyEntity::Raider(raider) => return Some(raider),
             AnyEntity::Witch(witch) => return Some(&witch.raider),
             _ => (),
         }
@@ -55,7 +55,7 @@ pub struct AbstractIllager {
 impl TryAsEntityRef<AbstractIllager> for AnyEntity {
     fn try_as_entity_ref(&self) -> Option<&AbstractIllager> {
         match self {
-            AnyEntity::AbstractIllager(abstract_illager) => return Some(&abstract_illager),
+            AnyEntity::AbstractIllager(abstract_illager) => return Some(abstract_illager),
             AnyEntity::Vindicator(vindicator) => return Some(&vindicator.abstract_illager),
             AnyEntity::Pillager(pillager) => return Some(&pillager.abstract_illager),
             _ => (),
@@ -109,7 +109,7 @@ pub struct SpellcasterIllager {
 impl TryAsEntityRef<SpellcasterIllager> for AnyEntity {
     fn try_as_entity_ref(&self) -> Option<&SpellcasterIllager> {
         match self {
-            AnyEntity::SpellcasterIllager(spellcaster_illager) => Some(&spellcaster_illager),
+            AnyEntity::SpellcasterIllager(spellcaster_illager) => Some(spellcaster_illager),
             AnyEntity::Illusioner(illusioner) => Some(&illusioner.spellcaster_illager),
             AnyEntity::Ravager(ravager) => Some(&ravager.spellcaster_illager),
             AnyEntity::Evoker(evoker) => Some(&evoker.spellcaster_illager),
