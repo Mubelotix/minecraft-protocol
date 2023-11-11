@@ -227,3 +227,9 @@ pub enum AnyEntity {
     TropicalFish(TropicalFish),
     Tadpole(Tadpole),
 }
+
+impl AnyEntity {
+    pub fn as_entity(&self) -> &Entity {
+        self.try_as_entity_ref().unwrap()
+    }
+}
