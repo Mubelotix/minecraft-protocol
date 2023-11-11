@@ -3,6 +3,8 @@ use crate::*;
 use minecraft_protocol::packets::UUID;
 use tokio::sync::RwLock;
 
+pub type EntityTask = Pin<Box<dyn Future<Output = ()> + Send + Sync + 'static>>;
+
 pub struct Entities {
     eid_counter: std::sync::atomic::AtomicU32,
     uuid_counter: std::sync::atomic::AtomicU64, 
@@ -11,8 +13,7 @@ pub struct Entities {
     /// A hashmap of chunk positions to get a list of entities in a chunk
     pub chunks: RwLock<HashMap<ChunkPosition, HashSet<Eid>>>,
     pub uuids: RwLock<HashMap<UUID, Eid>>,
-    
-    // TODO: pub entities_by_tag: RwLock<HashMap<Tag, HashSet<Eid>>>,
+    pub entity_tasks: RwLock<HashMap<Eid, HashMap<&'static str, EntityTask>>>,
 }
 
 impl Entities {
@@ -23,6 +24,7 @@ impl Entities {
             entities: RwLock::new(HashMap::new()),
             chunks: RwLock::new(HashMap::new()),
             uuids: RwLock::new(HashMap::new()),
+            entity_tasks: RwLock::new(HashMap::new()),
         }
     }
 
@@ -66,6 +68,13 @@ impl Entities {
 
     /// Remove an entity
     pub async fn remove_entity(&self, eid: Eid) -> Option<AnyEntity> {
-        self.entities.write().await.remove(&eid)
+        let entity = self.entities.write().await.remove(&eid);
+        let mut chunks = self.chunks.write().await;
+        chunks.values_mut().for_each(|set| { set.remove(&eid); });
+        chunks.retain(|_,v| !v.is_empty());
+        drop(chunks);
+        self.uuids.write().await.retain(|_,v| *v != eid);
+        self.entity_tasks.write().await.remove(&eid);
+        entity
     }
 }
