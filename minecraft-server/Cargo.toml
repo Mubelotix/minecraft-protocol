@@ -12,4 +12,5 @@ tokio = { version = "1.33.0", features = ["full"] }
 futures = "0.3.29"
 minecraft-protocol = { path="../minecraft-protocol" }
 minecraft-positions = { path="../minecraft-positions" }
+minecraft-entities-derive = { path="../minecraft-entities-derive" }
 rand = "0.8.4"
