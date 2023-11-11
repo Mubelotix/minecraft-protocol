@@ -58,13 +58,14 @@ pub trait TryAsEntityRef<T> {
     fn try_as_entity_mut(&mut self) -> Option<&mut T>;
 }
 
+
 pub trait WorldTest {
-    fn observe_entity(&self, eid: Eid, observer: fn(&AnyEntity)) -> dyn std::future::Future<Output = ()>;
-    fn mutate_entity(&self, eid: Eid, mutator: fn(&mut AnyEntity)) -> dyn std::future::Future<Output = ()>;
+    fn observe_entity(&self, eid: Eid, observer: &dyn FnOnce(&AnyEntity)) -> Pin<Box<dyn std::future::Future<Output = ()>>>;
+    fn mutate_entity(&self, eid: Eid, mutator: &dyn FnOnce(&mut AnyEntity)) -> Pin<Box<dyn std::future::Future<Output = ()>>>;
 }
 
 pub struct Handler<T> where AnyEntity: TryAsEntityRef<T> {
-    id: Eid,
+    eid: Eid,
     world: &'static dyn WorldTest,
     entity: std::marker::PhantomData<T>,
 }
@@ -72,7 +73,7 @@ pub struct Handler<T> where AnyEntity: TryAsEntityRef<T> {
 impl<T> Handler<T> where AnyEntity: TryAsEntityRef<T> {
     pub fn assume(id: Eid, world: &'static dyn WorldTest) -> Self {
         Self {
-            id,
+            eid: id,
             world,
             entity: std::marker::PhantomData,
         }
@@ -80,17 +81,22 @@ impl<T> Handler<T> where AnyEntity: TryAsEntityRef<T> {
 
     fn assume_other<V>(self) -> Handler<V> where AnyEntity: TryAsEntityRef<V> {
         Handler {
-            id: self.id,
+            eid: self.eid,
             world: self.world,
             entity: std::marker::PhantomData,
         }
     }
 
     pub async fn observe(&self, observer: fn(&T)) {
-        //let fut = self.world.observe_entity(self.id, |entity| {
-        //
-        //});
-        //fut.await;
+        self.world.observe_entity(self.eid, &|entity| {
+            observer(entity.try_as_entity_ref().unwrap())
+        }).await;
+    }
+
+    pub async fn mutate(&self, mutator: fn(&mut T)) {
+        self.world.mutate_entity(self.eid, &|entity| {
+            mutator(entity.try_as_entity_mut().unwrap())
+        }).await;
     }
 }
 
