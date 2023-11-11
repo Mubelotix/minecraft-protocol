@@ -49,9 +49,9 @@ impl<T> Handler<T> {
 // Entity
 
 #[MinecraftEntity(
+    inheritable,
     ancestors {  },
     descendants { Animal... },
-    inheritable,
     defines {
         on_moved(self, from: f32, to: f32);
         on_spawned(self);
@@ -74,9 +74,9 @@ impl Handler<Entity> {
 // Animal
 
 #[MinecraftEntity(
+    inheritable,
     ancestors { Entity },
     descendants { Cow },
-    inheritable,
     defines {
         Entity.on_spawned(self);
         on_hit(self, damage: usize);
@@ -130,4 +130,9 @@ impl Handler<Cow> {
 }
 
 fn main() {
+}
+
+#[test]
+fn test() {
+
 }

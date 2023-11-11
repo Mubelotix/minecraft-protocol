@@ -95,9 +95,9 @@ pub fn MinecraftEntity(attr: proc_macro::TokenStream, item: proc_macro::TokenStr
                         if !matches!(group_attrs.next(), Some(TokenTree::Punct(punct)) if punct.as_char() == '.') {
                             abort!(dot.span(), "this dot needs to come with two other dots");
                         }
-                        descendants.push(ident);
-                    } else {
                         wildcard_descendants.push(ident);
+                    } else {
+                        descendants.push(ident);
                     }
                     if matches!(group_attrs.peek(), Some(TokenTree::Punct(punct)) if punct.as_char() == ',') {
                         group_attrs.next();
@@ -163,6 +163,7 @@ pub fn MinecraftEntity(attr: proc_macro::TokenStream, item: proc_macro::TokenStr
     let mut to_replace = HashMap::new();
     let this = struct_name.clone();
     let this_snake = Ident::new(&struct_name.to_string().to_case(Case::Snake), struct_name.span());
+    let this_test = Ident::new(&format!("test_entity_{}", struct_name.to_string().to_case(Case::Snake)), struct_name.span());
     to_replace.insert("This", this.clone());
     to_replace.insert("ThisDescendant", Ident::new(&format!("{}Descendant", struct_name), struct_name.span()));
     to_replace.insert("ThisMethods", Ident::new(&format!("{}Methods", struct_name), struct_name.span()));
@@ -173,6 +174,7 @@ pub fn MinecraftEntity(attr: proc_macro::TokenStream, item: proc_macro::TokenStr
     if !ancestors.is_empty() {
         // Generate code for parent
         let parent = ancestors.remove(0);
+        let parent_snake = Ident::new(&parent.to_string().to_case(Case::Snake), parent.span());
         let code: TokenStream = r#"
             #[automatically_derived]
             impl ParentDescendant for This {
@@ -192,6 +194,18 @@ pub fn MinecraftEntity(attr: proc_macro::TokenStream, item: proc_macro::TokenStr
         let code: TokenStream = code.into_iter().collect();
         println!("{}", code);
         codes.push(code);
+
+        let code = quote! {
+            #[cfg(test)]
+            #[automatically_derived]
+            #[test]
+            fn #this_test() {
+                let #this_snake: AnyEntity = AnyEntity::#this(<#this as std::default::Default>::default());
+                let #parent_snake: Option<&#parent> = #this_snake.try_as_entity_ref();
+                assert!(#parent_snake.is_some(), "Please add {} to {} list", stringify!(#this), stringify!(#parent));
+            }
+        };
+        codes.push(code);
     }
 
     // Generate code for higher inheritance levels
@@ -202,7 +216,7 @@ pub fn MinecraftEntity(attr: proc_macro::TokenStream, item: proc_macro::TokenStr
             fn get_inherited_mut(&mut self) -> &mut Inherited { self.parent.get_inherited_mut() }
         }
     "#.parse().unwrap();
-    for inherited in ancestors {
+    for inherited in &ancestors {
         to_replace.insert("InheritedDescendant", Ident::new(&format!("{}Descendant", inherited), inherited.span()));
         to_replace.insert("Inherited", inherited.clone());
         to_replace.insert("get_inherited", Ident::new(&format!("get_{}", inherited.to_string().to_case(Case::Snake)), inherited.span()));
