@@ -2,7 +2,7 @@ use minecraft_protocol::components::particle::Particle;
 use super::*;
 
 #[MinecraftEntity(
-    parents { Entity },
+    ancestors { Entity },
 )]
 pub struct AreaEffectCloud {
     pub entity: Entity,
@@ -26,7 +26,7 @@ impl Default for AreaEffectCloud {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { Entity },
+    ancestors { Entity },
 )]
 pub struct FishingHook{
     pub entity: Entity,

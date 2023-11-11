@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { Mob, LivingEntity, Entity },
+    inheritable, ancestors { Mob, LivingEntity, Entity },
 )]
 pub struct Flying {
     pub mob: Mob,
@@ -30,7 +30,7 @@ impl TryAsEntityRef<Flying> for AnyEntity {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { Flying, Mob, LivingEntity, Entity },
+    ancestors { Flying, Mob, LivingEntity, Entity },
 )]
 pub struct Ghast {
     pub flying: Flying,
@@ -39,7 +39,7 @@ pub struct Ghast {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { Flying, Mob, LivingEntity, Entity },
+    ancestors { Flying, Mob, LivingEntity, Entity },
 )]
 pub struct Phantom {
     pub flying: Flying,

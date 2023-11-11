@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable, ancestors { Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Cow {
     pub animal: Animal,
@@ -28,7 +28,7 @@ impl TryAsEntityRef<Cow> for AnyEntity {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { Cow, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { Cow, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Mooshroom {
     pub cow: Cow,

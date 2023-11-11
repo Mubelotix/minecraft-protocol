@@ -15,7 +15,7 @@ pub use bat::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { LivingEntity, Entity },
+    inheritable, ancestors { LivingEntity, Entity },
 )]
 pub struct Mob {
     pub living_entity: LivingEntity,
@@ -55,7 +55,7 @@ impl TryAsEntityRef<Mob> for AnyEntity {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { Mob, LivingEntity, Entity },
+    inheritable, ancestors { Mob, LivingEntity, Entity },
 )]
 pub struct AmbientCreature {
     pub mob: Mob,
@@ -83,7 +83,7 @@ impl TryAsEntityRef<AmbientCreature> for AnyEntity {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { Mob, LivingEntity, Entity },
+    inheritable, ancestors { Mob, LivingEntity, Entity },
 )]
 pub struct PathfinderMob {
     pub mob: Mob,
@@ -115,7 +115,7 @@ impl TryAsEntityRef<PathfinderMob> for AnyEntity {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable, ancestors { PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct AgeableMob {
     pub pathfinder_mob: PathfinderMob,

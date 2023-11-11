@@ -2,7 +2,7 @@ use super::*;
 use minecraft_protocol::components::paintings::Painting as PaintingType;
 
 #[MinecraftEntity(
-    inheritable, parents { Entity },
+    inheritable, ancestors { Entity },
 )]
 pub struct Display {
     pub entity: Entity,
@@ -75,7 +75,7 @@ impl TryAsEntityRef<Display> for AnyEntity {
 }
 
 #[MinecraftEntity(
-    parents { Display, Entity },
+    ancestors { Display, Entity },
 )]
 pub struct BlockDisplay {
     pub display: Display,
@@ -92,7 +92,7 @@ impl Default for BlockDisplay {
 }
 
 #[MinecraftEntity(
-    parents { Display, Entity },
+    ancestors { Display, Entity },
 )]
 pub struct ItemDisplay {
     pub display: Display,
@@ -111,7 +111,7 @@ impl Default for ItemDisplay {
 }
 
 #[MinecraftEntity(
-    parents { Display, Entity },
+    ancestors { Display, Entity },
 )]
 pub struct TextDisplay {
     pub display: Display,
@@ -143,7 +143,7 @@ impl Default for TextDisplay {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { Entity },
+    ancestors { Entity },
 )]
 pub struct Painting {
     pub entity: Entity,

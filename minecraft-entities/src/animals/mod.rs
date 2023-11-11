@@ -47,7 +47,7 @@ pub use water_animal::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable, ancestors { AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Animal {
     pub ageable_mob: AgeableMob,
@@ -79,7 +79,7 @@ impl TryAsEntityRef<Animal> for AnyEntity {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable, ancestors { Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct TameableAnimal {
     pub animal: Animal,

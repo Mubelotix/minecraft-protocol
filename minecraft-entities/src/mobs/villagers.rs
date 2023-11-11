@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable, ancestors { AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct AbstractVillager {
     pub ageable_mob: AgeableMob,
@@ -31,7 +31,7 @@ impl TryAsEntityRef<AbstractVillager> for AnyEntity {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { AbstractVillager, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { AbstractVillager, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Villager {
     pub abstract_villager: AbstractVillager,
@@ -40,7 +40,7 @@ pub struct Villager {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { AbstractVillager, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { AbstractVillager, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct WanderingTrader {
     pub abstract_villager: AbstractVillager,

@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable, ancestors { Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct BasePiglin {
     pub monster: Monster,
@@ -31,7 +31,7 @@ impl TryAsEntityRef<BasePiglin> for AnyEntity {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { BasePiglin, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { BasePiglin, Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Piglin {
     pub base_piglin: BasePiglin,
@@ -42,7 +42,7 @@ pub struct Piglin {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { BasePiglin, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { BasePiglin, Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct PiglinBrute {
     pub base_piglin: BasePiglin,

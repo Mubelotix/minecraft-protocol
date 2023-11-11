@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Turtle {
     pub animal: Animal,

@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable, ancestors { Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct AbstractHorse {
     pub animal: Animal,
@@ -11,7 +11,7 @@ pub struct AbstractHorse {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Horse {
     pub abstract_horse: AbstractHorse,
@@ -52,7 +52,7 @@ impl TryAsEntityRef<AbstractHorse> for AnyEntity {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct ZombieHorse {
     pub abstract_horse: AbstractHorse,
@@ -60,7 +60,7 @@ pub struct ZombieHorse {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct SkeletonHorse {
     pub abstract_horse: AbstractHorse,
@@ -68,7 +68,7 @@ pub struct SkeletonHorse {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Camel {
     pub abstract_horse: AbstractHorse,
@@ -78,7 +78,7 @@ pub struct Camel {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable, ancestors { AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct ChestedHorse {
     pub abstract_horse: AbstractHorse,
@@ -115,7 +115,7 @@ impl TryAsEntityRef<ChestedHorse> for AnyEntity {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { ChestedHorse, AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { ChestedHorse, AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Mule {
     pub chested_horse: ChestedHorse,
@@ -123,14 +123,14 @@ pub struct Mule {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { ChestedHorse, AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { ChestedHorse, AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Donkey {
     pub chested_horse: ChestedHorse,
 }
 
 #[MinecraftEntity(
-    inheritable, parents { ChestedHorse, AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable, ancestors { ChestedHorse, AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Llama {
     pub chested_horse: ChestedHorse,
@@ -172,7 +172,7 @@ impl TryAsEntityRef<Llama> for AnyEntity {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { Llama, ChestedHorse, AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { Llama, ChestedHorse, AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct TraderLlama {
     pub llama: Llama,
@@ -181,7 +181,7 @@ pub struct TraderLlama {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { Entity },
+    ancestors { Entity },
 )]
 pub struct LlamaSpit {
     pub entity: Entity,

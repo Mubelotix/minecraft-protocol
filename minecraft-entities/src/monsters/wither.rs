@@ -1,7 +1,7 @@
 use super::*;
 
 #[MinecraftEntity(
-    parents { Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Wither {
     pub monster: Monster,
@@ -13,7 +13,7 @@ pub struct Wither {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { Entity },
+    ancestors { Entity },
 )]
 pub struct WitherSkull {
     pub entity: Entity,

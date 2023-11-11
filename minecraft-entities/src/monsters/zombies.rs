@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable, ancestors { Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Zombie {
     pub monster: Monster,
@@ -37,7 +37,7 @@ impl TryAsEntityRef<Zombie> for AnyEntity {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { Zombie, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { Zombie, Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct ZombieVillager {
     pub zombie: Zombie,
@@ -47,7 +47,7 @@ pub struct ZombieVillager {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { Zombie, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { Zombie, Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Husk {
     pub zombie: Zombie,
@@ -55,7 +55,7 @@ pub struct Husk {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { Zombie, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { Zombie, Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Drowned {
     pub zombie: Zombie,
@@ -63,7 +63,7 @@ pub struct Drowned {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { Zombie, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { Zombie, Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct ZombifiedPiglin {
     pub zombie: Zombie,

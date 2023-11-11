@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { Entity },
+    inheritable, ancestors { Entity },
 )]
 pub struct ItemFrame {
     pub entity: Entity,
@@ -30,7 +30,7 @@ impl TryAsEntityRef<ItemFrame> for AnyEntity {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { ItemFrame, Entity },
+    ancestors { ItemFrame, Entity },
 )]
 pub struct GlowingItemFrame {
     pub item_frame: ItemFrame,
@@ -38,7 +38,7 @@ pub struct GlowingItemFrame {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { Entity },
+    ancestors { Entity },
 )]
 pub struct ItemEntity {
     pub entity: Entity,

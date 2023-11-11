@@ -1,7 +1,7 @@
 use super::*;
 
 #[MinecraftEntity(
-    parents { LivingEntity, Entity },
+    ancestors { LivingEntity, Entity },
 )]
 pub struct Player {
     pub living_entity: LivingEntity,

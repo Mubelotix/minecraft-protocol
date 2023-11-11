@@ -3,7 +3,7 @@ use minecraft_protocol::ids::blocks::Block;
 use super::*;
 
 #[MinecraftEntity(
-    parents { Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Enderman {
     pub monster: Monster,

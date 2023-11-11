@@ -1,7 +1,7 @@
 use super::*;
 
 #[MinecraftEntity(
-    parents { TameableAnimal, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { TameableAnimal, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Wolf {
     pub tameable_animal: TameableAnimal,

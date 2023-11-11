@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable, ancestors { PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct WaterAnimal {
     pub pathfinder_mob: PathfinderMob,
@@ -38,7 +38,7 @@ impl TryAsEntityRef<WaterAnimal> for AnyEntity {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { WaterAnimal, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { WaterAnimal, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Dolphin {
     pub water_animal: WaterAnimal,
@@ -49,7 +49,7 @@ pub struct Dolphin {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { WaterAnimal, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { WaterAnimal, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Squid {
     pub water_animal: WaterAnimal,
@@ -57,7 +57,7 @@ pub struct Squid {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { WaterAnimal, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable, ancestors { WaterAnimal, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct AbstractFish {
     pub water_animal: WaterAnimal,
@@ -92,7 +92,7 @@ impl TryAsEntityRef<AbstractFish> for AnyEntity {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { AbstractFish, WaterAnimal, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { AbstractFish, WaterAnimal, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Cod {
     pub abstract_fish: AbstractFish,
@@ -100,7 +100,7 @@ pub struct Cod {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { AbstractFish, WaterAnimal, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { AbstractFish, WaterAnimal, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct PufferFish {
     pub abstract_fish: AbstractFish,
@@ -109,7 +109,7 @@ pub struct PufferFish {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { AbstractFish, WaterAnimal, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { AbstractFish, WaterAnimal, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Salmon {
     pub abstract_fish: AbstractFish,
@@ -117,7 +117,7 @@ pub struct Salmon {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { AbstractFish, WaterAnimal, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { AbstractFish, WaterAnimal, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct TropicalFish {
     pub abstract_fish: AbstractFish,
@@ -126,7 +126,7 @@ pub struct TropicalFish {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { AbstractFish, WaterAnimal, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { AbstractFish, WaterAnimal, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Tadpole {
     pub abstract_fish: AbstractFish,

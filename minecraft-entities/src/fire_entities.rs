@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { Entity },
+    ancestors { Entity },
 )]
 pub struct DragonFireball {
     pub entity: Entity,
@@ -10,7 +10,7 @@ pub struct DragonFireball {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { Entity },
+    ancestors { Entity },
 )]
 pub struct SmallFireball {
     pub entity: Entity,
@@ -19,7 +19,7 @@ pub struct SmallFireball {
 
 #[derive(Default)]
 #[MinecraftEntity(
-     parents { Entity },
+     ancestors { Entity },
 )]
 pub struct Fireball {
     pub entity: Entity,
@@ -28,7 +28,7 @@ pub struct Fireball {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { Entity },
+    ancestors { Entity },
 )]
 pub struct FireworkRocket {
     pub entity: Entity,

@@ -1,7 +1,7 @@
 use super::*;
 
 #[MinecraftEntity(
-    parents { Entity },
+    ancestors { Entity },
 )]
 pub struct Interaction {
     pub entity: Entity,

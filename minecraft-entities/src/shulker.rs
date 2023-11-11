@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { AbstractGolem, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { AbstractGolem, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Shulker {
     pub abstract_golem: AbstractGolem,

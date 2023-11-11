@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable, ancestors { Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Raider {
     pub monster: Monster,
@@ -37,7 +37,7 @@ impl TryAsEntityRef<Raider> for AnyEntity {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { Raider, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { Raider, Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Witch {
     pub raider: Raider,
@@ -46,7 +46,7 @@ pub struct Witch {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { Raider, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable, ancestors { Raider, Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct AbstractIllager {
     pub raider: Raider,
@@ -82,7 +82,7 @@ impl TryAsEntityRef<AbstractIllager> for AnyEntity {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { AbstractIllager, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { AbstractIllager, Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Vindicator {
     pub abstract_illager: AbstractIllager,
@@ -90,7 +90,7 @@ pub struct Vindicator {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { AbstractIllager, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { AbstractIllager, Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Pillager {
     pub abstract_illager: AbstractIllager,
@@ -99,7 +99,7 @@ pub struct Pillager {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { AbstractIllager, Raider, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable, ancestors { AbstractIllager, Raider, Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct SpellcasterIllager {
     pub abstract_illager:  AbstractIllager,
@@ -130,7 +130,7 @@ impl TryAsEntityRef<SpellcasterIllager> for AnyEntity {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { SpellcasterIllager, AbstractIllager, Raider, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { SpellcasterIllager, AbstractIllager, Raider, Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Illusioner {
     pub spellcaster_illager:  SpellcasterIllager,
@@ -138,7 +138,7 @@ pub struct Illusioner {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { SpellcasterIllager, AbstractIllager, Raider, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { SpellcasterIllager, AbstractIllager, Raider, Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Ravager {
     pub spellcaster_illager:  SpellcasterIllager,
@@ -146,7 +146,7 @@ pub struct Ravager {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { SpellcasterIllager, AbstractIllager, Raider, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { SpellcasterIllager, AbstractIllager, Raider, Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Evoker {
     pub spellcaster_illager:  SpellcasterIllager,
@@ -154,7 +154,7 @@ pub struct Evoker {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { Entity },
+    ancestors { Entity },
 )]
 pub struct EvokerFangs {
     pub entity: Entity,

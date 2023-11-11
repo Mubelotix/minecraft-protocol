@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable, ancestors { Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Guardian {
     pub monster: Monster,
@@ -30,7 +30,7 @@ impl TryAsEntityRef<Guardian> for AnyEntity {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { Guardian, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { Guardian, Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct ElderGuardian {
     pub guardian: Guardian,

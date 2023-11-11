@@ -1,7 +1,7 @@
 use super::*;
 
 #[MinecraftEntity(
-    inheritable, parents { Entity },
+    inheritable, ancestors { Entity },
 )]
 pub struct AbstractArrow {
     pub entity: Entity,
@@ -44,7 +44,7 @@ impl TryAsEntityRef<AbstractArrow> for AnyEntity {
 }
 
 #[MinecraftEntity(
-    parents { AbstractArrow, Entity },
+    ancestors { AbstractArrow, Entity },
 )]
 pub struct Arrow {
     pub abstract_arrow: AbstractArrow,
@@ -61,7 +61,7 @@ impl Default for Arrow {
 }
 
 #[MinecraftEntity(
-    parents { AbstractArrow, Entity },
+    ancestors { AbstractArrow, Entity },
 )]
 pub struct SpectralArrow {
     pub abstract_arrow: AbstractArrow,
@@ -80,7 +80,7 @@ impl Default for SpectralArrow {
 }
 
 #[MinecraftEntity(
-    parents { AbstractArrow, Entity },
+    ancestors { AbstractArrow, Entity },
 )]
 pub struct ThrownTrident {
     pub abstract_arrow: AbstractArrow,

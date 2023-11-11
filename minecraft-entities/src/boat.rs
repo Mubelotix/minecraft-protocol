@@ -1,7 +1,7 @@
 use super::*;
 
 #[MinecraftEntity(
-    inheritable, parents { Entity },
+    inheritable, ancestors { Entity },
 )]
 pub struct Boat {
     pub entity: Entity,
@@ -50,7 +50,7 @@ impl TryAsEntityRef<Boat> for AnyEntity {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { Boat, Entity },
+    ancestors { Boat, Entity },
 )]
 pub struct ChestBoat {
     pub boat: Boat,

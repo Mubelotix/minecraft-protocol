@@ -35,7 +35,7 @@ pub use enderman::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable, ancestors { PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Monster {
     pub pathfinder_mob: PathfinderMob,

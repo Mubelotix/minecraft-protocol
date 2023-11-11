@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable, ancestors { PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct AbstractGolem {
     pub pathfinder_mob: PathfinderMob,
@@ -30,7 +30,7 @@ impl TryAsEntityRef<AbstractGolem> for AnyEntity {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { AbstractGolem, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { AbstractGolem, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct IronGolem {
     pub abstract_golem: AbstractGolem,
@@ -39,7 +39,7 @@ pub struct IronGolem {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { AbstractGolem, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { AbstractGolem, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct SnowGolem {
     pub abstract_golem: AbstractGolem,

@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, parents { Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable, ancestors { Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct AbstractSkeleton {
     pub monster: Monster,
@@ -32,7 +32,7 @@ impl TryAsEntityRef<AbstractSkeleton> for AnyEntity {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { AbstractSkeleton, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { AbstractSkeleton, Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Skeleton {
     pub abstract_skeleton: AbstractSkeleton,
@@ -40,7 +40,7 @@ pub struct Skeleton {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { AbstractSkeleton, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { AbstractSkeleton, Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct WitherSkeleton {
     pub abstract_skeleton: AbstractSkeleton,
@@ -48,7 +48,7 @@ pub struct WitherSkeleton {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    parents { AbstractSkeleton, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    ancestors { AbstractSkeleton, Monster, PathfinderMob, Mob, LivingEntity, Entity },
 )]
 pub struct Stray {
     pub abstract_skeleton: AbstractSkeleton,

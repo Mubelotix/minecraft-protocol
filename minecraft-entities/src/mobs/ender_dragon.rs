@@ -1,7 +1,7 @@
 use super::*;
 
 #[MinecraftEntity(
-    parents { Mob, LivingEntity, Entity },
+    ancestors { Mob, LivingEntity, Entity },
 )]
 pub struct EnderDragon {
     pub mob: Mob,
@@ -18,7 +18,7 @@ impl Default for EnderDragon {
 }
 
 #[MinecraftEntity(
-    parents { Entity },
+    ancestors { Entity },
 )]
 pub struct EndCrystal {
     pub entity: Entity,
