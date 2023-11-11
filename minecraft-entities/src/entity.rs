@@ -2,7 +2,7 @@ use super::*;
 
 #[MinecraftEntity(
     inheritable,
-    descendants {  },
+    descendants { AbstractArrow..., Boat..., Display, FallingBlock, LlamaSpit, Painting, DragonFireball, Fireball..., FireworkRocket, SmallFireball, Interaction..., ItemEntity, ItemFrame..., LivingEntity... EndCrystal, EvokerFangs, WitherSkull, AreaEffectCloud, FishingHook, EyeOfEnder, ThrownItemProjectile... },
 )]
 pub struct Entity {
     pub position: Position,

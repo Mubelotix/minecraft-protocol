@@ -37,7 +37,7 @@ pub use enderman::*;
 #[MinecraftEntity(
     inheritable,
     ancestors { PathfinderMob, Mob, LivingEntity, Entity },
-    descendants { BasePiglin..., Guardian... },
+    descendants { Blaze, Creeper, Enderman, Endermite, Giant, Raider, Silverfish, Spider, Vex, Warden, Wither, Zoglin, Zombie, AbstractSkeleton...,BasePiglin..., Guardian... },
 )]
 pub struct Monster {
     pub pathfinder_mob: PathfinderMob,

@@ -4,7 +4,7 @@ use super::*;
 #[MinecraftEntity(
     inheritable,
     ancestors { PathfinderMob, Mob, LivingEntity, Entity },
-    descendants { IronGolem, SnowGolem },
+    descendants { IronGolem, SnowGolem, Shulker },
 )]
 pub struct AbstractGolem {
     pub pathfinder_mob: PathfinderMob,

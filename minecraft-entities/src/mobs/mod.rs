@@ -17,7 +17,7 @@ pub use bat::*;
 #[MinecraftEntity(
     inheritable,
     ancestors { LivingEntity, Entity },
-    descendants { AmbientCreature..., PathfinderMob... },
+    descendants { AmbientCreature..., PathfinderMob..., EnderDragon, Flying..., Slime },
 )]
 pub struct Mob {
     pub living_entity: LivingEntity,
@@ -40,7 +40,7 @@ pub struct AmbientCreature {
 #[MinecraftEntity(
     inheritable,
     ancestors { Mob, LivingEntity, Entity },
-    descendants { AgeableMob... },
+    descendants { WaterAnimal..., AgeableMob..., Monster..., AbstractGolem... },
 )]
 pub struct PathfinderMob {
     pub mob: Mob,
@@ -50,7 +50,7 @@ pub struct PathfinderMob {
 #[MinecraftEntity(
     inheritable,
     ancestors { PathfinderMob, Mob, LivingEntity, Entity },
-    descendants { AbstractVillager... },
+    descendants { Animal..., AbstractVillager... },
 )]
 pub struct AgeableMob {
     pub pathfinder_mob: PathfinderMob,

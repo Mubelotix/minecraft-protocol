@@ -49,7 +49,7 @@ pub use water_animal::*;
 #[MinecraftEntity(
     inheritable,
     ancestors { AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
-    descendants { TameableAnimal... },
+    descendants { Axolotl, Bee, Chicken, Cow, Fox, Frog, Goat, Hoglin, Ocelot, Panda, Pig, PolarBear, Rabbit, Sheep, Sniffer, Strider, Turtle, AbstractHorse..., TameableAnimal... },
 )]
 pub struct Animal {
     pub ageable_mob: AgeableMob,
@@ -59,7 +59,7 @@ pub struct Animal {
 #[MinecraftEntity(
     inheritable,
     ancestors { Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
-    descendants { }
+    descendants { Cat, Parrot, Wolf }
 )]
 pub struct TameableAnimal {
     pub animal: Animal,

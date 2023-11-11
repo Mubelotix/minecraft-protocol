@@ -19,7 +19,7 @@ pub struct SmallFireball {
 
 #[derive(Default)]
 #[MinecraftEntity(
-     ancestors { Entity },
+    ancestors { Entity },
 )]
 pub struct Fireball {
     pub entity: Entity,
