@@ -245,6 +245,10 @@ impl AnyEntity {
         self.try_as_entity_ref().unwrap()
     }
 
+    pub fn as_other<O>(&self) -> Option<&O> where AnyEntity: TryAsEntityRef<O> {
+        self.try_as_entity_ref()
+    }
+
     pub fn to_network(&self) -> Option<minecraft_protocol::ids::entities::Entity> {
         use minecraft_protocol::ids::entities::Entity::*;
         match self {

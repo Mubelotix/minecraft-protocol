@@ -52,16 +52,16 @@ impl Entities {
         }
     }
 
-    pub async fn spawn(&self, entity: AnyEntity) -> Eid {
+    pub async fn spawn_entity(&self, entity: AnyEntity) -> (Eid, UUID) {
         let eid = self.eid_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        let uid = self.uuid_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u128;
+        let uuid = self.uuid_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u128;
         let mut entities = self.entities.write().await;
         let mut chunks = self.chunks.write().await;
         let mut uuids = self.uuids.write().await;
         chunks.entry(entity.as_entity().position.chunk()).or_insert(HashSet::new()).insert(eid);
         entities.insert(eid, entity);
-        uuids.insert(uid, eid);
-        eid
+        uuids.insert(uuid, eid);
+        (eid, uuid)
     }
 
     /// Remove an entity

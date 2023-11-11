@@ -30,10 +30,28 @@ impl PlayerHandler {
         }
     }
 
-    async fn on_block_change(&mut self, position: BlockPosition, block: BlockWithState) {
+    async fn on_block_changed(&mut self, position: BlockPosition, block: BlockWithState) {
         self.send_packet(PlayClientbound::BlockUpdate {
             location: position.into(),
             block_state: block,
+        }).await;
+    }
+
+    async fn on_entity_spawned(&mut self, eid: Eid, uuid: UUID, ty: NetworkEntity, position: Position, pitch: f32, yaw: f32, head_yaw: f32, data: u32, velocity: (), metadata: ()) {
+        self.send_packet(PlayClientbound::SpawnEntity {
+            id: VarInt(eid as i32),
+            uuid,
+            entity_type: ty,
+            x: position.x,
+            y: position.y,
+            z: position.z,
+            pitch: (pitch * (256.0 / 360.0)) as u8,
+            yaw: (yaw * (256.0 / 360.0)) as u8,
+            head_yaw: (head_yaw * (256.0 / 360.0)) as u8,
+            data: VarInt(data as i32),
+            velocity_x: 0,
+            velocity_y: 0,
+            velocity_z: 0,
         }).await;
     }
 
@@ -225,7 +243,11 @@ pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut serve
                 receive_change_fut = Box::pin(change_receiver.recv().fuse());
 
                 match change {
-                    WorldChange::BlockChange(position, block) => handler.on_block_change(position, block).await,
+                    WorldChange::Block(position, block) => handler.on_block_changed(position, block).await,
+                    WorldChange::EntitySpawned { eid, uuid: uid, ty, position, pitch, yaw, head_yaw, data, velocity, metadata } => handler.on_entity_spawned(eid, uid, ty, position, pitch, yaw, head_yaw, data, velocity, metadata).await,
+                    WorldChange::EntityDispawned { eid } => todo!(),
+                    WorldChange::EntityMetadata { eid, metadata } => todo!(),
+                    WorldChange::EntityMoved { eid, position, pitch, yaw, head_yaw } => todo!(),
                 }
             },
             Event::Message(Err(recv_error)) => {

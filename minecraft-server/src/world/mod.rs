@@ -40,7 +40,7 @@ impl World {
 
     pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
         self.map.set_block(position.clone(), block.clone()).await;
-        self.notify(&position.chunk_column(), WorldChange::BlockChange(position, block)).await;
+        self.notify(&position.chunk_column(), WorldChange::Block(position, block)).await;
     }
 
     pub async fn add_loader(&self, uuid: UUID) -> MpscReceiver<WorldChange> {
@@ -67,6 +67,28 @@ impl World {
         for just_unloaded_chunk in just_unloaded_chunks {
             self.map.unload(just_unloaded_chunk.clone()).await;
         }
+    }
+
+    pub async fn spawn_entity(&self, entity: AnyEntity) -> Eid {
+        let position = entity.as_entity().position.clone();
+        let ty = entity.to_network().unwrap(); // TODO: error handling
+        let pitch = entity.as_entity().pitch;
+        let yaw = entity.as_entity().yaw;
+        let head_yaw = entity.as_other::<LivingEntity>().map(|e| e.head_yaw).unwrap_or(0.0);
+        let (eid, uuid) = self.entities.spawn_entity(entity).await;
+        self.notify(&position.chunk_column(), WorldChange::EntitySpawned {
+            eid,
+            uuid,
+            ty,
+            position,
+            pitch,
+            yaw,
+            head_yaw,
+            data: 0,
+            velocity: (),
+            metadata: (),
+        }).await;
+        eid
     }
 
     async fn notify(&self, position: &ChunkColumnPosition, change: WorldChange) {
@@ -110,7 +132,7 @@ mod tests {
         world.update_loaded_chunks(2, vec![ChunkColumnPosition{cx: 1, cz: 1}].into_iter().collect()).await;
 
         world.set_block(BlockPosition{x: 1, y: 1, z: 1}, BlockWithState::Air).await;
-        assert!(matches!(receiver1.try_recv(), Ok(WorldChange::BlockChange(BlockPosition{x: 1, y: 1, z: 1}, BlockWithState::Air))));
+        assert!(matches!(receiver1.try_recv(), Ok(WorldChange::Block(BlockPosition{x: 1, y: 1, z: 1}, BlockWithState::Air))));
         assert!(matches!(receiver2.try_recv(), Err(TryRecvError::Empty)));
     }
 }

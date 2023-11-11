@@ -7,6 +7,7 @@ use super::*;
 )]
 pub struct LivingEntity {
     pub entity: Entity,
+    pub head_yaw: f32,
     pub is_hand_active: bool,
     pub active_hand: Hand,
     pub is_riptide_spinning: bool,
@@ -22,6 +23,7 @@ impl Default for LivingEntity {
     fn default() -> Self {
         LivingEntity {
             entity: Entity::default(),
+            head_yaw: 0.0,
             is_hand_active: false,
             active_hand: Hand::MainHand,
             is_riptide_spinning: false,
