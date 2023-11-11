@@ -4,6 +4,7 @@ mod player_handler;
 mod server_behavior;
 mod prelude;
 mod world;
+mod entities;
 
 use crate::prelude::*;
 

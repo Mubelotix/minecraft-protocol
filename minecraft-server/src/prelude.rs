@@ -1,4 +1,4 @@
-pub use crate::{player_handler::*, server_behavior::*, world::*};
+pub use crate::{entities::*, player_handler::*, server_behavior::*, world::*};
 pub use futures::FutureExt;
 pub use log::{debug, error, info, trace, warn};
 pub use minecraft_protocol::{
@@ -57,6 +57,5 @@ pub use tokio::{
     },
 };
 pub use minecraft_positions::*;
-pub use minecraft_entities::*;
 
 pub const MAX_PLAYERS: usize = 1001;
