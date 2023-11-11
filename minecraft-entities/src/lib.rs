@@ -245,7 +245,7 @@ impl AnyEntity {
         self.try_as_entity_ref().unwrap()
     }
 
-    pub fn as_network(&self) -> Option<minecraft_protocol::ids::entities::Entity> {
+    pub fn to_network(&self) -> Option<minecraft_protocol::ids::entities::Entity> {
         use minecraft_protocol::ids::entities::Entity::*;
         match self {
             AnyEntity::Entity(_) => None,
