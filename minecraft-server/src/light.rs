@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 
 #[derive(Debug, Clone)]
-pub struct SectionLightData(Vec<u8>);
+struct SectionLightData(Vec<u8>);
 
 impl SectionLightData {
     pub fn new() -> SectionLightData {
@@ -39,7 +39,7 @@ impl SectionLightData {
 }
 
 #[derive(Debug, Clone)]
-pub struct SkyLight {
+struct SkyLight {
     /// The level of the sky light, 15 is the maximum.
     pub level: u8,
     /// The sky light data for each section.
@@ -50,8 +50,8 @@ pub struct SkyLight {
     pub empty_sky_light_mask: u64,
 }
 
-pub struct Light {
-    pub sky_light: SkyLight,
+pub(super) struct Light {
+    sky_light: SkyLight,
 }
 
 impl Light {
@@ -64,5 +64,11 @@ impl Light {
                 empty_sky_light_mask: !0,
             }
         }
+    }
+}
+
+impl ChunkColumn {
+    pub fn propagate_light_inside(&mut self) {
+        
     }
 }

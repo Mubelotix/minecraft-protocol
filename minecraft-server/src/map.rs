@@ -1,7 +1,7 @@
 use std::{collections::HashMap, cmp::Ordering};
 use minecraft_protocol::{components::chunk::{PalettedData, self}, ids::blocks::Block};
 use tokio::sync::RwLock;
-use crate::prelude::*;
+use crate::{prelude::*, light::Light};
 
 pub struct WorldMap {
     /// The map is divided in shards.
@@ -19,7 +19,7 @@ impl ChunkColumnPosition {
 }
 
 #[derive(Clone)]
-struct Chunk {
+pub(super) struct Chunk {
     data: NetworkChunk,
     palette_block_counts: Vec<u16>,
 }
@@ -293,8 +293,9 @@ impl HeightMap {
 }
 
 
-struct ChunkColumn {
+pub(super) struct ChunkColumn {
     heightmap: HeightMap,
+    light: Light,
     chunks: Vec<Chunk>,
 }
 
@@ -336,7 +337,11 @@ impl ChunkColumn {
     }
 
     pub fn from(chunks: Vec<Chunk>) -> Self {
-        let mut column = Self { chunks, heightmap: HeightMap::new(9) };
+        let mut column = Self { 
+            chunks, 
+            heightmap: HeightMap::new(9),
+            light: Light::new(),
+        };
         column.init_chunk_heightmap();
         column
     }
