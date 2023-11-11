@@ -1,19 +1,14 @@
 use minecraft_entities_derive::*;
 
 use std::{pin::Pin, future::Future, sync::{Mutex, Arc}};
-type CallBack<O> = fn(O) -> Pin<Box<dyn Future<Output = ()>>>;
-type CallBack1<O, I> = fn(O, I) -> Pin<Box<dyn Future<Output = ()>>>;
-type CallBack2<O, I, J> = fn(O, I, J) -> Pin<Box<dyn Future<Output = ()>>>;
+type CallBack<O> = fn(O) -> Pin<Box<dyn Future<Output = ()> + Sync + Send>>;
+type CallBack1<O, I> = fn(O, I) -> Pin<Box<dyn Future<Output = ()> + Sync + Send>>;
+type CallBack2<O, I, J> = fn(O, I, J) -> Pin<Box<dyn Future<Output = ()> + Sync + Send>>;
 type Eid = u32;
 
 trait TryAsEntityRef<T> {
     fn try_as_entity_ref(&self) -> Option<&T>;
     fn try_as_entity_mut(&mut self) -> Option<&mut T>;
-}
-
-trait WorldTest {
-    fn observe_entity(&self, eid: Eid, observer: fn(&AnyEntity)) -> dyn std::future::Future<Output = ()>;
-    fn mutate_entity(&self, eid: Eid, mutator: fn(&mut AnyEntity)) -> dyn std::future::Future<Output = ()>;
 }
 
 enum AnyEntity {
