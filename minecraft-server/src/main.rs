@@ -8,6 +8,7 @@ mod entities;
 mod map;
 mod ecs;
 mod world;
+mod light;
 
 use std::env;
 use crate::prelude::*;
