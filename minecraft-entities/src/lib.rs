@@ -44,14 +44,20 @@ pub(crate) use minecraft_protocol::{
     nbt::NbtTag,
     packets::UUID
 };
+use std::{pin::Pin, future::Future};
 
 pub type Eid = u32;
 
-
-use std::{pin::Pin, future::Future, sync::{Mutex, Arc}};
+#[allow(dead_code)]
 type CallBack<O> = fn(O) -> Pin<Box<dyn Future<Output = ()>>>;
+#[allow(dead_code)]
 type CallBack1<O, I> = fn(O, I) -> Pin<Box<dyn Future<Output = ()>>>;
+#[allow(dead_code)]
 type CallBack2<O, I, J> = fn(O, I, J) -> Pin<Box<dyn Future<Output = ()>>>;
+#[allow(dead_code)]
+type CallBack3<O, I, J> = fn(O, I, J) -> Pin<Box<dyn Future<Output = ()>>>;
+#[allow(dead_code)]
+type CallBack4<O, I, J> = fn(O, I, J) -> Pin<Box<dyn Future<Output = ()>>>;
 
 pub trait TryAsEntityRef<T> {
     fn try_as_entity_ref(&self) -> Option<&T>;

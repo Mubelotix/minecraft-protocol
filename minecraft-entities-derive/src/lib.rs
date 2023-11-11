@@ -41,11 +41,11 @@ pub fn MinecraftEntity(attr: proc_macro::TokenStream, item: proc_macro::TokenStr
     // Get struct name
     let mut items = item.clone().into_iter();
     match items.next() {
-        Some(TokenTree::Ident(ident)) if ident.to_string() == "pub" => (),
+        Some(TokenTree::Ident(ident)) if ident == "pub" => (),
         Some(TokenTree::Punct(punct)) if punct.as_char() == '#' => {
             items.next();
             match items.next() {
-                Some(TokenTree::Ident(ident)) if ident.to_string() == "pub" => (),
+                Some(TokenTree::Ident(ident)) if ident == "pub" => (),
                 Some(other) => abort!(other.span(), "expected struct to be public"),
                 None => panic!("expected public struct, found nothing"),
             }
@@ -54,7 +54,7 @@ pub fn MinecraftEntity(attr: proc_macro::TokenStream, item: proc_macro::TokenStr
         None => panic!("expected public struct, found nothing"),
     }
     match items.next() {
-        Some(TokenTree::Ident(ident)) if ident.to_string() == "struct" => (),
+        Some(TokenTree::Ident(ident)) if ident == "struct" => (),
         Some(other) => abort!(other.span(), "expected struct, found {:?}"),
         None => panic!("expected struct, found nothing"),
     }
@@ -124,7 +124,7 @@ pub fn MinecraftEntity(attr: proc_macro::TokenStream, item: proc_macro::TokenStr
                         abort!(params.span(), "expected parenthesis");
                     }
                     let mut params = params.stream().into_iter().peekable();
-                    if matches!(params.peek(), Some(TokenTree::Ident(ident)) if ident.to_string() == "self") {
+                    if matches!(params.peek(), Some(TokenTree::Ident(ident)) if ident == "self") {
                         params.next();
                         if matches!(params.peek(), Some(TokenTree::Punct(punct)) if punct.as_char() == ',') {
                             params.next();
@@ -264,7 +264,7 @@ pub fn MinecraftEntity(attr: proc_macro::TokenStream, item: proc_macro::TokenStr
         replace_idents(element, &to_replace);
     }
     let mut inner_codes = TokenStream::new();
-    for (_, method, args) in defines.iter().filter(|(ty, _, _)| ty.to_string() == struct_name.to_string()) {
+    for (_, method, args) in defines.iter().filter(|(ty, _, _)| ty == &struct_name) {
         let inner_code: TokenStream = match args.len() {
             0 => String::from(r#"
                 fn method(self) -> Pin<Box<dyn Future<Output = ()>>> {{
@@ -318,7 +318,7 @@ pub fn MinecraftEntity(attr: proc_macro::TokenStream, item: proc_macro::TokenStr
         replace_idents(element, &to_replace);
     }
     let mut inner_codes = TokenStream::new();
-    for (_, method, args) in defines.iter().filter(|(ty, _, _)| ty.to_string() == struct_name.to_string()) {
+    for (_, method, args) in defines.iter().filter(|(ty, _, _)| ty == &struct_name) {
         let inner_code: TokenStream = match args.len() {
             0 => String::from(r#"pub method: CallBack<Handler<This>>,"#),
             1 => format!(r#"pub method: CallBack1<Handler<This>, {}>,"#, args[0].1),
@@ -356,7 +356,7 @@ pub fn MinecraftEntity(attr: proc_macro::TokenStream, item: proc_macro::TokenStr
             replace_idents(element, &to_replace);
         }    
         let mut inner_codes = TokenStream::new();
-        for (_, method, args) in defines.iter().filter(|(ty, _, _)| ty.to_string() == ascendant.to_string()) {
+        for (_, method, args) in defines.iter().filter(|(ty, _, _)| ty == ascendant) {
             let inner_code: TokenStream = match args.len() {
                 0 => r#"method: |s| Box::pin(s.assume_other::<This>().method()),"#,
                 1 => r#"method: |s, arg1| Box::pin(s.assume_other::<This>().method(arg1)),"#,
@@ -380,7 +380,7 @@ pub fn MinecraftEntity(attr: proc_macro::TokenStream, item: proc_macro::TokenStr
         let TokenTree::Group(ref mut group) = code.get_mut(i).unwrap() else {unreachable!()};
         *group = Group::new(group.delimiter(), group.stream().into_iter().chain(inner_codes.into_iter()).collect());
 
-        if ascendant.to_string() != struct_name.to_string() {
+        if ascendant != &struct_name {
             let inner_code: TokenStream = r#"..*ASCENDANT_METHODS_FOR_PARENT"#.parse().unwrap();
             to_replace.insert("ASCENDANT_METHODS_FOR_PARENT", Ident::new(&format!("{}_METHODS_FOR_{}", ascendant.to_string().to_case(Case::ScreamingSnake), hierarchy[1].to_string().to_case(Case::ScreamingSnake)), ascendant.span()));
             let mut inner_code = inner_code.clone().into_iter().collect::<Vec<_>>();
