@@ -1,7 +1,9 @@
 use super::*;
 
 #[MinecraftEntity(
-    inheritable, ancestors { Entity },
+    inheritable,
+    ancestors { Entity },
+    descendants { ChestBoat },
 )]
 pub struct Boat {
     pub entity: Entity,
@@ -26,24 +28,6 @@ impl Default for Boat {
             is_left_paddle_turning: false,
             is_right_paddle_turning: false,
             splash_timer: 0,
-        }
-    }
-}
-
-impl TryAsEntityRef<Boat> for AnyEntity {
-    fn try_as_entity_ref(&self) -> Option<&Boat> {
-        match self {
-            AnyEntity::Boat(boat) => Some(boat),
-            AnyEntity::ChestBoat(chest_boat) => Some(&chest_boat.boat),
-            _ => None,
-        }
-    }
-
-    fn try_as_entity_mut(&mut self) -> Option<&mut Boat> {
-        match self {
-            AnyEntity::Boat(boat) => Some(boat),
-            AnyEntity::ChestBoat(chest_boat) => Some(&mut chest_boat.boat),
-            _ => None,
         }
     }
 }

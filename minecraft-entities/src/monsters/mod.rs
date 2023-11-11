@@ -35,39 +35,10 @@ pub use enderman::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, ancestors { PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable,
+    ancestors { PathfinderMob, Mob, LivingEntity, Entity },
+    descendants { BasePiglin..., Guardian... },
 )]
 pub struct Monster {
     pub pathfinder_mob: PathfinderMob,
 }
-
-impl TryAsEntityRef<Monster> for AnyEntity {
-    fn try_as_entity_ref(&self) -> Option<&Monster> {
-        match self {
-            AnyEntity::Monster(monster) => return Some(&monster),
-            _ => (),
-        }
-        if let Some(base_piglin) = <Self as TryAsEntityRef<BasePiglin>>::try_as_entity_ref(self) {
-            return Some(&base_piglin.monster)
-        }
-        if let Some(guardian) = <Self as TryAsEntityRef<Guardian>>::try_as_entity_ref(self) {
-            return Some(&guardian.monster)
-        }
-        None
-    }
-
-    fn try_as_entity_mut(&mut self) -> Option<&mut Monster> {
-        match self {
-            AnyEntity::Monster(monster) => return Some(monster),
-            _ => (),
-        }
-        if <Self as TryAsEntityRef<BasePiglin>>::try_as_entity_ref(self).is_some() {
-            return <Self as TryAsEntityRef<BasePiglin>>::try_as_entity_mut(self).map(|piglin| &mut piglin.monster)
-        }
-        if <Self as TryAsEntityRef<Guardian>>::try_as_entity_ref(self).is_some() {
-            return <Self as TryAsEntityRef<Guardian>>::try_as_entity_mut(self).map(|guardian| &mut guardian.monster)
-        }
-        None
-    }
-}
-

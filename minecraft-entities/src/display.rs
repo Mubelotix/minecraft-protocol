@@ -2,7 +2,9 @@ use super::*;
 use minecraft_protocol::components::paintings::Painting as PaintingType;
 
 #[MinecraftEntity(
-    inheritable, ancestors { Entity },
+    inheritable,
+    ancestors { Entity },
+    descendants { BlockDisplay, ItemDisplay, TextDisplay },
 )]
 pub struct Display {
     pub entity: Entity,
@@ -48,28 +50,6 @@ impl Default for Display {
             width: 0.,
             height: 0.,
             glow_color: -1,
-        }
-    }
-}
-
-impl TryAsEntityRef<Display> for AnyEntity {
-    fn try_as_entity_ref(&self) -> Option<&Display> {
-        match self {
-            AnyEntity::Display(display) => Some(display),
-            AnyEntity::BlockDisplay(block_display) => Some(&block_display.display),
-            AnyEntity::ItemDisplay(item_display) => Some(&item_display.display),
-            AnyEntity::TextDisplay(text_display) => Some(&text_display.display),
-            _ => None,
-        }
-    }
-
-    fn try_as_entity_mut(&mut self) -> Option<&mut Display> {
-        match self {
-            AnyEntity::Display(display) => Some(display),
-            AnyEntity::BlockDisplay(block_display) => Some(&mut block_display.display),
-            AnyEntity::ItemDisplay(item_display) => Some(&mut item_display.display),
-            AnyEntity::TextDisplay(text_display) => Some(&mut text_display.display),
-            _ => None,
         }
     }
 }

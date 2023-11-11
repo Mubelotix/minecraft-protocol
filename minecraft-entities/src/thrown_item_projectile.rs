@@ -1,7 +1,9 @@
 use super::*;
 
 #[MinecraftEntity(
-    inheritable, ancestors { Entity },
+    inheritable,
+    ancestors { Entity },
+    descendants { ThrownEgg, ThrownEnderPearl, ThrownExperienceBottle, ThrownPotion, Snowball },
 )]
 pub struct ThrownItemProjectile {
     pub entity: Entity,
@@ -13,32 +15,6 @@ impl Default for ThrownItemProjectile {
         ThrownItemProjectile {
             entity: Entity::default(),
             item: Slot {item: None},
-        }
-    }
-}
-
-impl TryAsEntityRef<ThrownItemProjectile> for AnyEntity {
-    fn try_as_entity_ref(&self) -> Option<&ThrownItemProjectile> {
-        match self {
-            AnyEntity::ThrownItemProjectile(throwable) => Some(throwable),
-            AnyEntity::ThrownEgg(egg) => Some(&egg.thrown_item_projectile),
-            AnyEntity::ThrownEnderPearl(ender_pearl) => Some(&ender_pearl.thrown_item_projectile),
-            AnyEntity::ThrownExperienceBottle(experience_bottle) => Some(&experience_bottle.thrown_item_projectile),
-            AnyEntity::ThrownPotion(potion) => Some(&potion.thrown_item_projectile),
-            AnyEntity::Snowball(snowball) => Some(&snowball.thrown_item_projectile),
-            _ => None,
-        }
-    }
-
-    fn try_as_entity_mut(&mut self) -> Option<&mut ThrownItemProjectile> {
-        match self {
-            AnyEntity::ThrownItemProjectile(throwable) => Some(throwable),
-            AnyEntity::ThrownEgg(egg) => Some(&mut egg.thrown_item_projectile),
-            AnyEntity::ThrownEnderPearl(ender_pearl) => Some(&mut ender_pearl.thrown_item_projectile),
-            AnyEntity::ThrownExperienceBottle(experience_bottle) => Some(&mut experience_bottle.thrown_item_projectile),
-            AnyEntity::ThrownPotion(potion) => Some(&mut potion.thrown_item_projectile),
-            AnyEntity::Snowball(snowball) => Some(&mut snowball.thrown_item_projectile),
-            _ => None,
         }
     }
 }

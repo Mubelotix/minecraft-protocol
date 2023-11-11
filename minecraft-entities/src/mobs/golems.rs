@@ -2,30 +2,12 @@ use super::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, ancestors { PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable,
+    ancestors { PathfinderMob, Mob, LivingEntity, Entity },
+    descendants { IronGolem, SnowGolem },
 )]
 pub struct AbstractGolem {
     pub pathfinder_mob: PathfinderMob,
-}
-
-impl TryAsEntityRef<AbstractGolem> for AnyEntity {
-    fn try_as_entity_ref(&self) -> Option<&AbstractGolem> {
-        match self {
-            AnyEntity::AbstractGolem(abstract_golem) => Some(&abstract_golem),
-            AnyEntity::IronGolem(iron_golem) => Some(&iron_golem.abstract_golem),
-            AnyEntity::SnowGolem(snow_golem) => Some(&snow_golem.abstract_golem),
-            _ => None,
-        }
-    }
-
-    fn try_as_entity_mut(&mut self) -> Option<&mut AbstractGolem> {
-        match self {
-            AnyEntity::AbstractGolem(abstract_golem) => Some(abstract_golem),
-            AnyEntity::IronGolem(iron_golem) => Some(&mut iron_golem.abstract_golem),
-            AnyEntity::SnowGolem(snow_golem) => Some(&mut snow_golem.abstract_golem),
-            _ => None,
-        }
-    }
 }
 
 #[derive(Default)]

@@ -1,7 +1,9 @@
 use super::*;
 
 #[MinecraftEntity(
-    inheritable, ancestors { Entity },
+    inheritable,
+    ancestors { Entity },
+    descendants { Arrow, SpectralArrow, ThrownTrident },
 )]
 pub struct AbstractArrow {
     pub entity: Entity,
@@ -17,28 +19,6 @@ impl Default for AbstractArrow {
             is_critical: false,
             is_no_clip: false,
             piercing_level: 0,
-        }
-    }
-}
-
-impl TryAsEntityRef<AbstractArrow> for AnyEntity {
-    fn try_as_entity_ref(&self) -> Option<&AbstractArrow> {
-        match self {
-            AnyEntity::AbstractArrow(abstract_arrow) => Some(abstract_arrow),
-            AnyEntity::Arrow(arrow) => Some(&arrow.abstract_arrow),
-            AnyEntity::SpectralArrow(spectral_arrow) => Some(&spectral_arrow.abstract_arrow),
-            AnyEntity::ThrownTrident(thrown_trident) => Some(&thrown_trident.abstract_arrow),
-            _ => None,
-        }
-    }
-
-    fn try_as_entity_mut(&mut self) -> Option<&mut AbstractArrow> {
-        match self {
-            AnyEntity::AbstractArrow(abstract_arrow) => Some(abstract_arrow),
-            AnyEntity::Arrow(arrow) => Some(&mut arrow.abstract_arrow),
-            AnyEntity::SpectralArrow(spectral_arrow) => Some(&mut spectral_arrow.abstract_arrow),
-            AnyEntity::ThrownTrident(thrown_trident) => Some(&mut thrown_trident.abstract_arrow),
-            _ => None,
         }
     }
 }

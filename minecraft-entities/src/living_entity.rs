@@ -1,7 +1,9 @@
 use super::*;
 
 #[MinecraftEntity(
-    inheritable, ancestors { Entity },
+    inheritable,
+    ancestors { Entity },
+    descendants { Player, ArmorStand, Mob... },
 )]
 pub struct LivingEntity {
     pub entity: Entity,
@@ -30,32 +32,6 @@ impl Default for LivingEntity {
             bee_stinger_count: 0,
             bed: None,
         }
-    }
-}
-
-impl TryAsEntityRef<LivingEntity> for AnyEntity {
-    fn try_as_entity_ref(&self) -> Option<&LivingEntity> {
-        match self {
-            AnyEntity::LivingEntity(living_entity) => return Some(living_entity),
-            AnyEntity::Player(player) => return Some(&player.living_entity),
-            _ => (),
-        }
-        if let Some(mob) = <Self as TryAsEntityRef<Mob>>::try_as_entity_ref(self) {
-            return Some(&mob.living_entity)
-        }
-        None
-    }
-
-    fn try_as_entity_mut(&mut self) -> Option<&mut LivingEntity> {
-        match self {
-            AnyEntity::LivingEntity(living_entity) => return Some(living_entity),
-            AnyEntity::Player(player) => return Some(&mut player.living_entity),
-            _ => (),
-        }
-        if let Some(mob) = <Self as TryAsEntityRef<Mob>>::try_as_entity_mut(self) {
-            return Some(&mut mob.living_entity)
-        }
-        None
     }
 }
 

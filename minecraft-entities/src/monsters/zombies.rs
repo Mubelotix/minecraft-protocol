@@ -2,37 +2,15 @@ use super::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, ancestors { Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable,
+    ancestors { Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    descendants { ZombieVillager, Husk, Drowned, ZombifiedPiglin },
 )]
 pub struct Zombie {
     pub monster: Monster,
     pub is_baby: bool,
     pub unused: isize,
     pub is_becoming_drowned: bool,
-}
-
-impl TryAsEntityRef<Zombie> for AnyEntity {
-    fn try_as_entity_ref(&self) -> Option<&Zombie> {
-        match self {
-            AnyEntity::Zombie(zombie) => Some(&zombie),
-            AnyEntity::ZombieVillager(zombie_villager) => Some(&zombie_villager.zombie),
-            AnyEntity::Husk(husk) => Some(&husk.zombie),
-            AnyEntity::Drowned(drowned) => Some(&drowned.zombie),
-            AnyEntity::ZombifiedPiglin(zombified_piglin) => Some(&zombified_piglin.zombie),
-            _ => None,
-        }
-    }
-
-    fn try_as_entity_mut(&mut self) -> Option<&mut Zombie> {
-        match self {
-            AnyEntity::Zombie(zombie) => Some(zombie),
-            AnyEntity::ZombieVillager(zombie_villager) => Some(&mut zombie_villager.zombie),
-            AnyEntity::Husk(husk) => Some(&mut husk.zombie),
-            AnyEntity::Drowned(drowned) => Some(&mut drowned.zombie),
-            AnyEntity::ZombifiedPiglin(zombified_piglin) => Some(&mut zombified_piglin.zombie),
-            _ => None,
-        }
-    }
 }
 
 #[derive(Default)]

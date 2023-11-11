@@ -47,60 +47,22 @@ pub use water_animal::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, ancestors { AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable,
+    ancestors { AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    descendants { TameableAnimal... },
 )]
 pub struct Animal {
     pub ageable_mob: AgeableMob,
 }
 
-impl TryAsEntityRef<Animal> for AnyEntity {
-    fn try_as_entity_ref(&self) -> Option<&Animal> {
-        match self {
-            AnyEntity::Animal(animal) => return Some(&animal),
-            _ => (),
-        }
-        if let Some(tameable_animal) = <Self as TryAsEntityRef<TameableAnimal>>::try_as_entity_ref(self) {
-            return Some(&tameable_animal.animal)
-        }
-        None
-    }
-
-    fn try_as_entity_mut(&mut self) -> Option<&mut Animal> {
-        match self {
-            AnyEntity::Animal(animal) => return Some(animal),
-            _ => (),
-        }
-        if let Some(tameable_animal) = <Self as TryAsEntityRef<TameableAnimal>>::try_as_entity_mut(self) {
-            return Some(&mut tameable_animal.animal)
-        }
-        None
-    }
-}
-
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, ancestors { Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable,
+    ancestors { Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    descendants { }
 )]
 pub struct TameableAnimal {
     pub animal: Animal,
     pub action_mask: u8,
     pub owner: Option<UUID>,
-}
-
-impl TryAsEntityRef<TameableAnimal> for AnyEntity {
-    fn try_as_entity_ref(&self) -> Option<&TameableAnimal> {
-        match self {
-            AnyEntity::TameableAnimal(tameable_animal) => return Some(&tameable_animal),
-            _ => (),
-        }
-        None
-    }
-
-    fn try_as_entity_mut(&mut self) -> Option<&mut TameableAnimal> {
-        match self {
-            AnyEntity::TameableAnimal(tameable_animal) => return Some(tameable_animal),
-            _ => (),
-        }
-        None
-    }
 }

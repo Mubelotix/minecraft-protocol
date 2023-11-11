@@ -2,37 +2,13 @@ use super::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, ancestors { Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable,
+    ancestors { Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    descendants { Witch, AbstractIllager... },
 )]
 pub struct Raider {
     pub monster: Monster,
     pub is_celebrating: bool,
-}
-
-impl TryAsEntityRef<Raider> for AnyEntity {
-    fn try_as_entity_ref(&self) -> Option<&Raider> {
-        match self {
-            AnyEntity::Raider(raider) => return Some(raider),
-            AnyEntity::Witch(witch) => return Some(&witch.raider),
-            _ => (),
-        }
-        if let Some(abstract_illager) = <Self as TryAsEntityRef<AbstractIllager>>::try_as_entity_ref(self) {
-            return Some(&abstract_illager.raider)
-        }
-        None
-    }
-
-    fn try_as_entity_mut(&mut self) -> Option<&mut Raider> {
-        match self {
-            AnyEntity::Raider(raider) => return Some(raider),
-            AnyEntity::Witch(witch) => return Some(&mut witch.raider),
-            _ => (),
-        }
-        if let Some(abstract_illager) = <Self as TryAsEntityRef<AbstractIllager>>::try_as_entity_mut(self) {
-            return Some(&mut abstract_illager.raider)
-        }
-        None
-    }
 }
 
 #[derive(Default)]
@@ -46,38 +22,12 @@ pub struct Witch {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, ancestors { Raider, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable,
+    ancestors { Raider, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    descendants { Vindicator, Pillager, SpellcasterIllager... },
 )]
 pub struct AbstractIllager {
     pub raider: Raider,
-}
-
-impl TryAsEntityRef<AbstractIllager> for AnyEntity {
-    fn try_as_entity_ref(&self) -> Option<&AbstractIllager> {
-        match self {
-            AnyEntity::AbstractIllager(abstract_illager) => return Some(abstract_illager),
-            AnyEntity::Vindicator(vindicator) => return Some(&vindicator.abstract_illager),
-            AnyEntity::Pillager(pillager) => return Some(&pillager.abstract_illager),
-            _ => (),
-        }
-        if let Some(spellcaster_illager) = <Self as TryAsEntityRef<SpellcasterIllager>>::try_as_entity_ref(self) {
-            return Some(&spellcaster_illager.abstract_illager)
-        }
-        None
-    }
-
-    fn try_as_entity_mut(&mut self) -> Option<&mut AbstractIllager> {
-        match self {
-            AnyEntity::AbstractIllager(abstract_illager) => return Some(abstract_illager),
-            AnyEntity::Vindicator(vindicator) => return Some(&mut vindicator.abstract_illager),
-            AnyEntity::Pillager(pillager) => return Some(&mut pillager.abstract_illager),
-            _ => (),
-        }
-        if let Some(spellcaster_illager) = <Self as TryAsEntityRef<SpellcasterIllager>>::try_as_entity_mut(self) {
-            return Some(&mut spellcaster_illager.abstract_illager)
-        }
-        None
-    }
 }
 
 #[derive(Default)]
@@ -99,33 +49,13 @@ pub struct Pillager {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, ancestors { AbstractIllager, Raider, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable,
+    ancestors { AbstractIllager, Raider, Monster, PathfinderMob, Mob, LivingEntity, Entity },
+    descendants { Illusioner, Ravager, Evoker },
 )]
 pub struct SpellcasterIllager {
     pub abstract_illager:  AbstractIllager,
     pub spell: u8,
-}
-
-impl TryAsEntityRef<SpellcasterIllager> for AnyEntity {
-    fn try_as_entity_ref(&self) -> Option<&SpellcasterIllager> {
-        match self {
-            AnyEntity::SpellcasterIllager(spellcaster_illager) => Some(spellcaster_illager),
-            AnyEntity::Illusioner(illusioner) => Some(&illusioner.spellcaster_illager),
-            AnyEntity::Ravager(ravager) => Some(&ravager.spellcaster_illager),
-            AnyEntity::Evoker(evoker) => Some(&evoker.spellcaster_illager),
-            _ => None,
-        }
-    }
-
-    fn try_as_entity_mut(&mut self) -> Option<&mut SpellcasterIllager> {
-        match self {
-            AnyEntity::SpellcasterIllager(spellcaster_illager) => Some(spellcaster_illager),
-            AnyEntity::Illusioner(illusioner) => Some(&mut illusioner.spellcaster_illager),
-            AnyEntity::Ravager(ravager) => Some(&mut ravager.spellcaster_illager),
-            AnyEntity::Evoker(evoker) => Some(&mut evoker.spellcaster_illager),
-            _ => None,
-        }
-    }
 }
 
 #[derive(Default)]

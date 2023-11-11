@@ -2,7 +2,9 @@ use super::*;
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, ancestors { Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable,
+    ancestors { Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    descendants { Horse, ZombieHorse, SkeletonHorse, Camel, ChestedHorse... },
 )]
 pub struct AbstractHorse {
     pub animal: Animal,
@@ -16,38 +18,6 @@ pub struct AbstractHorse {
 pub struct Horse {
     pub abstract_horse: AbstractHorse,
     pub variant: usize,
-}
-
-impl TryAsEntityRef<AbstractHorse> for AnyEntity {
-    fn try_as_entity_ref(&self) -> Option<&AbstractHorse> {
-        match self {
-            AnyEntity::AbstractHorse(abstract_horse) => return Some(&abstract_horse),
-            AnyEntity::Horse(horse) => return Some(&horse.abstract_horse),
-            AnyEntity::ZombieHorse(zombie_horse) => return Some(&zombie_horse.abstract_horse),
-            AnyEntity::SkeletonHorse(skeleton_horse) => return Some(&skeleton_horse.abstract_horse),
-            AnyEntity::Camel(camel) => return Some(&camel.abstract_horse),
-            _ => (),
-        }
-        if let Some(chested_horse) = <Self as TryAsEntityRef<ChestedHorse>>::try_as_entity_ref(self) {
-            return Some(&chested_horse.abstract_horse)
-        }
-        None
-    }
-
-    fn try_as_entity_mut(&mut self) -> Option<&mut AbstractHorse> {
-        match self {
-            AnyEntity::AbstractHorse(abstract_horse) => return Some(abstract_horse),
-            AnyEntity::Horse(horse) => return Some(&mut horse.abstract_horse),
-            AnyEntity::ZombieHorse(zombie_horse) => return Some(&mut zombie_horse.abstract_horse),
-            AnyEntity::SkeletonHorse(skeleton_horse) => return Some(&mut skeleton_horse.abstract_horse),
-            AnyEntity::Camel(camel) => return Some(&mut camel.abstract_horse),
-            _ => (),
-        }
-        if let Some(chested_horse) = <Self as TryAsEntityRef<ChestedHorse>>::try_as_entity_mut(self) {
-            return Some(&mut chested_horse.abstract_horse)
-        }
-        None
-    }
 }
 
 #[derive(Default)]
@@ -78,39 +48,13 @@ pub struct Camel {
 
 #[derive(Default)]
 #[MinecraftEntity(
-    inheritable, ancestors { AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable,
+    ancestors { AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    descendants { Mule, Donkey, Llama... },
 )]
 pub struct ChestedHorse {
     pub abstract_horse: AbstractHorse,
     pub has_chest: bool,
-}
-
-impl TryAsEntityRef<ChestedHorse> for AnyEntity {
-    fn try_as_entity_ref(&self) -> Option<&ChestedHorse> {
-        match self {
-            AnyEntity::ChestedHorse(chested_horse) => return Some(&chested_horse),
-            AnyEntity::Mule(mule) => return Some(&mule.chested_horse),
-            AnyEntity::Donkey(donkey) => return Some(&donkey.chested_horse),
-            _ => (),
-        }
-        if let Some(llama) = <Self as TryAsEntityRef<Llama>>::try_as_entity_ref(self) {
-            return Some(&llama.chested_horse)
-        }
-        None
-    }
-
-    fn try_as_entity_mut(&mut self) -> Option<&mut ChestedHorse> {
-        match self {
-            AnyEntity::ChestedHorse(chested_horse) => return Some(chested_horse),
-            AnyEntity::Mule(mule) => return Some(&mut mule.chested_horse),
-            AnyEntity::Donkey(donkey) => return Some(&mut donkey.chested_horse),
-            _ => (),
-        }
-        if let Some(llama) = <Self as TryAsEntityRef<Llama>>::try_as_entity_mut(self) {
-            return Some(&mut llama.chested_horse)
-        }
-        None
-    }
 }
 
 #[derive(Default)]
@@ -130,7 +74,9 @@ pub struct Donkey {
 }
 
 #[MinecraftEntity(
-    inheritable, ancestors { ChestedHorse, AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    inheritable,
+    ancestors { ChestedHorse, AbstractHorse, Animal, AgeableMob, PathfinderMob, Mob, LivingEntity, Entity },
+    descendants { TraderLlama },
 )]
 pub struct Llama {
     pub chested_horse: ChestedHorse,
@@ -148,24 +94,6 @@ impl Default for Llama {
             stength: 0,
             carpet_color: -1,
             variant: 0,
-        }
-    }
-}
-
-impl TryAsEntityRef<Llama> for AnyEntity {
-    fn try_as_entity_ref(&self) -> Option<&Llama> {
-        match self {
-            AnyEntity::Llama(llama) => Some(&llama),
-            AnyEntity::TraderLlama(trader_llama) => Some(&trader_llama.llama),
-            _ => None,
-        }
-    }
-
-    fn try_as_entity_mut(&mut self) -> Option<&mut Llama> {
-        match self {
-            AnyEntity::Llama(llama) => Some(llama),
-            AnyEntity::TraderLlama(trader_llama) => Some(&mut trader_llama.llama),
-            _ => None,
         }
     }
 }
