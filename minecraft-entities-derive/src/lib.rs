@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
-use proc_macro::{TokenStream, TokenTree, Ident, Group};
+use proc_macro2::{TokenStream, TokenTree, Ident, Group, Delimiter};
 use convert_case::{Case, Casing};
 use proc_macro_error::*;
+use quote::quote;
 
 fn replace_idents(token: &mut TokenTree, to_replace: &HashMap<&'static str, Ident>) {
     match token {
@@ -26,9 +27,13 @@ fn replace_idents(token: &mut TokenTree, to_replace: &HashMap<&'static str, Iden
 #[allow(non_snake_case)]
 #[proc_macro_attribute]
 #[proc_macro_error]
-pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn MinecraftEntity(attr: proc_macro::TokenStream, item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let attr = TokenStream::from(attr.clone());
+    let item = TokenStream::from(item.clone());
+
     let mut ancestors = Vec::new();
     let mut descendants = Vec::new();
+    let mut wildcard_descendants = Vec::new();
     let mut inheritable = false;
     let mut defines = Vec::new();
     let mut codes = Vec::new();
@@ -82,7 +87,6 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
                 let mut group_attrs = group.stream().into_iter().peekable();
                 while let Some(ident) = group_attrs.next() {
                     let TokenTree::Ident(ident) = ident else { abort!(ident.span(), "expected ident") };
-                    let mut generic = false;
                     if matches!(group_attrs.peek(), Some(TokenTree::Punct(punct)) if punct.as_char() == '.') {
                         let dot = group_attrs.next().unwrap();
                         if !matches!(group_attrs.next(), Some(TokenTree::Punct(punct)) if punct.as_char() == '.') {
@@ -91,9 +95,10 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
                         if !matches!(group_attrs.next(), Some(TokenTree::Punct(punct)) if punct.as_char() == '.') {
                             abort!(dot.span(), "this dot needs to come with two other dots");
                         }
-                        generic = true;
+                        descendants.push(ident);
+                    } else {
+                        wildcard_descendants.push(ident);
                     }
-                    descendants.push((ident, generic));
                     if matches!(group_attrs.peek(), Some(TokenTree::Punct(punct)) if punct.as_char() == ',') {
                         group_attrs.next();
                     }
@@ -115,7 +120,7 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
                     }
                     let Some(group) = group_attrs.next() else { abort!(method.span(), "expected group after method name") };
                     let TokenTree::Group(params) = group else { abort!(group.span(), "expected group") };
-                    if params.delimiter() != proc_macro::Delimiter::Parenthesis {
+                    if params.delimiter() != Delimiter::Parenthesis {
                         abort!(params.span(), "expected parenthesis");
                     }
                     let mut params = params.stream().into_iter().peekable();
@@ -156,7 +161,9 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
     hierarchy.insert(0, struct_name.clone());
 
     let mut to_replace = HashMap::new();
-    to_replace.insert("This", struct_name.clone());
+    let this = struct_name.clone();
+    let this_snake = Ident::new(&struct_name.to_string().to_case(Case::Snake), struct_name.span());
+    to_replace.insert("This", this.clone());
     to_replace.insert("ThisDescendant", Ident::new(&format!("{}Descendant", struct_name), struct_name.span()));
     to_replace.insert("ThisMethods", Ident::new(&format!("{}Methods", struct_name), struct_name.span()));
     to_replace.insert("ThisExt", Ident::new(&format!("{}Ext", struct_name), struct_name.span()));
@@ -222,32 +229,6 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
             impl ThisDescendant for This {
                 fn get_this(&self) -> &This { self }
                 fn get_this_mut(&mut self) -> &mut This { self }
-            }
-        "#.parse().unwrap();
-        let mut code = code.clone().into_iter().collect::<Vec<_>>();
-        for element in &mut code {
-            replace_idents(element, &to_replace);
-        }
-        let code: TokenStream = code.into_iter().collect();
-        codes.push(code);
-    } else {
-        // Implement TryAsEntityRef for this struct
-        let code: TokenStream = r#"
-            #[automatically_derived]
-            impl TryAsEntityRef<This> for AnyEntity {
-                fn try_as_entity_ref(&self) -> Option<&This> {
-                    match self {
-                        AnyEntity::This(ref val) => Some(val),
-                        _ => None,
-                    }
-                }
-            
-                fn try_as_entity_mut(&mut self) -> Option<&mut This> {
-                    match self {
-                        AnyEntity::This(ref mut val) => Some(val),
-                        _ => None,
-                    }
-                }
             }
         "#.parse().unwrap();
         let mut code = code.clone().into_iter().collect::<Vec<_>>();
@@ -455,11 +436,48 @@ pub fn MinecraftEntity(attr: TokenStream, item: TokenStream) -> TokenStream {
         let code: TokenStream = code.into_iter().collect();
         codes.push(code);
     }
+    
+    // Implement TryAsEntityRef
+    let descendants_snake = descendants.iter().map(|i| Ident::new(i.to_string().to_case(Case::Snake).as_str(), i.span())).collect::<Vec<_>>();
+    let wildcard_descendants_snake = wildcard_descendants.iter().map(|i| Ident::new(i.to_string().to_case(Case::Snake).as_str(), i.span())).collect::<Vec<_>>();
+    let code = quote! {
+        #[automatically_derived]
+        impl TryAsEntityRef<#this> for AnyEntity {
+            fn try_as_entity_ref(&self) -> Option<&#this> {
+                match self {
+                    AnyEntity::#this(#this_snake) => return Some(#this_snake),
+                    #( AnyEntity::#descendants(#descendants_snake) => return Some(&#descendants_snake.#this_snake), )*
+                    _ => (),
+                }
+                #(
+                if let Some(#wildcard_descendants_snake) = <Self as TryAsEntityRef<#wildcard_descendants>>::try_as_entity_ref(self) {
+                    return Some(&#wildcard_descendants_snake.#this_snake)
+                }
+                )*
+                None
+            }
+        
+            fn try_as_entity_mut(&mut self) -> Option<&mut #this> {
+                match self {
+                    AnyEntity::#this(#this_snake) => return Some(#this_snake),
+                    #( AnyEntity::#descendants(#descendants_snake) => return Some(&mut #descendants_snake.#this_snake), )*
+                    _ => (),
+                }
+                #(
+                if <Self as TryAsEntityRef<#wildcard_descendants>>::try_as_entity_ref(self).is_some() {
+                    return <Self as TryAsEntityRef<#wildcard_descendants>>::try_as_entity_mut(self).map(|#wildcard_descendants_snake| &mut #wildcard_descendants_snake.#this_snake)
+                }
+                )*
+                None
+            }
+        }
+    };
+    codes.push(code);
 
     // Generate final code
     let mut final_code = item;
     for code in codes {
         final_code.extend(code);
     }
-    final_code
+    proc_macro::TokenStream::from(final_code)
 }
