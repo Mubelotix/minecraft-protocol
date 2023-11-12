@@ -42,6 +42,7 @@ fn min_options2(a: Option<f32>, b: Option<f32>) -> Option<f32> {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
 struct CollisionShape {
     x1: f32,
     y1: f32,
@@ -72,6 +73,7 @@ impl<'a> Iterator for PointIter<'a> {
                 y: if self.index & 2 == 0 { self.shape.y1 } else { self.shape.y2 },
                 z: if self.index & 4 == 0 { self.shape.z1 } else { self.shape.z2 },
             };
+            self.index += 1;
             Some(result)
         } else {
             None
@@ -88,10 +90,38 @@ impl CollisionShape {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
 struct Translation {
     x: f32,
     y: f32,
     z: f32,
+}
+
+impl std::ops::Add<Translation> for Translation {
+    type Output = Translation;
+
+    fn add(self, rhs: Translation) -> Self::Output {
+        Translation {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
+    }
+}
+
+impl std::ops::Add<Translation> for CollisionShape {
+    type Output = CollisionShape;
+
+    fn add(self, rhs: Translation) -> Self::Output {
+        CollisionShape {
+            x1: self.x1 + rhs.x,
+            y1: self.y1 + rhs.y,
+            z1: self.z1 + rhs.z,
+            x2: self.x2 + rhs.x,
+            y2: self.y2 + rhs.y,
+            z2: self.z2 + rhs.z,
+        }
+    }
 }
 
 fn is_inside(shape: &CollisionShape, point: Point) -> bool {
@@ -100,14 +130,14 @@ fn is_inside(shape: &CollisionShape, point: Point) -> bool {
 
 fn translation_limit_y(shape: &CollisionShape, translation: &Translation, point: &Point) -> Option<f32> {
     let y = if translation.y < 0.0 { shape.y1 } else { shape.y2 };
-    let translated_ratio = (y - shape.y1) / translation.y;
+    let translated_ratio = (point.y - y) / translation.y;
     if !(0.0..=1.0).contains(&translated_ratio) {
         return None;
     }
-    let translated_x1 = shape.x1 + (shape.x2 - shape.x1) * translated_ratio;
-    let translated_x2 = shape.x2 + (shape.x2 - shape.x1) * translated_ratio;
-    let translated_z1 = shape.z1 + (shape.z2 - shape.z1) * translated_ratio;
-    let translated_z2 = shape.z2 + (shape.z2 - shape.z1) * translated_ratio;
+    let translated_x1 = shape.x1 + translation.x * translated_ratio;
+    let translated_x2 = shape.x2 + translation.x * translated_ratio;
+    let translated_z1 = shape.z1 + translation.z * translated_ratio;
+    let translated_z2 = shape.z2 + translation.z * translated_ratio;
     if (translated_x1..=translated_x2).contains(&point.x) && (translated_z1..=translated_z2).contains(&point.z) {
         Some(translated_ratio)
     } else {
@@ -117,14 +147,14 @@ fn translation_limit_y(shape: &CollisionShape, translation: &Translation, point:
 
 fn translation_limit_x(shape: &CollisionShape, translation: &Translation, point: &Point) -> Option<f32> {
     let x = if translation.x < 0.0 { shape.x1 } else { shape.x2 };
-    let translated_ratio = (x - shape.x1) / translation.x;
+    let translated_ratio = (point.x - x) / translation.x;
     if !(0.0..=1.0).contains(&translated_ratio) {
         return None;
     }
-    let translated_y1 = shape.y1 + (shape.y2 - shape.y1) * translated_ratio;
-    let translated_y2 = shape.y2 + (shape.y2 - shape.y1) * translated_ratio;
-    let translated_z1 = shape.z1 + (shape.z2 - shape.z1) * translated_ratio;
-    let translated_z2 = shape.z2 + (shape.z2 - shape.z1) * translated_ratio;
+    let translated_y1 = shape.y1 + translation.y * translated_ratio;
+    let translated_y2 = shape.y2 + translation.y * translated_ratio;
+    let translated_z1 = shape.z1 + translation.z * translated_ratio;
+    let translated_z2 = shape.z2 + translation.z * translated_ratio;
     if (translated_y1..=translated_y2).contains(&point.y) && (translated_z1..=translated_z2).contains(&point.z) {
         Some(translated_ratio)
     } else {
@@ -134,14 +164,14 @@ fn translation_limit_x(shape: &CollisionShape, translation: &Translation, point:
 
 fn translation_limit_z(shape: &CollisionShape, translation: &Translation, point: &Point) -> Option<f32> {
     let z = if translation.z < 0.0 { shape.z1 } else { shape.z2 };
-    let translated_ratio = (z - shape.z1) / translation.z;
+    let translated_ratio = (point.z - z) / translation.z;
     if !(0.0..=1.0).contains(&translated_ratio) {
         return None;
     }
-    let translated_x1 = shape.x1 + (shape.x2 - shape.x1) * translated_ratio;
-    let translated_x2 = shape.x2 + (shape.x2 - shape.x1) * translated_ratio;
-    let translated_y1 = shape.y1 + (shape.y2 - shape.y1) * translated_ratio;
-    let translated_y2 = shape.y2 + (shape.y2 - shape.y1) * translated_ratio;
+    let translated_x1 = shape.x1 + translation.x * translated_ratio;
+    let translated_x2 = shape.x2 + translation.x * translated_ratio;
+    let translated_y1 = shape.y1 + translation.y * translated_ratio;
+    let translated_y2 = shape.y2 + translation.y * translated_ratio;
     if (translated_x1..=translated_x2).contains(&point.x) && (translated_y1..=translated_y2).contains(&point.y) {
         Some(translated_ratio)
     } else {
@@ -157,11 +187,14 @@ fn translation_limit(shape: &CollisionShape, translation: &Translation, point: &
     )
 }
 
-fn collide(translating: CollisionShape, translation: Translation, obstacle: CollisionShape) -> Option<Translation> {
+fn collide(translating: &CollisionShape, translation: &Translation, obstacle: &CollisionShape) -> Option<Translation> {
     let mut limit = None;
 
     for point in obstacle.points() {
         limit = min_options2(limit, translation_limit(&translating, &translation, &point));
+        if limit.map(|l| l==0.0).unwrap_or(false) {
+            break;
+        }
     }
 
     limit.map(|limit| Translation {
@@ -169,6 +202,28 @@ fn collide(translating: CollisionShape, translation: Translation, obstacle: Coll
         y: translation.y * limit,
         z: translation.z * limit,
     })
+}
+
+#[test]
+fn test() {
+    let shape1 = CollisionShape {
+        x1: 0.0,
+        y1: 0.0,
+        z1: 0.0,
+        x2: 1.0,
+        y2: 1.0,
+        z2: 1.0,
+    };
+
+    // Boxes are just next to each other and pushing against each other
+    let shape2 = shape1.clone() + Translation { x: 1.0, y: 0.0, z: 0.0 };
+    let translation = Translation { x: -1.0, y: 0.0, z: 0.0 };
+    assert_eq!(collide(&shape2, &translation, &shape1), Some(Translation { x: 0.0, y: 0.0, z: 0.0 }));
+
+    // Boxes are one block away but one comes and pushes the other
+    let shape2 = shape1.clone() + Translation { x: 2.0, y: 0.0, z: 0.0 };
+    let translation = Translation { x: -2.0, y: 0.0, z: 0.0 };
+    assert_eq!(collide(&shape2, &translation, &shape1), Some(Translation { x: -1.0, y: 0.0, z: 0.0 }));
 }
 
 fn ray_cast(position: (f32, f32, f32), movement: (f32, f32, f32)) -> Vec<(isize, isize, isize)> {
