@@ -224,6 +224,11 @@ fn test() {
     let shape2 = shape1.clone() + Translation { x: 2.0, y: 0.0, z: 0.0 };
     let translation = Translation { x: -2.0, y: 0.0, z: 0.0 };
     assert_eq!(collide(&shape2, &translation, &shape1), Some(Translation { x: -1.0, y: 0.0, z: 0.0 }));
+
+    // The other way around
+    let shape2 = shape1.clone() + Translation { x: -2.0, y: 0.0, z: 0.0 };
+    let translation = Translation { x: 2.0, y: 0.0, z: 0.0 };
+    assert_eq!(collide(&shape2, &translation, &shape1), Some(Translation { x: 1.0, y: 0.0, z: 0.0 }));
 }
 
 fn ray_cast(position: (f32, f32, f32), movement: (f32, f32, f32)) -> Vec<(isize, isize, isize)> {
