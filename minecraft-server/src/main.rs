@@ -239,6 +239,21 @@ fn test() {
     let shape2 = shape1.clone() + Translation { x: 0.0, y: 0.0, z: 2.0 };
     let translation = Translation { x: 0.0, y: 0.0, z: -2.0 };
     assert_eq!(collide(&shape2, &translation, &shape1), Some(Translation { x: 0.0, y: 0.0, z: -1.0 }));
+
+    // Colliding on corner
+    let shape2 = shape1.clone() + Translation { x: 2.0, y: 2.0, z: 2.0 };
+    let translation = Translation { x: -2.0, y: -2.0, z: -2.0 };
+    assert_eq!(collide(&shape2, &translation, &shape1), Some(Translation { x: -1.0, y: -1.0, z: -1.0 }));
+
+    // Colliding with offset on other axis
+    let shape2 = shape1.clone() + Translation { x: 2.0, y: 0.5, z: 0.0 };
+    let translation = Translation { x: -2.0, y: 0.0, z: 0.0 };
+    assert_eq!(collide(&shape2, &translation, &shape1), Some(Translation { x: -1.0, y: 0.0, z: 0.0 }));
+
+    // Colliding when already inside
+    //let shape2 = shape1.clone() + Translation { x: 0.5, y: 0.5, z: 0.5 };
+    //let translation = Translation { x: -0.5, y: -0.5, z: -0.5 };
+    //assert_eq!(collide(&shape2, &translation, &shape1), Some(Translation { x: 0.0, y: 0.0, z: 0.0 }));
 }
 
 fn ray_cast(position: (f32, f32, f32), movement: (f32, f32, f32)) -> Vec<(isize, isize, isize)> {
