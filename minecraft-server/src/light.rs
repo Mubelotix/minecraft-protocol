@@ -1,4 +1,4 @@
-use std::{collections::BinaryHeap, cmp::Ordering};
+use std::collections::BinaryHeap;
 
 use crate::prelude::*;
 
@@ -99,6 +99,7 @@ impl SkyLight {
             return Err(());
         }
 
+        println!("Set region from {} to {} with level {}", from_y, to_y, level);
         // Get the range of sections to set.
         let first_section = (from_y.div_euclid(16) + self.zero_chunk_index as i32).max(0) as usize;
         let first_secion_offset = from_y.rem_euclid(16) as usize;
@@ -110,13 +111,24 @@ impl SkyLight {
             if section != first_section && section != last_section {
                 // Set the whole section
                 self.sky_light_arrays[section].set_with(level);
+                println!("Set section {}", section);
             } else {
+                println!("Set part of section {}", section);
                 // Set the part of the section
                 let first_offset = if section == first_section { first_secion_offset } else { 0 };
                 let last_offset = if section == last_section { last_section_offset } else { 15 };
                 for y in first_offset..=last_offset {
+                    println!("Set layer {}", y);
                     self.sky_light_arrays[section].set_layer(y as u8, level)?;
                 }
+            }
+
+            // Update the mask
+            let mask = 1 << section;
+            if self.level > 0 {
+                self.empty_sky_light_mask |= mask;
+            } else {
+                self.empty_sky_light_mask &= !mask;
             }
         }
 
@@ -128,12 +140,14 @@ pub(super) struct Light {
     sky_light: SkyLight,
 }
 
+
 impl Light {
     pub fn new() -> Self {
+        // TODO: Make this configurable with the world.
         Self {
             sky_light: SkyLight {
                 level: 15,
-                sky_light_arrays: vec![SectionLightData::new(); 16],
+                sky_light_arrays: vec![SectionLightData::new(); 24+2],
                 sky_light_mask: 0,
                 empty_sky_light_mask: !0,
                 zero_chunk_index: 4, // We start at y=-64, and we have a chunk under that. 
@@ -169,13 +183,17 @@ impl std::cmp::Ord for HeightBasedPosition {
 }
 
 impl ChunkColumn {
-    pub fn propagate_sky_light_inside(&mut self) {
+    pub(super) fn init_light(&mut self) -> Result<(), ()>{
+        self.propagate_sky_light_inside()?;
+        Ok(())
+    }
+
+    fn propagate_sky_light_inside(&mut self) -> Result<(), ()> {
         // Set all highest blocks to the highest block
         let highest_blocks = self.get_highest_block();
 
-        let n_chunk_with_sky_light =  highest_blocks;
-        
-
+        let max_y = (self.light.sky_light.sky_light_arrays.len() as i32 - self.light.sky_light.zero_chunk_index as i32) * 16 - 1;
+        self.light.sky_light.set_region(highest_blocks as i32 - 64, max_y, self.light.sky_light.level)?;
         let mut to_explore: BinaryHeap<HeightBasedPosition> = BinaryHeap::new();
         
         
@@ -183,8 +201,12 @@ impl ChunkColumn {
         for x in 0..16 {
             for z in 0..16 {
             } 
-            }
         }
+
+        while let Some(position) = to_explore.iter().next() {
+            
+        }
+        Ok(())
     }
 }
 
@@ -257,6 +279,19 @@ mod tests {
         assert_eq!(sky_light.sky_light_arrays[5].get(BlockPositionInChunk { bx: 4, by: 1, bz: 2 }).unwrap(), 0);
         assert_eq!(sky_light.sky_light_arrays[3].get(BlockPositionInChunk { bx: 0, by: 14, bz: 9 }).unwrap(), 0);
         assert_eq!(sky_light.sky_light_arrays[0].get(BlockPositionInChunk { bx: 9, by: 0, bz: 10 }).unwrap(), 0);
+    }
 
+    #[test]
+    fn test_sky_light_flat_chunk() {
+        let mut flat_chunk = ChunkColumn::flat();
+
+        // Check that the sky light is equal to the light level above the grass and on the top of the world.
+        for x in 0..16 {
+            for z in 0..16 {
+                assert_eq!(flat_chunk.light.sky_light.sky_light_arrays[4].get(BlockPositionInChunk { bx: x, by: 0, bz: z }).unwrap(), 15);
+                assert_eq!(flat_chunk.light.sky_light.sky_light_arrays[25].get(BlockPositionInChunk { bx: x, by: 15, bz: z }).unwrap(), 15);
+            }
+        }
+        // Check that the sky light is under the grass
     }
 }

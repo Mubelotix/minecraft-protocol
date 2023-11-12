@@ -295,7 +295,7 @@ impl HeightMap {
 
 pub(super) struct ChunkColumn {
     heightmap: HeightMap,
-    light: Light,
+    pub(super) light: Light,
     chunks: Vec<Chunk>,
 }
 
@@ -337,7 +337,7 @@ impl ChunkColumn {
     }
 
     pub(super) fn get_highest_block(&self) -> u32 {
-        self.heightmap.max_height.unwrap_or(0) as u32
+        self.heightmap.max_height.unwrap_or(0)
     }
 
     pub fn from(chunks: Vec<Chunk>) -> Self {
@@ -347,6 +347,7 @@ impl ChunkColumn {
             light: Light::new(),
         };
         column.init_chunk_heightmap();
+        let _ = column.init_light().map_err(|_| error!("Failed to init light in chunk column"));
         column
     }
 
