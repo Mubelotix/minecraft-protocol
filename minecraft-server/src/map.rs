@@ -380,7 +380,7 @@ impl ChunkColumn {
         Self::from(chunks)
     }
 
-    fn get_block(&self, position: BlockPositionInChunkColumn) -> BlockWithState {
+    pub(super) fn get_block(&self, position: BlockPositionInChunkColumn) -> BlockWithState {
         fn get_block_inner(s: &ChunkColumn, position: BlockPositionInChunkColumn) -> Option<BlockWithState> {
             let cy = position.cy();
             let cy_in_vec: usize = cy.saturating_add(4).try_into().ok()?;
@@ -389,6 +389,11 @@ impl ChunkColumn {
             Some(chunk.get_block(position))
         }
         get_block_inner(self, position).unwrap_or(BlockWithState::Air)
+    }
+
+    #[cfg(test)]
+    pub fn set_block_for_test(&mut self, position: BlockPositionInChunkColumn, block: BlockWithState) {
+        self.set_block(position, block);
     }
 
     fn set_block(&mut self, position: BlockPositionInChunkColumn, block: BlockWithState) {
@@ -418,7 +423,7 @@ impl ChunkColumn {
             },
             _ => {}   
         }
-
+        self.update_light_at(position.clone());
         set_block_innter(self, position, block);
     }
 }
@@ -457,7 +462,7 @@ impl WorldMap {
 
         Some(chunk.as_network_chunk().clone())
     }
-
+    
     pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
         async fn inner_get_block(s: &WorldMap, position: BlockPosition, block: BlockWithState) -> Option<()> {
             let chunk_position = position.chunk();
@@ -467,7 +472,8 @@ impl WorldMap {
         
             let mut shard = s.shards[shard].write().await;
             let chunk_column = shard.get_mut(&chunk_column_position)?;
-            chunk_column.set_block(position_in_chunk_column, block);
+            chunk_column.set_block(position_in_chunk_column.clone(), block);
+            chunk_column.update_light_at(position_in_chunk_column);
             Some(())
         }
         inner_get_block(self, position, block).await;

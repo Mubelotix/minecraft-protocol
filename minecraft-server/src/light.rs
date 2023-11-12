@@ -1,5 +1,7 @@
 use std::collections::BinaryHeap;
 
+use minecraft_protocol::ids::blocks::Block;
+
 use crate::prelude::*;
 
 
@@ -99,7 +101,6 @@ impl SkyLight {
             return Err(());
         }
 
-        println!("Set region from {} to {} with level {}", from_y, to_y, level);
         // Get the range of sections to set.
         let first_section = (from_y.div_euclid(16) + self.zero_chunk_index as i32).max(0) as usize;
         let first_secion_offset = from_y.rem_euclid(16) as usize;
@@ -111,14 +112,11 @@ impl SkyLight {
             if section != first_section && section != last_section {
                 // Set the whole section
                 self.sky_light_arrays[section].set_with(level);
-                println!("Set section {}", section);
             } else {
-                println!("Set part of section {}", section);
                 // Set the part of the section
                 let first_offset = if section == first_section { first_secion_offset } else { 0 };
                 let last_offset = if section == last_section { last_section_offset } else { 15 };
                 for y in first_offset..=last_offset {
-                    println!("Set layer {}", y);
                     self.sky_light_arrays[section].set_layer(y as u8, level)?;
                 }
             }
@@ -133,6 +131,16 @@ impl SkyLight {
         }
 
         Ok(())
+    }
+
+    pub(super) fn get_level(&self, position: BlockPositionInChunkColumn) -> Result<u8, ()> {
+        let section = position.cy() + self.zero_chunk_index as i32;
+        self.sky_light_arrays[section.max(0) as usize].get(position.in_chunk())
+    }
+
+    pub(super) fn set_level(&mut self, position: BlockPositionInChunkColumn, level: u8) -> Result<(), ()> {
+        let section = position.cy() + self.zero_chunk_index as i32; 
+        self.sky_light_arrays[section.max(0) as usize].set(position.in_chunk(), level)
     }
 }
 
@@ -156,15 +164,26 @@ impl Light {
     }
 }
 
+#[derive(Debug, Clone)]
 struct HeightBasedPosition {
-    x: u8,
+    bx: u8,
     y: usize,
-    z: u8,
+    bz: u8,
 }
 
 impl PartialEq for HeightBasedPosition {
     fn eq(&self, other: &Self) -> bool {
         self.y == other.y
+    }
+}
+
+impl From<HeightBasedPosition> for BlockPositionInChunkColumn {
+    fn from(val: HeightBasedPosition) -> Self {
+        BlockPositionInChunkColumn {
+            bx: val.bx,
+            y: val.y as i32,
+            bz: val.bz,
+        }
     }
 }
 
@@ -183,7 +202,7 @@ impl std::cmp::Ord for HeightBasedPosition {
 }
 
 impl ChunkColumn {
-    pub(super) fn init_light(&mut self) -> Result<(), ()>{
+    pub(super) fn init_light(&mut self) -> Result<(), ()> {
         self.propagate_sky_light_inside()?;
         Ok(())
     }
@@ -200,13 +219,76 @@ impl ChunkColumn {
         // Add all highest blocks to the queue
         for x in 0..16 {
             for z in 0..16 {
+                let position = HeightBasedPosition {
+                    bx: x,
+                    y: self.get_hiest_block_at(&BlockPositionInChunkColumn { bx: x, y: 0, bz: z }) as usize,
+                    bz: z,
+                };
+                to_explore.push(position);
             } 
         }
 
-        while let Some(position) = to_explore.iter().next() {
-            
+        self.explore_sky_light_from_heap(&mut to_explore).map_err(|_| error!("Error while updating light")).unwrap();
+
+        Ok(())
+    }
+
+    fn explore_sky_light_from_heap(&mut self, to_explore: &mut BinaryHeap<HeightBasedPosition>) -> Result<(), ()> {
+        while let Some(position) = to_explore.pop() {
+            let mut neighbors = Vec::new();
+            let is_inside = self.get_hiest_block_at(&position.clone().into()) > position.y as u16;
+            let my_level = self.light.sky_light.get_level(position.clone().into())?;
+
+            if position.bx > 0 {
+                neighbors.push(HeightBasedPosition { bx: position.bx - 1, y: position.y, bz: position.bz });
+            }
+            if position.bx < 15 {
+                neighbors.push(HeightBasedPosition { bx: position.bx + 1, y: position.y, bz: position.bz });
+            }
+            if position.bz > 0 {
+                neighbors.push(HeightBasedPosition { bx: position.bx, y: position.y, bz: position.bz - 1 });
+            }
+            if position.bz < 15 {
+                neighbors.push(HeightBasedPosition { bx: position.bx, y: position.y, bz: position.bz + 1 });
+            }
+            if position.y > 0 {
+                neighbors.push(HeightBasedPosition { bx: position.bx, y: position.y - 1, bz: position.bz });
+            }
+            if position.y < ((self.light.sky_light.sky_light_arrays.len() - 1) * 16) + 1 { // No block can be higher so no block can affect the light level 
+                neighbors.push(HeightBasedPosition { bx: position.bx, y: position.y + 1, bz: position.bz });
+            }
+
+            for neighbor in neighbors {
+                let neighbor_position: BlockPositionInChunkColumn = neighbor.clone().into();
+                let neighbor_level = self.light.sky_light.get_level(neighbor_position.clone())?;
+
+                if Block::from(self.get_block(neighbor_position.clone())).is_transparent() 
+                    && (is_inside && neighbor_level < my_level.saturating_sub(1)) 
+                {
+                    to_explore.push(neighbor.clone());
+                    let new_level = my_level - 1;
+                    self.light.sky_light.set_level(neighbor_position, new_level)?;
+                }
+            }
         }
         Ok(())
+    }
+
+    pub(super) fn update_light_at(&mut self, position: BlockPositionInChunkColumn) {
+        let position1 = HeightBasedPosition {
+            bx: position.bx,
+            y: position.y as usize,
+            bz: position.bz,
+        };
+        let position2 = HeightBasedPosition {
+            bx: position.bx,
+            y: position.y as usize + 1, // We want to update the light above the block so we need the 
+            bz: position.bz,
+        };
+        let mut to_explore: BinaryHeap<HeightBasedPosition> = BinaryHeap::new();
+        to_explore.push(position2);
+        to_explore.push(position1);
+        self.explore_sky_light_from_heap(&mut to_explore).map_err(|_| error!("Error while updating light")).unwrap();
     }
 }
 
@@ -288,10 +370,23 @@ mod tests {
         // Check that the sky light is equal to the light level above the grass and on the top of the world.
         for x in 0..16 {
             for z in 0..16 {
+                assert_eq!(flat_chunk.light.sky_light.sky_light_arrays[0].get(BlockPositionInChunk { bx: x, by: 0, bz: z }).unwrap(), 0);
                 assert_eq!(flat_chunk.light.sky_light.sky_light_arrays[4].get(BlockPositionInChunk { bx: x, by: 0, bz: z }).unwrap(), 15);
                 assert_eq!(flat_chunk.light.sky_light.sky_light_arrays[25].get(BlockPositionInChunk { bx: x, by: 15, bz: z }).unwrap(), 15);
             }
         }
-        // Check that the sky light is under the grass
+        
+        // Break the grass block and check that the sky light is correct.
+        flat_chunk.set_block_for_test(BlockPositionInChunkColumn { bx: 0, y: 15, bz: 0 }, Block::Air.into());
+        assert_eq!(flat_chunk.light.sky_light.sky_light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 15, bz: 0 }).unwrap(), 15);
+        
+        flat_chunk.set_block_for_test(BlockPositionInChunkColumn { bx: 0, y: 14, bz: 0 }, Block::Air.into());
+        assert_eq!(flat_chunk.light.sky_light.sky_light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 14, bz: 0 }).unwrap(), 15);
+
+        flat_chunk.set_block_for_test(BlockPositionInChunkColumn { bx: 0, y: 14, bz: 1 }, Block::Air.into());
+        assert_eq!(flat_chunk.light.sky_light.sky_light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 14, bz: 10 }).unwrap(), 0);
+        assert_eq!(flat_chunk.light.sky_light.sky_light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 14, bz: 1 }).unwrap(), 14);
+
+
     }
 }
