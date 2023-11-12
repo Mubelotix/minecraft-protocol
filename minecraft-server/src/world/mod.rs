@@ -15,7 +15,7 @@ pub struct World {
     entities: Entities,
 
     loading_manager: RwLock<WorldLoadingManager>,
-    change_senders: RwLock<HashMap<UUID, MpscSender<WorldChange>>>,
+    change_senders: RwLock<HashMap<UUID, MpscSender<WorldChange>>>, // TODO: Add a way to select events you want to subscribe to
 }
 
 impl World {

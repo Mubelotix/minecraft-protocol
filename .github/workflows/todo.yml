@@ -9,4 +9,4 @@ jobs:
               uses: "alstr/todo-to-issue-action@v4"
               with:
                 IDENTIFIERS: '[{"name": "TODO", "labels": []}, {"name": "FIXME", "labels": ["bug"]}]'
-                ISSUE_TEMPLATE: '{{ title }}\n\n{{ body }}\n\n{{ url }}\n\n'
+                ISSUE_TEMPLATE: "{{ title }}\n\n{{ body }}\n\n{{ url }}\n\n"
