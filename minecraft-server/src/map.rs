@@ -340,6 +340,10 @@ impl ChunkColumn {
         self.heightmap.max_height.unwrap_or(0)
     }
 
+    pub(super) fn get_hiest_block_at(&self, position: &BlockPositionInChunkColumn) -> u16 {
+        self.heightmap.get(position) 
+    }
+
     pub fn from(chunks: Vec<Chunk>) -> Self {
         let mut column = Self { 
             chunks, 
