@@ -393,6 +393,7 @@ impl ChunkColumn {
 
     #[cfg(test)]
     pub fn set_block_for_test(&mut self, position: BlockPositionInChunkColumn, block: BlockWithState) {
+        println!("set block at {:?}", position);
         self.set_block(position, block);
     }
 
@@ -423,8 +424,8 @@ impl ChunkColumn {
             },
             _ => {}   
         }
-        self.update_light_at(position.clone());
-        set_block_innter(self, position, block);
+        set_block_innter(self, position.clone(), block);
+        self.update_light_at(position);
     }
 }
 

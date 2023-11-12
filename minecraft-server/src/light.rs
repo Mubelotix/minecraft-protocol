@@ -1,4 +1,4 @@
-use std::collections::BinaryHeap;
+use std::{collections::BinaryHeap, ops::AddAssign};
 
 use minecraft_protocol::ids::blocks::Block;
 
@@ -96,18 +96,19 @@ struct SkyLight {
 
 impl SkyLight {
     /// Set the sky light in the given section.
-    pub fn set_region(&mut self, from_y: i32, to_y: i32, level: u8) -> Result<(), ()> {
+    pub fn set_region(&mut self, from_y: usize, to_y: usize, level: u8) -> Result<(), ()> {
         if level > self.level {
             return Err(());
         }
 
         // Get the range of sections to set.
-        let first_section = (from_y.div_euclid(16) + self.zero_chunk_index as i32).max(0) as usize;
-        let first_secion_offset = from_y.rem_euclid(16) as usize;
+        let first_section = from_y.div_euclid(16);
+        let first_secion_offset = from_y.rem_euclid(16);
 
-        let last_section = (to_y.div_euclid(16) + self.zero_chunk_index as i32).max(0) as usize;
-        let last_section_offset = to_y.rem_euclid(16) as usize;
+        let last_section = to_y.div_euclid(16);
+        let last_section_offset = to_y.rem_euclid(16);
 
+        println!("Setting sky light from {} to {} in sections {} to {}", from_y, to_y, first_section, last_section);
         for section in first_section..=last_section {
             if section != first_section && section != last_section {
                 // Set the whole section
@@ -133,21 +134,20 @@ impl SkyLight {
         Ok(())
     }
 
-    pub(super) fn get_level(&self, position: BlockPositionInChunkColumn) -> Result<u8, ()> {
-        let section = position.cy() + self.zero_chunk_index as i32;
-        self.sky_light_arrays[section.max(0) as usize].get(position.in_chunk())
+    pub(super) fn get_level(&self, position: LightPositionInChunkColumn) -> Result<u8, ()> {
+        let section = position.y.div_euclid(16);
+        self.sky_light_arrays[section.max(0)].get(position.in_chunk())
     }
 
-    pub(super) fn set_level(&mut self, position: BlockPositionInChunkColumn, level: u8) -> Result<(), ()> {
-        let section = position.cy() + self.zero_chunk_index as i32; 
-        self.sky_light_arrays[section.max(0) as usize].set(position.in_chunk(), level)
+    pub(super) fn set_level(&mut self, position: LightPositionInChunkColumn, level: u8) -> Result<(), ()> {
+        let section = position.y.div_euclid(16);
+        self.sky_light_arrays[section.max(0)].set(position.in_chunk(), level)
     }
 }
 
 pub(super) struct Light {
     sky_light: SkyLight,
 }
-
 
 impl Light {
     pub fn new() -> Self {
@@ -165,37 +165,63 @@ impl Light {
 }
 
 #[derive(Debug, Clone)]
-struct HeightBasedPosition {
+struct LightPositionInChunkColumn {
     bx: u8,
     y: usize,
     bz: u8,
 }
 
-impl PartialEq for HeightBasedPosition {
+impl LightPositionInChunkColumn {
+    pub fn in_chunk(&self) -> BlockPositionInChunk {
+        BlockPositionInChunk {
+            bx: self.bx,
+            by: self.y.rem_euclid(16) as u8,
+            bz: self.bz,
+        }
+    }
+}
+
+impl PartialEq for LightPositionInChunkColumn {
     fn eq(&self, other: &Self) -> bool {
         self.y == other.y
     }
 }
 
-impl From<HeightBasedPosition> for BlockPositionInChunkColumn {
-    fn from(val: HeightBasedPosition) -> Self {
+impl From<LightPositionInChunkColumn> for BlockPositionInChunkColumn {
+    fn from(val: LightPositionInChunkColumn) -> Self {
         BlockPositionInChunkColumn {
             bx: val.bx,
-            y: val.y as i32,
+            y: val.y as i32 - 64 - 16, // TODO: Use the world config
             bz: val.bz,
         }
     }
 }
 
-impl std::cmp::Eq for HeightBasedPosition {}
+impl From<BlockPositionInChunkColumn> for LightPositionInChunkColumn {
+    fn from(val: BlockPositionInChunkColumn) -> Self {
+        LightPositionInChunkColumn {
+            bx: val.bx,
+            y: (val.y + 64 + 16) as usize, //-TODO: Use the world config
+            bz: val.bz,
+        }
+    }   
+}
 
-impl std::cmp::PartialOrd for HeightBasedPosition {
+impl AddAssign<usize> for LightPositionInChunkColumn {
+    fn add_assign(&mut self, rhs: usize) {
+        self.y += rhs;
+    }
+}
+
+impl std::cmp::Eq for LightPositionInChunkColumn {}
+
+impl std::cmp::PartialOrd for LightPositionInChunkColumn {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.y.cmp(&other.y))
     }
 }
 
-impl std::cmp::Ord for HeightBasedPosition {
+impl std::cmp::Ord for LightPositionInChunkColumn {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.y.cmp(&other.y)
     }
@@ -211,17 +237,17 @@ impl ChunkColumn {
         // Set all highest blocks to the highest block
         let highest_blocks = self.get_highest_block();
 
-        let max_y = (self.light.sky_light.sky_light_arrays.len() as i32 - self.light.sky_light.zero_chunk_index as i32) * 16 - 1;
-        self.light.sky_light.set_region(highest_blocks as i32 - 64, max_y, self.light.sky_light.level)?;
-        let mut to_explore: BinaryHeap<HeightBasedPosition> = BinaryHeap::new();
+        let max_y = self.light.sky_light.sky_light_arrays.len() * 16 - 1;
+        self.light.sky_light.set_region(highest_blocks as usize + 16, max_y, self.light.sky_light.level)?;
+        let mut to_explore: BinaryHeap<LightPositionInChunkColumn> = BinaryHeap::new();
         
         
         // Add all highest blocks to the queue
         for x in 0..16 {
             for z in 0..16 {
-                let position = HeightBasedPosition {
+                let position = LightPositionInChunkColumn {
                     bx: x,
-                    y: self.get_hiest_block_at(&BlockPositionInChunkColumn { bx: x, y: 0, bz: z }) as usize,
+                    y: self.get_hiest_block_at(&BlockPositionInChunkColumn { bx: x, y: 0, bz: z }) as usize + 16 + 1,
                     bz: z,
                 };
                 to_explore.push(position);
@@ -233,41 +259,44 @@ impl ChunkColumn {
         Ok(())
     }
 
-    fn explore_sky_light_from_heap(&mut self, to_explore: &mut BinaryHeap<HeightBasedPosition>) -> Result<(), ()> {
+    fn explore_sky_light_from_heap(&mut self, to_explore: &mut BinaryHeap<LightPositionInChunkColumn>) -> Result<(), ()> {
         while let Some(position) = to_explore.pop() {
+            println!("Exploring {:?}", position);
             let mut neighbors = Vec::new();
             let is_inside = self.get_hiest_block_at(&position.clone().into()) > position.y as u16;
-            let my_level = self.light.sky_light.get_level(position.clone().into())?;
-
+            let my_level = self.light.sky_light.get_level(position.clone())?;
             if position.bx > 0 {
-                neighbors.push(HeightBasedPosition { bx: position.bx - 1, y: position.y, bz: position.bz });
+                neighbors.push(LightPositionInChunkColumn { bx: position.bx - 1, y: position.y, bz: position.bz });
             }
             if position.bx < 15 {
-                neighbors.push(HeightBasedPosition { bx: position.bx + 1, y: position.y, bz: position.bz });
+                neighbors.push(LightPositionInChunkColumn { bx: position.bx + 1, y: position.y, bz: position.bz });
             }
             if position.bz > 0 {
-                neighbors.push(HeightBasedPosition { bx: position.bx, y: position.y, bz: position.bz - 1 });
+                neighbors.push(LightPositionInChunkColumn { bx: position.bx, y: position.y, bz: position.bz - 1 });
             }
             if position.bz < 15 {
-                neighbors.push(HeightBasedPosition { bx: position.bx, y: position.y, bz: position.bz + 1 });
+                neighbors.push(LightPositionInChunkColumn { bx: position.bx, y: position.y, bz: position.bz + 1 });
             }
             if position.y > 0 {
-                neighbors.push(HeightBasedPosition { bx: position.bx, y: position.y - 1, bz: position.bz });
+                neighbors.push(LightPositionInChunkColumn { bx: position.bx, y: position.y - 1, bz: position.bz });
             }
             if position.y < ((self.light.sky_light.sky_light_arrays.len() - 1) * 16) + 1 { // No block can be higher so no block can affect the light level 
-                neighbors.push(HeightBasedPosition { bx: position.bx, y: position.y + 1, bz: position.bz });
+                neighbors.push(LightPositionInChunkColumn { bx: position.bx, y: position.y + 1, bz: position.bz });
             }
 
             for neighbor in neighbors {
-                let neighbor_position: BlockPositionInChunkColumn = neighbor.clone().into();
-                let neighbor_level = self.light.sky_light.get_level(neighbor_position.clone())?;
+                let neighbor_level = self.light.sky_light.get_level(neighbor.clone())?;
 
-                if Block::from(self.get_block(neighbor_position.clone())).is_transparent() 
-                    && (is_inside && neighbor_level < my_level.saturating_sub(1)) 
+                println!("Neighbor: {:?}, level: {}", neighbor, neighbor_level);
+                let block = Block::from(self.get_block(neighbor.clone().into())); 
+                println!("Is transparent {}", block.is_transparent());
+                if block.is_transparent() 
+                    && (neighbor_level < my_level.saturating_sub(1)) 
                 {
+                    println!("Updating light at {:?} from {:?}", neighbor, position);
                     to_explore.push(neighbor.clone());
-                    let new_level = my_level - 1;
-                    self.light.sky_light.set_level(neighbor_position, new_level)?;
+                    let new_level = if is_inside { my_level - 1 } else { self.light.sky_light.level };
+                    self.light.sky_light.set_level(neighbor, new_level)?;
                 }
             }
         }
@@ -275,19 +304,10 @@ impl ChunkColumn {
     }
 
     pub(super) fn update_light_at(&mut self, position: BlockPositionInChunkColumn) {
-        let position1 = HeightBasedPosition {
-            bx: position.bx,
-            y: position.y as usize,
-            bz: position.bz,
-        };
-        let position2 = HeightBasedPosition {
-            bx: position.bx,
-            y: position.y as usize + 1, // We want to update the light above the block so we need the 
-            bz: position.bz,
-        };
-        let mut to_explore: BinaryHeap<HeightBasedPosition> = BinaryHeap::new();
-        to_explore.push(position2);
-        to_explore.push(position1);
+        let mut start_position: LightPositionInChunkColumn = position.into();
+        start_position += 1;
+        let mut to_explore: BinaryHeap<LightPositionInChunkColumn> = BinaryHeap::new();
+        to_explore.push(start_position );
         self.explore_sky_light_from_heap(&mut to_explore).map_err(|_| error!("Error while updating light")).unwrap();
     }
 }
@@ -350,17 +370,17 @@ mod tests {
             zero_chunk_index: 4, // We start at y=-64, and we have a chunk under that. 
         };
 
-        sky_light.set_region(-1, 16, 15).unwrap();
+        sky_light.set_region(1, 33, 15).unwrap();
         
         // Test in
-        assert_eq!(sky_light.sky_light_arrays[5].get(BlockPositionInChunk { bx: 0, by: 0, bz: 7 }).unwrap(), 15);
-        assert_eq!(sky_light.sky_light_arrays[4].get(BlockPositionInChunk { bx: 1, by: 2, bz: 8 }).unwrap(), 15);
-        assert_eq!(sky_light.sky_light_arrays[4].get(BlockPositionInChunk { bx: 3, by: 0, bz: 0 }).unwrap(), 15);
+        assert_eq!(sky_light.sky_light_arrays[0].get(BlockPositionInChunk { bx: 0, by: 1, bz: 7 }).unwrap(), 15);
+        assert_eq!(sky_light.sky_light_arrays[1].get(BlockPositionInChunk { bx: 1, by: 15, bz: 8 }).unwrap(), 15);
+        assert_eq!(sky_light.sky_light_arrays[2].get(BlockPositionInChunk { bx: 3, by: 0, bz: 0 }).unwrap(), 15);
 
         // Test out
-        assert_eq!(sky_light.sky_light_arrays[5].get(BlockPositionInChunk { bx: 4, by: 1, bz: 2 }).unwrap(), 0);
+        assert_eq!(sky_light.sky_light_arrays[0].get(BlockPositionInChunk { bx: 4, by: 0, bz: 2 }).unwrap(), 0);
         assert_eq!(sky_light.sky_light_arrays[3].get(BlockPositionInChunk { bx: 0, by: 14, bz: 9 }).unwrap(), 0);
-        assert_eq!(sky_light.sky_light_arrays[0].get(BlockPositionInChunk { bx: 9, by: 0, bz: 10 }).unwrap(), 0);
+        assert_eq!(sky_light.sky_light_arrays[4].get(BlockPositionInChunk { bx: 9, by: 0, bz: 10 }).unwrap(), 0);
     }
 
     #[test]
@@ -377,16 +397,17 @@ mod tests {
         }
         
         // Break the grass block and check that the sky light is correct.
-        flat_chunk.set_block_for_test(BlockPositionInChunkColumn { bx: 0, y: 15, bz: 0 }, Block::Air.into());
+        assert_eq!(flat_chunk.light.sky_light.sky_light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 15, bz: 0 }).unwrap(), 0);
+        flat_chunk.set_block_for_test(BlockPositionInChunkColumn { bx: 0, y: -49, bz: 0 }, Block::Air.into());
         assert_eq!(flat_chunk.light.sky_light.sky_light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 15, bz: 0 }).unwrap(), 15);
         
-        flat_chunk.set_block_for_test(BlockPositionInChunkColumn { bx: 0, y: 14, bz: 0 }, Block::Air.into());
+        assert_eq!(flat_chunk.light.sky_light.sky_light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 14, bz: 0 }).unwrap(), 0);
+        flat_chunk.set_block_for_test(BlockPositionInChunkColumn { bx: 0, y: -50, bz: 0 }, Block::Air.into());
         assert_eq!(flat_chunk.light.sky_light.sky_light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 14, bz: 0 }).unwrap(), 15);
 
-        flat_chunk.set_block_for_test(BlockPositionInChunkColumn { bx: 0, y: 14, bz: 1 }, Block::Air.into());
-        assert_eq!(flat_chunk.light.sky_light.sky_light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 14, bz: 10 }).unwrap(), 0);
+        flat_chunk.set_block_for_test(BlockPositionInChunkColumn { bx: 0, y: -50, bz: 1 }, Block::Air.into());
         assert_eq!(flat_chunk.light.sky_light.sky_light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 14, bz: 1 }).unwrap(), 14);
-
+        assert_eq!(flat_chunk.light.sky_light.sky_light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 0, bz: 10 }).unwrap(), 0);
 
     }
 }
