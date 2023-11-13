@@ -1,7 +1,7 @@
 use super::*;
 
 /// Returns minimum of two floats, but not NaN
-fn min2(a: f32, b: f32) -> f32 {
+fn min2(a: f64, b: f64) -> f64 {
     if a < b || b.is_nan() {
         a
     } else {
@@ -10,19 +10,19 @@ fn min2(a: f32, b: f32) -> f32 {
 }
 
 /// Returns minimum of three floats
-fn min(a: f32, b: f32, c: f32) -> f32 {
+fn min(a: f64, b: f64, c: f64) -> f64 {
     min2(min2(a, b), c)
 }
 
 /// An object in space
 #[derive(Debug, Clone, PartialEq)]
 pub struct CollisionShape {
-    pub x1: f32,
-    pub y1: f32,
-    pub z1: f32,
-    pub x2: f32,
-    pub y2: f32,
-    pub z2: f32,
+    pub x1: f64,
+    pub y1: f64,
+    pub z1: f64,
+    pub x2: f64,
+    pub y2: f64,
+    pub z2: f64,
 }
 
 impl CollisionShape {
@@ -50,9 +50,9 @@ impl CollisionShape {
 
 /// A point in space
 pub struct Point {
-    x: f32,
-    y: f32,
-    z: f32,
+    x: f64,
+    y: f64,
+    z: f64,
 }
 
 impl Point {
@@ -62,7 +62,7 @@ impl Point {
     }
 
     /// Returns the proportion of the translation that can be applied without absorbing `point` inside `shape` on the x axis
-    fn collide_x(&self, shape: &CollisionShape, translation: &Translation) -> f32 {
+    fn collide_x(&self, shape: &CollisionShape, translation: &Translation) -> f64 {
         if translation.x == 0.0 {
             return 1.0;
         }
@@ -85,7 +85,7 @@ impl Point {
     }
 
     /// Returns the proportion of the translation that can be applied without absorbing `point` inside `shape` on the y axis
-    fn collide_y(&self, shape: &CollisionShape, translation: &Translation) -> f32 {
+    fn collide_y(&self, shape: &CollisionShape, translation: &Translation) -> f64 {
         if translation.y == 0.0 {
             return 1.0;
         }
@@ -108,7 +108,7 @@ impl Point {
     }
 
     /// Returns the proportion of the translation that can be applied without absorbing `point` inside `shape` on the z axis
-    fn collide_z(&self, shape: &CollisionShape, translation: &Translation) -> f32 {
+    fn collide_z(&self, shape: &CollisionShape, translation: &Translation) -> f64 {
         if translation.z == 0.0 {
             return 1.0;
         }
@@ -131,7 +131,7 @@ impl Point {
     }
 
     /// Returns the proportion of the translation that can be applied without absorbing `point` inside `shape`
-    fn collide(&self, shape: &CollisionShape, translation: &Translation) -> f32 {
+    fn collide(&self, shape: &CollisionShape, translation: &Translation) -> f64 {
         min(
             self.collide_x(shape, translation),
             self.collide_y(shape, translation),
@@ -167,9 +167,9 @@ impl<'a> Iterator for PointIter<'a> {
 /// Vector describing a movement
 #[derive(Debug, Clone, PartialEq)]
 pub struct Translation {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
 }
 
 impl Translation {
@@ -189,7 +189,7 @@ impl Translation {
         self.z *= limit;
     }
 
-    fn norm(&self) -> f32 {
+    fn norm(&self) -> f64 {
         (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
     }
 
@@ -225,7 +225,7 @@ impl Translation {
             let y_time = y_dist / self.y.abs();
             let z_time = z_dist / self.z.abs();
             let time = min(x_time, y_time, z_time);
-            println!("pos{fragmented:?} dist({x_dist}, {y_dist}, {z_dist}) time({x_time}, {y_time}, {z_time}) time({time})");
+            //println!("pos{fragmented:?} dist({x_dist}, {y_dist}, {z_dist}) time({x_time}, {y_time}, {z_time}) time({time})");
             let mini_translation = self.clone() * time;
             fragmented += &mini_translation;
             result.push(mini_translation);
@@ -295,10 +295,10 @@ impl std::ops::AddAssign<&Translation> for CollisionShape {
     }
 }
 
-impl std::ops::Mul<f32> for Translation {
+impl std::ops::Mul<f64> for Translation {
     type Output = Translation;
 
-    fn mul(self, rhs: f32) -> Self::Output {
+    fn mul(self, rhs: f64) -> Self::Output {
         Translation {
             x: self.x * rhs,
             y: self.y * rhs,

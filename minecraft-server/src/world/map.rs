@@ -475,5 +475,11 @@ mod tests {
         let movement = Translation { x: 0.0, y: -10.0, z: 0.0 };
         let movement = map.try_move(positionned_box, movement).await;
         assert_eq!(movement, Translation { x: 0.0, y: -1.0, z: 0.0 }); // It falls down but doesn't get through
+
+        // Place it above but not on round coordinates
+        let positionned_box = bounding_box.clone() + &Translation { x: 0.0, y: -3.0*16.0 + 1.1, z: 0.2 };
+        let movement = Translation { x: 2.0, y: -10.0, z: 0.0 };
+        let movement = map.try_move(positionned_box, movement).await;
+        assert_eq!(movement, Translation { x: 0.2200000000000003, y: -1.1000000000000014, z: 0.0 }); // It falls down but doesn't get through
     }
 }
