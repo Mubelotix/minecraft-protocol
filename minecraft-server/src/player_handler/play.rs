@@ -10,6 +10,9 @@ struct PlayerHandler {
     on_ground: bool,
     packet_sender: MpscSender<Vec<u8>>,
 
+    inventory: PlayerInventory,
+    held_item: usize,
+
     render_distance: i32,
     loaded_chunks: HashSet<ChunkColumnPosition>,
     center_chunk: ChunkPosition,
@@ -143,12 +146,64 @@ impl PlayerHandler {
                 self.on_move().await;
                 // TODO: make sure the movement is allowed
             },
+            SetHeldItem { mut slot } => {
+                slot = slot.clamp(0, 8);
+                self.held_item = slot as usize;
+            }
+            SetCreativeModeSlot { id, clicked_item } => {
+                if self.game_mode != Gamemode::Creative {
+                    warn!("Received SetCreativeModeSlot packet in non-creative gamemode");
+                    return;
+                }
+                match id {
+                    -1 => (), // TODO drop item
+                    0..=45 => self.inventory.set_slot(id as usize, clicked_item),
+                    id => error!("Invalid creative mode slot: {id}"),
+                }
+            }
             DigBlock { status, location, face: _, sequence: _ } => {
                 use minecraft_protocol::components::blocks::DiggingState;
                 // TODO: Check legitimacy 
                 if self.game_mode == Gamemode::Creative || status == DiggingState::Finished {
                     self.world.set_block(location.into(), BlockWithState::Air).await;
                 }
+            }
+            PlaceBlock { hand, location, face, sequence, .. } => {
+                use minecraft_protocol::components::blocks::BlockFace;
+
+                // TODO: use cursor position
+
+                // TODO: check legitimacy
+                
+                let slot_id = match hand {
+                    Hand::MainHand => self.held_item + 36,
+                    Hand::OffHand => 45,
+                };
+                let block_location = match face {
+                    BlockFace::Bottom => { let mut location = location; location.y -= 1; location }
+                    BlockFace::Top => { let mut location = location; location.y += 1; location }
+                    BlockFace::North => { let mut location = location; location.z -= 1; location }
+                    BlockFace::South => { let mut location = location; location.z += 1; location }
+                    BlockFace::West => { let mut location = location; location.x -= 1; location }
+                    BlockFace::East => { let mut location = location; location.x += 1; location }
+                };
+
+                let Some(slot) = self.inventory.get_slot_mut(slot_id) else {return};
+                let Some(item) = &mut slot.item else {return};
+                
+                if item.item_count <= 0 {
+                    return;
+                }
+
+                let text_id = item.item_id.text_id();
+                let Some(block) = Block::from_text_id(text_id) else {return};
+                let Some(block) = BlockWithState::from_state_id(block.default_state_id()) else {return};
+
+                if self.game_mode != Gamemode::Creative {
+                    item.item_count -= 1;
+                }
+                self.world.set_block_by(block_location.into(), block, self.info.uuid).await;
+                self.send_packet(PlayClientbound::AcknowledgeBlockChange { id: sequence }).await;
             }
             packet => warn!("Unsupported packet received: {packet:?}"),
         }
@@ -166,6 +221,9 @@ pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut serve
         pitch: 0.0,
         on_ground: false,
         packet_sender,
+
+        inventory: PlayerInventory::new(),
+        held_item: 0,
 
         center_chunk: ChunkPosition { cx: 0, cy: 11, cz: 0 },
         render_distance: player_info.render_distance.clamp(4, 15) as i32,

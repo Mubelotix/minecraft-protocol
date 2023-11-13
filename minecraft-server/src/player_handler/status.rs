@@ -20,9 +20,6 @@ pub async fn status(stream: &mut TcpStream) -> Result<(), ()> {
                 debug!("Pong sent");
                 return Ok(());
             },
-            _ => {
-                debug!("Unexpected packet: {packet:?}");
-            }
         };
     }
 }

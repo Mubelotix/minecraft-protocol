@@ -1,6 +1,7 @@
 #![allow(clippy::uninit_vec)]
 
 mod player_handler;
+mod inventory;
 mod server_behavior;
 mod prelude;
 mod ecs;

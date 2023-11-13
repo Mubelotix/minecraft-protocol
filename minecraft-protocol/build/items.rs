@@ -75,6 +75,13 @@ impl Item {{
         unsafe {{*TEXT_IDS.get_unchecked((self as u32) as usize)}}
     }}
 
+    pub fn from_text_id(text_id: &str) -> Option<Self> {{
+        match text_id {{
+            {text_id_match}
+            _ => None,
+        }}
+    }}
+
     #[inline]
     pub fn display_name(self) -> &'static str {{
         unsafe {{*DISPLAY_NAMES.get_unchecked((self as u32) as usize)}}
@@ -125,6 +132,11 @@ const TEXT_IDS: [&str; {max_value}] = {text_ids:?};
         durabilities = items.iter().map(|i| i.max_durability).collect::<Vec<_>>(),
         display_names = items.iter().map(|i| &i.display_name).collect::<Vec<_>>(),
         text_ids = items.iter().map(|i| &i.text_id).collect::<Vec<_>>(),
+        text_id_match = items
+            .iter()
+            .map(|i| format!("\"{}\" => Some(Item::{}),", i.text_id, i.text_id.from_case(Case::Snake).to_case(Case::UpperCamel)))
+            .collect::<Vec<_>>()
+            .join("\n            "),
     );
 
     File::create("src/ids/items.rs")

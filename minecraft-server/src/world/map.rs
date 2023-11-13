@@ -79,6 +79,7 @@ impl Chunk {
         match &mut self.data.blocks {
             PalettedData::Paletted { palette, indexed } => {
                 let data_position = position.by as usize * 16 * 16 + position.bz as usize * 16 + position.bx as usize;
+                let previous_was_air = palette[indexed[data_position] as usize] == 0;
 
                 // Decrease count of previous block
                 let prev_palette_index = indexed[data_position] as usize;
@@ -132,6 +133,14 @@ impl Chunk {
                         if let Some(count) = self.palette_block_counts.get_mut(palette_position) {
                             *count += 1;
                         }
+
+                        // Update the number of non-air blocks
+                        match (previous_was_air, palette[palette_position] == 0) {
+                            (true, false) => self.data.block_count += 1,
+                            (false, true) => self.data.block_count -= 1,
+                            (true, true) => (),
+                            (false, false) => (),
+                        }
                     },
                     None => {
                         // Turn to raw
@@ -143,6 +152,14 @@ impl Chunk {
                         values[data_position] = block_state_id;
                         self.data.blocks = PalettedData::Raw { values };
                         self.palette_block_counts.clear();
+
+                        // Update the number of non-air blocks
+                        match (previous_was_air, block_state_id == 0) {
+                            (true, false) => self.data.block_count += 1,
+                            (false, true) => self.data.block_count -= 1,
+                            (true, true) => (),
+                            (false, false) => (),
+                        }
                     }
                 }
             },
@@ -156,11 +173,29 @@ impl Chunk {
                 let mut indexed = vec![0; 4096];
                 let data_position = position.by as usize * 16 * 16 + position.bz as usize * 16 + position.bx as usize;
                 indexed[data_position] = 1;
+
+                // Compute the number of non-air blocks
+                self.data.block_count = match (*value == 0, block_state_id == 0) {
+                    (true, false) => 1,
+                    (false, true) => 4095,
+                    (true, true) => 0,
+                    (false, false) => 4096,
+                };
+
                 self.data.blocks = PalettedData::Paletted { palette, indexed };
                 self.palette_block_counts = vec![4095, 1];
             }
             PalettedData::Raw { values } => {
                 let data_position = position.by as usize * 16 * 16 + position.bz as usize * 16 + position.bx as usize;
+
+                // Update the number of non-air blocks
+                match (values[data_position] == 0, block_state_id == 0) {
+                    (true, false) => self.data.block_count += 1,
+                    (false, true) => self.data.block_count -= 1,
+                    (true, true) => (),
+                    (false, false) => (),
+                }
+
                 values[data_position] = block_state_id;
             }
         }
