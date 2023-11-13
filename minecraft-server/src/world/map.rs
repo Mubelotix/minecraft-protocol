@@ -271,6 +271,10 @@ impl WorldMap {
         inner_get_block(self, position, block).await;
     }
 
+    pub async fn test_move(&self, object: CollisionShape, movement: Translation) -> Translation {
+        todo!()
+    }
+
     pub async fn load(&self, position: ChunkColumnPosition) {
         let chunk = ChunkColumn::flat(); // TODO: load from disk
         let shard = position.shard(self.shard_count);
