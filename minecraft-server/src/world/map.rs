@@ -465,10 +465,10 @@ mod tests {
         };
 
         // Position on ground and try to go through it
-        //let positionned_box = bounding_box.clone() + &Translation { x: 0.0, y: -3.0*16.0, z: 0.0 };
-        //let movement = Translation { x: 0.0, y: -10.0, z: 0.0 };
-        //let movement = map.try_move(positionned_box, movement).await;
-        //assert_eq!(movement, Translation { x: 0.0, y: 0.0, z: 0.0 }); // It doesn't get through
+        let positionned_box = bounding_box.clone() + &Translation { x: 0.0, y: -3.0*16.0, z: 0.0 };
+        let movement = Translation { x: 0.0, y: -10.0, z: 0.0 };
+        let movement = map.try_move(positionned_box, movement).await;
+        assert_eq!(movement, Translation { x: 0.0, y: 0.0, z: 0.0 }); // It doesn't get through
 
         // Place it a little above ground
         let positionned_box = bounding_box.clone() + &Translation { x: 0.0, y: -3.0*16.0 + 1.0, z: 0.0 };

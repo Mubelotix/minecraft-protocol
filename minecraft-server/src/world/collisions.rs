@@ -189,41 +189,45 @@ impl Translation {
         self.z *= limit;
     }
 
+    fn norm(&self) -> f32 {
+        (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
+    }
+
     // TODO: turn CollisionShape.fragment into an iterator
     pub fn fragment(self, position: &CollisionShape) -> Vec<Translation> {
-        let final_position = position.clone() + &self;
         let mut result = Vec::new();
-        let mut current_position = position.clone();
+        let mut fragmented = Translation { x: 0.0, y: 0.0, z: 0.0 };
+        //let mut current_position = position.clone();
         //result.extend(position.containing_blocks().into_iter());
-        while current_position != final_position {
+        while fragmented.norm() < self.norm() {
             let x_dist = if self.x > 0.0 {
-                let next_x = current_position.x2.floor()+1.0;
-                (next_x - current_position.x2).abs()
+                let next_x = (position.x2 + fragmented.x).floor()+1.0;
+                (next_x - (position.x2 + fragmented.x)).abs()
             } else {
-                let next_x = current_position.x1.ceil()-1.0;
-                (next_x - current_position.x1).abs()
+                let next_x = (position.x1 + fragmented.x).ceil()-1.0;
+                (next_x - (position.x1 + fragmented.x)).abs()
             };
             let y_dist = if self.y > 0.0 {
-                let next_y = current_position.y2.floor()+1.0;
-                (next_y - current_position.y2).abs()
+                let next_y = (position.y2 + fragmented.y).floor()+1.0;
+                (next_y - (position.y2 + fragmented.y)).abs()
             } else {
-                let next_y = current_position.y1.ceil()-1.0;
-                (next_y - current_position.y1).abs()
+                let next_y = (position.y1 + fragmented.y).ceil()-1.0;
+                (next_y - (position.y1 + fragmented.y)).abs()
             };
             let z_dist = if self.z > 0.0 {
-                let next_z = current_position.z2.floor()+1.0;
-                (next_z - current_position.z2).abs()
+                let next_z = (position.z2 + fragmented.z).floor()+1.0;
+                (next_z - (position.z2 + fragmented.z)).abs()
             } else {
-                let next_z = current_position.z1.ceil()-1.0;
-                (next_z - current_position.z1).abs()
+                let next_z = (position.z1 + fragmented.z).ceil()-1.0;
+                (next_z - (position.z1 + fragmented.z)).abs()
             };
             let x_time = x_dist / self.x.abs();
             let y_time = y_dist / self.y.abs();
             let z_time = z_dist / self.z.abs();
             let time = min(x_time, y_time, z_time);
-            println!("pos{current_position:?} dist({x_dist}, {y_dist}, {z_dist}) time({x_time}, {y_time}, {z_time}) time({time})");
+            println!("pos{fragmented:?} dist({x_dist}, {y_dist}, {z_dist}) time({x_time}, {y_time}, {z_time}) time({time})");
             let mini_translation = self.clone() * time;
-            current_position += &mini_translation;
+            fragmented += &mini_translation;
             result.push(mini_translation);
         }
         result
@@ -239,6 +243,14 @@ impl std::ops::Add<Translation> for Translation {
             y: self.y + rhs.y,
             z: self.z + rhs.z,
         }
+    }
+}
+
+impl std::ops::AddAssign<&Translation> for Translation {
+    fn add_assign(&mut self, rhs: &Translation) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+        self.z += rhs.z;
     }
 }
 
