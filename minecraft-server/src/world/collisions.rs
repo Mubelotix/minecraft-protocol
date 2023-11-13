@@ -230,6 +230,18 @@ impl Translation {
             fragmented += &mini_translation;
             result.push(mini_translation);
         }
+        // Last one might be too long
+        if let Some(last) = result.pop() {
+            let final_position = position.clone() + self;
+            let previous_fragmented = fragmented.clone() - last;
+            let previous_position = position.clone() + previous_fragmented;
+            let difference = Translation {
+                x: final_position.x1 - previous_position.x1,
+                y: final_position.y1 - previous_position.y1,
+                z: final_position.z1 - previous_position.z1,
+            };
+            result.push(difference);
+        }
         result
     }    
 }
@@ -251,6 +263,18 @@ impl std::ops::AddAssign<&Translation> for Translation {
         self.x += rhs.x;
         self.y += rhs.y;
         self.z += rhs.z;
+    }
+}
+
+impl std::ops::Sub<Translation> for Translation {
+    type Output = Translation;
+
+    fn sub(self, rhs: Translation) -> Self::Output {
+        Translation {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z,
+        }
     }
 }
 
@@ -382,18 +406,23 @@ mod tests {
             z2: 1.0,
         };
 
-        // TODO: add real test value comparisons
-
-        let movement = Translation { x: 5.0, y: 0.0, z: 0.0 };
+        let movement = Translation { x: 3.0, y: 0.0, z: 0.0 };
         let fragments = movement.fragment(&shape);
-        println!("{fragments:#?}");
+        assert_eq!(fragments, vec![Translation { x: 1.0, y: 0.0, z: 0.0 }; 3]);
 
-        let movement = Translation { x: 4.0, y: 2.0, z: 0.0 };
-        let mini_movements = movement.fragment(&shape);
-        println!("{fragments:#?}");
+        let movement = Translation { x: 2.3, y: 0.0, z: 0.0 };
+        let fragments = movement.fragment(&shape);
+        assert_eq!(fragments, vec![Translation { x: 1.0, y: 0.0, z: 0.0 }, Translation { x: 1.0, y: 0.0, z: 0.0 }, Translation { x: 0.2999999999999998, y: 0.0, z: 0.0 }]);
 
-        let movement = Translation { x: 2.38, y: 1.82, z: 1.0 };
-        let mini_movements = movement.fragment(&shape);
-        println!("{fragments:#?}");
+        let movement = Translation { x: 1.0, y: 0.75, z: 0.0 } * 4.0;
+        let fragments = movement.fragment(&shape);
+        assert_eq!(fragments, vec![
+            Translation { x: 1.0, y: 0.75, z: 0.0 },
+            Translation { x: 0.3333333333333333, y: 0.25, z: 0.0 },
+            Translation { x: 0.666666666666667, y: 0.5000000000000002, z: 0.0 },
+            Translation { x: 0.6666666666666666, y: 0.5, z: 0.0 },
+            Translation { x: 0.3333333333333335, y: 0.2500000000000001, z: 0.0 },
+            Translation { x: 1.0, y: 0.75, z: 0.0 }]
+        );
     }
 }
