@@ -21,6 +21,10 @@ impl PlayerHandler {
         self.packet_sender.send(packet).await.unwrap();
     }
 
+    async fn send_packet_raw(&mut self, packet: &[u8]) {
+        self.packet_sender.send(packet.to_vec()).await.unwrap();
+    }
+
     async fn on_server_message(&mut self, message: ServerMessage) {
         use ServerMessage::*;
         match message {
@@ -72,40 +76,12 @@ impl PlayerHandler {
 
         // Send the chunks to the client
         for newly_loaded_chunk in newly_loaded_chunks {
-            let mut column = Vec::new();
-            let heightmaps = self.world.get_network_heightmap(newly_loaded_chunk.clone()).await.unwrap_or_else(|| {
+            let chunk_column_data = self.world.get_network_chunk_column_data(newly_loaded_chunk.clone()).await.unwrap_or_else(|| {
                 error!("Chunk not loaded: {newly_loaded_chunk:?}");
-                NbtTag::Compound(HashMap::new()) // TODO hard error
+                panic!("Chunk not loaded: {newly_loaded_chunk:?}");
             });
-
-            for cy in -4..20 {
-                let chunk = self.world.get_network_chunk(newly_loaded_chunk.chunk(cy)).await.unwrap_or_else(|| {
-                    error!("Chunk not loaded: {newly_loaded_chunk:?}");
-                    NetworkChunk { // TODO hard error
-                        block_count: 0,
-                        blocks: PalettedData::Single { value: 0 },
-                        biomes: PalettedData::Single { value: 4 },
-                    }
-                });
-                column.push(chunk);
-            }
-            let serialized: Vec<u8> = NetworkChunk::into_data(column).unwrap();
-            let chunk_data = PlayClientbound::ChunkData {
-                value: ChunkData {
-                    chunk_x: newly_loaded_chunk.cx,
-                    chunk_z: newly_loaded_chunk.cz,
-                    heightmaps,
-                    data: Array::from(serialized.clone()),
-                    block_entities: Array::default(),
-                    sky_light_mask: Array::default(),
-                    block_light_mask: Array::default(),
-                    empty_sky_light_mask: Array::default(),
-                    empty_block_light_mask: Array::default(),
-                    sky_light: Array::default(),
-                    block_light: Array::default(),
-                }
-            };
-            self.send_packet(chunk_data).await;
+         
+            self.send_packet_raw(&chunk_column_data).await;
         }
 
         // Tell the client to unload chunks
