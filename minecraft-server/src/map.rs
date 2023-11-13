@@ -208,7 +208,8 @@ impl HeightMap {
     /// Set the height of the highest block at the given position.
     pub fn set(&mut self, position: &BlockPositionInChunkColumn, height: u32) {
         let (x, z) = (position.bx, position.bz);
-
+        println!("set height at {:?}", position);
+        println!("height: {:?}", height);
         // Check if the height is higher than the current max height.
         if let Some(max_height) = self.max_height {
             if height < max_height {        // Calculate the new base for the data.
@@ -393,7 +394,6 @@ impl ChunkColumn {
 
     #[cfg(test)]
     pub fn set_block_for_test(&mut self, position: BlockPositionInChunkColumn, block: BlockWithState) {
-        println!("set block at {:?}", position);
         self.set_block(position, block);
     }
 
@@ -403,28 +403,33 @@ impl ChunkColumn {
             let cy_in_vec: usize = cy.saturating_add(4).try_into().ok()?;
             let position = position.in_chunk();
             let chunk = s.chunks.get_mut(cy_in_vec)?;
-            chunk.set_block(position, block);
+            chunk.set_block(position, block.clone());
             Some(())
         }
+        set_block_innter(self, position.clone(), block.clone());
 
         let last_height = self.heightmap.get(&position);
-        let filter_sunlight = Block::from(block.clone()).is_transparent(); // TODO: check if the block is transparent
+        let not_filter_sunlight = Block::from(block.clone()).is_transparent(); // TODO: check if the block is transparent
 
         // Get the height of the placed block
-        let block_height = (position.y - Self::MIN_Y).max(0) as u16;
-
+        let block_height = (position.y - Self::MIN_Y + 1).max(0) as u16;
+        println!("set {:?} at {:?} ", block, position);
+        println!("block height: {:?}", block_height);
+        println!("last height: {:?}", last_height);
+        println!("let pass sunlight: {:?}", not_filter_sunlight);
         match block_height.cmp(&last_height) {
-            Ordering::Greater if !filter_sunlight => {
+            Ordering::Greater if !not_filter_sunlight => {
+                println!("greater");
                 self.heightmap.set(&position, block_height.into());
             },
-            Ordering::Equal if filter_sunlight => {
+            Ordering::Equal if not_filter_sunlight => {
                 // Downward propagation
+                println!("equal");
                 let new_height = self.get_higher_skylight_filter_block(&position, last_height).into();
                 self.heightmap.set(&position, new_height);
             },
             _ => {}   
         }
-        set_block_innter(self, position.clone(), block);
         self.update_light_at(position);
     }
 }
@@ -682,11 +687,11 @@ mod tests {
 
         // Now check that the heightmap is correct after setting a block
         flat_column.set_block(BlockPositionInChunkColumn { bx: 0, y: 10, bz: 0 }, BlockWithState::GrassBlock { snowy: false });
-        assert_eq!(flat_column.heightmap.get(&BlockPositionInChunkColumn { bx: 0, y: 0, bz: 0 }), 74);
+        assert_eq!(flat_column.heightmap.get(&BlockPositionInChunkColumn { bx: 0, y: 0, bz: 0 }), 75);
 
         // Check that the heightmap is correct after setting a block to air under the highest block
         flat_column.set_block(BlockPositionInChunkColumn { bx: 0, y: 8, bz: 0 }, BlockWithState::Air);
-        assert_eq!(flat_column.heightmap.get(&BlockPositionInChunkColumn { bx: 0, y: 0, bz: 0 }), 74);
+        assert_eq!(flat_column.heightmap.get(&BlockPositionInChunkColumn { bx: 0, y: 0, bz: 0 }), 75);
 
         // Check that the heightmap is correct after setting the highest block to air
         flat_column.set_block(BlockPositionInChunkColumn { bx: 0, y: 10, bz: 0 }, BlockWithState::Air);
