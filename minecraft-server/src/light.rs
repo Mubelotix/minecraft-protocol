@@ -95,6 +95,9 @@ struct SkyLight {
 }
 
 impl SkyLight {
+    pub fn to_packet(&self) -> () {
+        
+    }
     /// Set the sky light in the given section.
     pub fn set_region(&mut self, from_y: usize, to_y: usize, level: u8) -> Result<(), ()> {
         if level > self.level {
@@ -247,7 +250,7 @@ impl ChunkColumn {
             for z in 0..16 {
                 let position = LightPositionInChunkColumn {
                     bx: x,
-                    y: self.get_hiest_block_at(&BlockPositionInChunkColumn { bx: x, y: 0, bz: z }) as usize + 16 + 1,
+                    y: self.get_highest_block_at(&BlockPositionInChunkColumn { bx: x, y: 0, bz: z }) as usize + 16 + 1,
                     bz: z,
                 };
                 to_explore.push(position);
@@ -260,9 +263,9 @@ impl ChunkColumn {
     }
 
     fn explore_sky_light_from_heap(&mut self, to_explore: &mut BinaryHeap<LightPositionInChunkColumn>) -> Result<(), ()> {
+        error!("start loop");
         while let Some(position) = to_explore.pop() {
             let mut neighbors = Vec::new();
-            let is_inside = self.get_hiest_block_at(&position.clone().into()) > position.y as u16;
             let my_level = self.light.sky_light.get_level(position.clone())?;
             if position.bx > 0 {
                 neighbors.push(LightPositionInChunkColumn { bx: position.bx - 1, y: position.y, bz: position.bz });
@@ -285,12 +288,12 @@ impl ChunkColumn {
 
             for neighbor in neighbors {
                 let neighbor_level = self.light.sky_light.get_level(neighbor.clone())?;
-
+            
                 let block = Block::from(self.get_block(neighbor.clone().into())); 
                 if block.is_transparent() 
                     && (neighbor_level < my_level.saturating_sub(1)) 
                 {
-                    let highest_block = self.get_hiest_block_at(&neighbor.clone().into()) + 16;
+                    let highest_block = self.get_highest_block_at(&neighbor.clone().into()) + 16;
                     let is_inside = highest_block > neighbor.y as u16 + 1;
                     to_explore.push(neighbor.clone());
                     let new_level = if is_inside { my_level - 1 } else { self.light.sky_light.level };
@@ -298,6 +301,7 @@ impl ChunkColumn {
                 }
             }
         }
+        error!("end loop");
         Ok(())
     }
 

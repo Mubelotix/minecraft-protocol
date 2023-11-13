@@ -71,11 +71,13 @@ impl PlayerHandler {
         self.world.update_loaded_chunks(self.info.uuid, loaded_chunks_after.clone()).await;
 
         // Send the chunks to the client
-        let mut heightmaps = HashMap::new();
-        heightmaps.insert(String::from("MOTION_BLOCKING"), NbtTag::LongArray(vec![0; 37]));
-        let heightmaps = NbtTag::Compound(heightmaps);
         for newly_loaded_chunk in newly_loaded_chunks {
             let mut column = Vec::new();
+            let heightmaps = self.world.get_network_heightmap(newly_loaded_chunk.clone()).await.unwrap_or_else(|| {
+                error!("Chunk not loaded: {newly_loaded_chunk:?}");
+                NbtTag::Compound(HashMap::new()) // TODO hard error
+            });
+
             for cy in -4..20 {
                 let chunk = self.world.get_network_chunk(newly_loaded_chunk.chunk(cy)).await.unwrap_or_else(|| {
                     error!("Chunk not loaded: {newly_loaded_chunk:?}");
@@ -92,7 +94,7 @@ impl PlayerHandler {
                 value: ChunkData {
                     chunk_x: newly_loaded_chunk.cx,
                     chunk_z: newly_loaded_chunk.cz,
-                    heightmaps: heightmaps.clone(),
+                    heightmaps,
                     data: Array::from(serialized.clone()),
                     block_entities: Array::default(),
                     sky_light_mask: Array::default(),

@@ -189,6 +189,18 @@ impl HeightMap {
         }
     }
     
+    pub fn to_tag(&self) -> NbtTag {
+        NbtTag::Compound(
+            HashMap::from_iter(
+                vec![
+                    (String::from("MOTION_BLOCKING"), NbtTag::LongArray(unsafe {
+                        std::mem::transmute::<Vec<u64>, Vec<i64>>(self.data.clone())
+                    })),
+                ]
+            )
+        )
+    }
+
     /// Update the current base of the heightmap.
     fn new_base(&mut self, new_base: u8) {
         assert!(new_base <= 9, "base must be <= 9 because the max height is 320 + 64");
@@ -208,8 +220,6 @@ impl HeightMap {
     /// Set the height of the highest block at the given position.
     pub fn set(&mut self, position: &BlockPositionInChunkColumn, height: u32) {
         let (x, z) = (position.bx, position.bz);
-        println!("set height at {:?}", position);
-        println!("height: {:?}", height);
         // Check if the height is higher than the current max height.
         if let Some(max_height) = self.max_height {
             if height < max_height {        // Calculate the new base for the data.
@@ -341,7 +351,7 @@ impl ChunkColumn {
         self.heightmap.max_height.unwrap_or(0)
     }
 
-    pub(super) fn get_hiest_block_at(&self, position: &BlockPositionInChunkColumn) -> u16 {
+    pub(super) fn get_highest_block_at(&self, position: &BlockPositionInChunkColumn) -> u16 {
         self.heightmap.get(position) 
     }
 
@@ -413,18 +423,12 @@ impl ChunkColumn {
 
         // Get the height of the placed block
         let block_height = (position.y - Self::MIN_Y + 1).max(0) as u16;
-        println!("set {:?} at {:?} ", block, position);
-        println!("block height: {:?}", block_height);
-        println!("last height: {:?}", last_height);
-        println!("let pass sunlight: {:?}", not_filter_sunlight);
         match block_height.cmp(&last_height) {
             Ordering::Greater if !not_filter_sunlight => {
-                println!("greater");
                 self.heightmap.set(&position, block_height.into());
             },
             Ordering::Equal if not_filter_sunlight => {
                 // Downward propagation
-                println!("equal");
                 let new_height = self.get_higher_skylight_filter_block(&position, last_height).into();
                 self.heightmap.set(&position, new_height);
             },
@@ -467,6 +471,14 @@ impl WorldMap {
         let chunk = chunk_column.chunks.get(cy_in_vec)?;
 
         Some(chunk.as_network_chunk().clone())
+    }
+
+    pub async fn get_network_heightmap(&self, position: ChunkColumnPosition) -> Option<NbtTag> {
+        let shard = position.shard(self.shard_count);
+        let shard = self.shards[shard].read().await;
+        let chunk_column = shard.get(&position)?;
+
+        Some(chunk_column.heightmap.to_tag())
     }
     
     pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {

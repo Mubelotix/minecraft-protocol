@@ -69,6 +69,10 @@ impl World {
         self.map.get_network_chunk(position).await
     }
 
+    pub async fn get_network_heightmap(&self, position: ChunkColumnPosition) -> Option<NbtTag> {
+        self.map.get_network_heightmap(position).await
+    }
+
     pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
         self.map.set_block(position.clone(), block.clone()).await;
         self.notify(&position.chunk_column(), WorldChange::BlockChange(position, block)).await;
