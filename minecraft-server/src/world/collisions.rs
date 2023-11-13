@@ -285,88 +285,91 @@ fn ray_cast(position: CollisionShape, movement: Translation) -> Vec<Translation>
     result
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
 
+    #[test]
+    fn test() {
+        let shape1 = CollisionShape {
+            x1: 0.0,
+            y1: 0.0,
+            z1: 0.0,
+            x2: 1.0,
+            y2: 1.0,
+            z2: 1.0,
+        };
 
-#[test]
-fn test() {
-    let shape1 = CollisionShape {
-        x1: 0.0,
-        y1: 0.0,
-        z1: 0.0,
-        x2: 1.0,
-        y2: 1.0,
-        z2: 1.0,
-    };
+        // Boxes are just next to each other and pushing against each other
+        let shape2 = shape1.clone() + Translation { x: 1.0, y: 0.0, z: 0.0 };
+        let mut translation = Translation { x: -1.0, y: 0.0, z: 0.0 };
+        restrict(&shape2, &mut translation, &shape1);
+        assert_eq!(translation, Translation { x: 0.0, y: 0.0, z: 0.0 });
 
-    // Boxes are just next to each other and pushing against each other
-    let shape2 = shape1.clone() + Translation { x: 1.0, y: 0.0, z: 0.0 };
-    let mut translation = Translation { x: -1.0, y: 0.0, z: 0.0 };
-    restrict(&shape2, &mut translation, &shape1);
-    assert_eq!(translation, Translation { x: 0.0, y: 0.0, z: 0.0 });
+        // Boxes are one block away but one comes and pushes the other
+        let shape2 = shape1.clone() + Translation { x: 2.0, y: 0.0, z: 0.0 };
+        let mut translation = Translation { x: -2.0, y: 0.0, z: 0.0 };
+        restrict(&shape2, &mut translation, &shape1);
+        assert_eq!(translation, Translation { x: -1.0, y: 0.0, z: 0.0 });
 
-    // Boxes are one block away but one comes and pushes the other
-    let shape2 = shape1.clone() + Translation { x: 2.0, y: 0.0, z: 0.0 };
-    let mut translation = Translation { x: -2.0, y: 0.0, z: 0.0 };
-    restrict(&shape2, &mut translation, &shape1);
-    assert_eq!(translation, Translation { x: -1.0, y: 0.0, z: 0.0 });
+        // The other way around
+        let shape2 = shape1.clone() + Translation { x: -2.0, y: 0.0, z: 0.0 };
+        let mut translation = Translation { x: 2.0, y: 0.0, z: 0.0 };
+        restrict(&shape2, &mut translation, &shape1);
+        assert_eq!(translation, Translation { x: 1.0, y: 0.0, z: 0.0 });
 
-    // The other way around
-    let shape2 = shape1.clone() + Translation { x: -2.0, y: 0.0, z: 0.0 };
-    let mut translation = Translation { x: 2.0, y: 0.0, z: 0.0 };
-    restrict(&shape2, &mut translation, &shape1);
-    assert_eq!(translation, Translation { x: 1.0, y: 0.0, z: 0.0 });
+        // From top
+        let shape2 = shape1.clone() + Translation { x: 0.0, y: 2.0, z: 0.0 };
+        let mut translation = Translation { x: 0.0, y: -2.0, z: 0.0 };
+        restrict(&shape2, &mut translation, &shape1);
+        assert_eq!(translation, Translation { x: 0.0, y: -1.0, z: 0.0 });
 
-    // From top
-    let shape2 = shape1.clone() + Translation { x: 0.0, y: 2.0, z: 0.0 };
-    let mut translation = Translation { x: 0.0, y: -2.0, z: 0.0 };
-    restrict(&shape2, &mut translation, &shape1);
-    assert_eq!(translation, Translation { x: 0.0, y: -1.0, z: 0.0 });
+        // On last axis
+        let shape2 = shape1.clone() + Translation { x: 0.0, y: 0.0, z: 2.0 };
+        let mut translation = Translation { x: 0.0, y: 0.0, z: -2.0 };
+        restrict(&shape2, &mut translation, &shape1);
+        assert_eq!(translation, Translation { x: 0.0, y: 0.0, z: -1.0 });
 
-    // On last axis
-    let shape2 = shape1.clone() + Translation { x: 0.0, y: 0.0, z: 2.0 };
-    let mut translation = Translation { x: 0.0, y: 0.0, z: -2.0 };
-    restrict(&shape2, &mut translation, &shape1);
-    assert_eq!(translation, Translation { x: 0.0, y: 0.0, z: -1.0 });
+        // Colliding on corner
+        let shape2 = shape1.clone() + Translation { x: 2.0, y: 2.0, z: 2.0 };
+        let mut translation = Translation { x: -2.0, y: -2.0, z: -2.0 };
+        restrict(&shape2, &mut translation, &shape1);
+        assert_eq!(translation, Translation { x: -1.0, y: -1.0, z: -1.0 });
 
-    // Colliding on corner
-    let shape2 = shape1.clone() + Translation { x: 2.0, y: 2.0, z: 2.0 };
-    let mut translation = Translation { x: -2.0, y: -2.0, z: -2.0 };
-    restrict(&shape2, &mut translation, &shape1);
-    assert_eq!(translation, Translation { x: -1.0, y: -1.0, z: -1.0 });
+        // Colliding with offset on other axis
+        let shape2 = shape1.clone() + Translation { x: 2.0, y: 0.5, z: 0.0 };
+        let mut translation = Translation { x: -2.0, y: 0.0, z: 0.0 };
+        restrict(&shape2, &mut translation, &shape1);
+        assert_eq!(translation, Translation { x: -1.0, y: 0.0, z: 0.0 });
 
-    // Colliding with offset on other axis
-    let shape2 = shape1.clone() + Translation { x: 2.0, y: 0.5, z: 0.0 };
-    let mut translation = Translation { x: -2.0, y: 0.0, z: 0.0 };
-    restrict(&shape2, &mut translation, &shape1);
-    assert_eq!(translation, Translation { x: -1.0, y: 0.0, z: 0.0 });
+        // Colliding when already inside
+        let shape2 = shape1.clone() + Translation { x: 0.5, y: 0.5, z: 0.5 };
+        let mut translation = Translation { x: -0.5, y: -0.5, z: -0.5 };
+        restrict(&shape2, &mut translation, &shape1);
+        assert_eq!(translation, Translation { x: 0.0, y: 0.0, z: 0.0 });
+    }
 
-    // Colliding when already inside
-    let shape2 = shape1.clone() + Translation { x: 0.5, y: 0.5, z: 0.5 };
-    let mut translation = Translation { x: -0.5, y: -0.5, z: -0.5 };
-    restrict(&shape2, &mut translation, &shape1);
-    assert_eq!(translation, Translation { x: 0.0, y: 0.0, z: 0.0 });
-}
+    #[test]
+    fn test_ray_cast() {
+        let shape = CollisionShape {
+            x1: 0.0,
+            y1: 0.0,
+            z1: 0.0,
+            x2: 1.0,
+            y2: 1.0,
+            z2: 1.0,
+        };
 
-#[test]
-fn test_ray_cast() {
-    let shape = CollisionShape {
-        x1: 0.0,
-        y1: 0.0,
-        z1: 0.0,
-        x2: 1.0,
-        y2: 1.0,
-        z2: 1.0,
-    };
+        let movement = Translation { x: 5.0, y: 0.0, z: 0.0 };
+        let mini_movements = ray_cast(shape.clone(), movement);
+        println!("{mini_movements:#?}");
 
-    let movement = Translation { x: 5.0, y: 0.0, z: 0.0 };
-    let mini_movements = ray_cast(shape.clone(), movement);
-    println!("{mini_movements:#?}");
+        let movement = Translation { x: 4.0, y: 2.0, z: 0.0 };
+        let mini_movements = ray_cast(shape.clone(), movement);
+        println!("{mini_movements:#?}");
 
-    let movement = Translation { x: 4.0, y: 2.0, z: 0.0 };
-    let mini_movements = ray_cast(shape.clone(), movement);
-    println!("{mini_movements:#?}");
-
-    let movement = Translation { x: 2.38, y: 1.82, z: 1.0 };
-    let mini_movements = ray_cast(shape.clone(), movement);
-    println!("{mini_movements:#?}");
+        let movement = Translation { x: 2.38, y: 1.82, z: 1.0 };
+        let mini_movements = ray_cast(shape.clone(), movement);
+        println!("{mini_movements:#?}");
+    }
 }
