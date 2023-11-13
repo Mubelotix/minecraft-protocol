@@ -450,4 +450,30 @@ mod tests {
             }
         }
     }
+
+    #[tokio::test]
+    async fn test_try_move() {
+        let map = WorldMap::new(1);
+        map.load(ChunkColumnPosition { cx: 0, cz: 0 }).await;
+        let bounding_box = CollisionShape {
+            x1: 0.0,
+            y1: 0.0,
+            z1: 0.0,
+            x2: 1.0,
+            y2: 1.0,
+            z2: 1.0,
+        };
+
+        // Position on ground and try to go through it
+        //let positionned_box = bounding_box.clone() + &Translation { x: 0.0, y: -3.0*16.0, z: 0.0 };
+        //let movement = Translation { x: 0.0, y: -10.0, z: 0.0 };
+        //let movement = map.try_move(positionned_box, movement).await;
+        //assert_eq!(movement, Translation { x: 0.0, y: 0.0, z: 0.0 }); // It doesn't get through
+
+        // Place it a little above ground
+        let positionned_box = bounding_box.clone() + &Translation { x: 0.0, y: -3.0*16.0 + 1.0, z: 0.0 };
+        let movement = Translation { x: 0.0, y: -10.0, z: 0.0 };
+        let movement = map.try_move(positionned_box, movement).await;
+        assert_eq!(movement, Translation { x: 0.0, y: -1.0, z: 0.0 }); // It falls down but doesn't get through
+    }
 }

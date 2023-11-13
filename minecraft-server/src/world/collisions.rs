@@ -1,8 +1,8 @@
 use super::*;
 
-/// Returns minimum of two floats
+/// Returns minimum of two floats, but not NaN
 fn min2(a: f32, b: f32) -> f32 {
-    if a < b {
+    if a < b || b.is_nan() {
         a
     } else {
         b
@@ -17,12 +17,12 @@ fn min(a: f32, b: f32, c: f32) -> f32 {
 /// An object in space
 #[derive(Debug, Clone, PartialEq)]
 pub struct CollisionShape {
-    x1: f32,
-    y1: f32,
-    z1: f32,
-    x2: f32,
-    y2: f32,
-    z2: f32,
+    pub x1: f32,
+    pub y1: f32,
+    pub z1: f32,
+    pub x2: f32,
+    pub y2: f32,
+    pub z2: f32,
 }
 
 impl CollisionShape {
@@ -34,7 +34,7 @@ impl CollisionShape {
     }
 
     // TODO(perf): Return an iterator yielding blocks instead of a vec of blocks
-    fn containing_blocks(&self) -> Vec<BlockPosition> {
+    pub fn containing_blocks(&self) -> Vec<BlockPosition> {
         let mut result = Vec::new();
         for x in self.x1.floor() as i32..=self.x2.floor() as i32 {
             for y in self.y1.floor() as i32..=self.y2.floor() as i32 {
@@ -167,9 +167,9 @@ impl<'a> Iterator for PointIter<'a> {
 /// Vector describing a movement
 #[derive(Debug, Clone, PartialEq)]
 pub struct Translation {
-    x: f32,
-    y: f32,
-    z: f32,
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
 }
 
 impl Translation {
@@ -188,6 +188,46 @@ impl Translation {
         self.y *= limit;
         self.z *= limit;
     }
+
+    // TODO: turn CollisionShape.fragment into an iterator
+    pub fn fragment(self, position: &CollisionShape) -> Vec<Translation> {
+        let final_position = position.clone() + &self;
+        let mut result = Vec::new();
+        let mut current_position = position.clone();
+        //result.extend(position.containing_blocks().into_iter());
+        while current_position != final_position {
+            let x_dist = if self.x > 0.0 {
+                let next_x = current_position.x2.floor()+1.0;
+                (next_x - current_position.x2).abs()
+            } else {
+                let next_x = current_position.x1.ceil()-1.0;
+                (next_x - current_position.x1).abs()
+            };
+            let y_dist = if self.y > 0.0 {
+                let next_y = current_position.y2.floor()+1.0;
+                (next_y - current_position.y2).abs()
+            } else {
+                let next_y = current_position.y1.ceil()-1.0;
+                (next_y - current_position.y1).abs()
+            };
+            let z_dist = if self.z > 0.0 {
+                let next_z = current_position.z2.floor()+1.0;
+                (next_z - current_position.z2).abs()
+            } else {
+                let next_z = current_position.z1.ceil()-1.0;
+                (next_z - current_position.z1).abs()
+            };
+            let x_time = x_dist / self.x.abs();
+            let y_time = y_dist / self.y.abs();
+            let z_time = z_dist / self.z.abs();
+            let time = min(x_time, y_time, z_time);
+            println!("pos{current_position:?} dist({x_dist}, {y_dist}, {z_dist}) time({x_time}, {y_time}, {z_time}) time({time})");
+            let mini_translation = self.clone() * time;
+            current_position += &mini_translation;
+            result.push(mini_translation);
+        }
+        result
+    }    
 }
 
 impl std::ops::Add<Translation> for Translation {
@@ -253,44 +293,6 @@ impl std::ops::Mul<f32> for Translation {
             z: self.z * rhs,
         }
     }
-}
-fn ray_cast(position: CollisionShape, movement: Translation) -> Vec<Translation> {
-    let final_position = position.clone() + &movement;
-    let mut result = Vec::new();
-    let mut next_position = position.clone();
-    //result.extend(position.containing_blocks().into_iter());
-    while next_position != final_position {
-        let x_dist = if movement.x > 0.0 {
-            let next_x = next_position.x1.floor()+1.0;
-            (next_x - next_position.x1).abs()
-        } else {
-            let next_x = next_position.x2.floor()-1.0;
-            (next_x - next_position.x2).abs()
-        };
-        let y_dist = if movement.y > 0.0 {
-            let next_y = next_position.y1.floor()+1.0;
-            (next_y - next_position.y1).abs()
-        } else {
-            let next_y = next_position.y2.floor()-1.0;
-            (next_y - next_position.y2).abs()
-        };
-        let z_dist = if movement.z > 0.0 {
-            let next_z = next_position.z1.floor()+1.0;
-            (next_z - next_position.z1).abs()
-        } else {
-            let next_z = next_position.z2.floor()-1.0;
-            (next_z - next_position.z2).abs()
-        };
-        let x_time = x_dist / movement.x.abs();
-        let y_time = y_dist / movement.y.abs();
-        let z_time = z_dist / movement.z.abs();
-        let time = min(x_time, y_time, z_time);
-        println!("pos{next_position:?} dist({x_dist}, {y_dist}, {z_dist}) time({x_time}, {y_time}, {z_time}) time({time})");
-        let mini_translation = movement.clone() * time;
-        next_position += &mini_translation;
-        result.push(mini_translation);
-    }
-    result
 }
 
 #[cfg(test)]
@@ -368,16 +370,18 @@ mod tests {
             z2: 1.0,
         };
 
+        // TODO: add real test value comparisons
+
         let movement = Translation { x: 5.0, y: 0.0, z: 0.0 };
-        let mini_movements = ray_cast(shape.clone(), movement);
-        println!("{mini_movements:#?}");
+        let fragments = movement.fragment(&shape);
+        println!("{fragments:#?}");
 
         let movement = Translation { x: 4.0, y: 2.0, z: 0.0 };
-        let mini_movements = ray_cast(shape.clone(), movement);
-        println!("{mini_movements:#?}");
+        let mini_movements = movement.fragment(&shape);
+        println!("{fragments:#?}");
 
         let movement = Translation { x: 2.38, y: 1.82, z: 1.0 };
-        let mini_movements = ray_cast(shape.clone(), movement);
-        println!("{mini_movements:#?}");
+        let mini_movements = movement.fragment(&shape);
+        println!("{fragments:#?}");
     }
 }
