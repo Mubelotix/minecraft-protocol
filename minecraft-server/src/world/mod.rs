@@ -6,7 +6,8 @@ mod loading_manager;
 use loading_manager::*;
 mod map;
 use map::*;
-
+mod light;
+use light::*;
 /// World is the union of the map and entities.
 /// World handles loaded chunks and entities.
 /// It is responsible for notifying players of changes in the world.

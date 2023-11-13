@@ -5,7 +5,6 @@ mod server_behavior;
 mod prelude;
 mod ecs;
 mod world;
-mod light;
 
 use crate::prelude::*;
 

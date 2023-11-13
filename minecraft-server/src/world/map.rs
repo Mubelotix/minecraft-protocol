@@ -1,7 +1,8 @@
 use std::{collections::HashMap, cmp::Ordering};
 use minecraft_protocol::{components::chunk::{PalettedData, self}, ids::blocks::Block};
 use tokio::sync::RwLock;
-use crate::{prelude::*, light::Light};
+use crate::prelude::*;
+use super::light::Light;
 
 pub struct WorldMap {
     /// The map is divided in shards.
