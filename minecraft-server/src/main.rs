@@ -75,6 +75,20 @@ impl CollisionShape {
             index: 0,
         }
     }
+
+    // TODO(perf): Return an iterator yielding blocks instead of a vec of blocks
+    fn containing_blocks(&self) -> Vec<BlockPosition> {
+        let mut result = Vec::new();
+        for x in self.x1.floor() as i32..=self.x2.floor() as i32 {
+            for y in self.y1.floor() as i32..=self.y2.floor() as i32 {
+                for z in self.z1.floor() as i32..=self.z2.floor() as i32 {
+                    let block = BlockPosition { x, y, z };
+                    result.push(block);
+                }
+            }
+        }
+        result
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -107,6 +121,44 @@ impl std::ops::Add<Translation> for CollisionShape {
             x2: self.x2 + rhs.x,
             y2: self.y2 + rhs.y,
             z2: self.z2 + rhs.z,
+        }
+    }
+}
+
+impl std::ops::Add<&Translation> for CollisionShape {
+    type Output = CollisionShape;
+
+    fn add(self, rhs: &Translation) -> Self::Output {
+        CollisionShape {
+            x1: self.x1 + rhs.x,
+            y1: self.y1 + rhs.y,
+            z1: self.z1 + rhs.z,
+            x2: self.x2 + rhs.x,
+            y2: self.y2 + rhs.y,
+            z2: self.z2 + rhs.z,
+        }
+    }
+}
+
+impl std::ops::AddAssign<&Translation> for CollisionShape {
+    fn add_assign(&mut self, rhs: &Translation) {
+        self.x1 += rhs.x;
+        self.y1 += rhs.y;
+        self.z1 += rhs.z;
+        self.x2 += rhs.x;
+        self.y2 += rhs.y;
+        self.z2 += rhs.z;
+    }
+}
+
+impl std::ops::Mul<f32> for Translation {
+    type Output = Translation;
+
+    fn mul(self, rhs: f32) -> Self::Output {
+        Translation {
+            x: self.x * rhs,
+            y: self.y * rhs,
+            z: self.z * rhs,
         }
     }
 }
@@ -264,27 +316,67 @@ fn test() {
     assert_eq!(translation, Translation { x: 0.0, y: 0.0, z: 0.0 });
 }
 
-fn ray_cast(position: (f32, f32, f32), movement: (f32, f32, f32)) -> Vec<(isize, isize, isize)> {
-    let final_position = ((position.0+movement.0) as isize, (position.1+movement.1) as isize, (position.2+movement.2) as isize);
+fn ray_cast(position: CollisionShape, movement: Translation) -> Vec<Translation> {
+    let final_position = position.clone() + &movement;
     let mut result = Vec::new();
-    let mut next_position = position;
-    result.push((next_position.0 as isize, next_position.1 as isize, next_position.2 as isize));
-    while result.last().unwrap() != &final_position {
-        let next_x = if movement.0 > 0.0 { next_position.0.floor()+1.0 } else { next_position.0.floor()-1.0 };
-        let next_y = if movement.1 > 0.0 { next_position.1.floor()+1.0 } else { next_position.1.floor()-1.0 };
-        let next_z = if movement.2 > 0.0 { next_position.2.floor()+1.0 } else { next_position.2.floor()-1.0 };
-        let x_dist = (next_x - next_position.0).abs();
-        let y_dist = (next_y - next_position.1).abs();
-        let z_dist = (next_z - next_position.2).abs();
-        let x_time = x_dist / movement.0.abs();
-        let y_time = y_dist / movement.1.abs();
-        let z_time = z_dist / movement.2.abs();
+    let mut next_position = position.clone();
+    //result.extend(position.containing_blocks().into_iter());
+    while next_position != final_position {
+        let x_dist = if movement.x > 0.0 {
+            let next_x = next_position.x1.floor()+1.0;
+            (next_x - next_position.x1).abs()
+        } else {
+            let next_x = next_position.x2.floor()-1.0;
+            (next_x - next_position.x2).abs()
+        };
+        let y_dist = if movement.y > 0.0 {
+            let next_y = next_position.y1.floor()+1.0;
+            (next_y - next_position.y1).abs()
+        } else {
+            let next_y = next_position.y2.floor()-1.0;
+            (next_y - next_position.y2).abs()
+        };
+        let z_dist = if movement.z > 0.0 {
+            let next_z = next_position.z1.floor()+1.0;
+            (next_z - next_position.z1).abs()
+        } else {
+            let next_z = next_position.z2.floor()-1.0;
+            (next_z - next_position.z2).abs()
+        };
+        let x_time = x_dist / movement.x.abs();
+        let y_time = y_dist / movement.y.abs();
+        let z_time = z_dist / movement.z.abs();
         let time = min(x_time, y_time, z_time);
         println!("pos{next_position:?} dist({x_dist}, {y_dist}, {z_dist}) time({x_time}, {y_time}, {z_time}) time({time})");
-        next_position = (next_position.0 + movement.0 * time, next_position.1 + movement.1 * time, next_position.2 + movement.2 * time);
-        result.push((next_position.0 as isize, next_position.1 as isize, next_position.2 as isize));
+        let mini_translation = movement.clone() * time;
+        next_position += &mini_translation;
+        result.push(mini_translation);
     }
     result
+}
+
+#[test]
+fn test_ray_cast() {
+    let shape = CollisionShape {
+        x1: 0.0,
+        y1: 0.0,
+        z1: 0.0,
+        x2: 1.0,
+        y2: 1.0,
+        z2: 1.0,
+    };
+
+    let movement = Translation { x: 5.0, y: 0.0, z: 0.0 };
+    let mini_movements = ray_cast(shape.clone(), movement);
+    println!("{mini_movements:#?}");
+
+    let movement = Translation { x: 4.0, y: 2.0, z: 0.0 };
+    let mini_movements = ray_cast(shape.clone(), movement);
+    println!("{mini_movements:#?}");
+
+    let movement = Translation { x: 2.38, y: 1.82, z: 1.0 };
+    let mini_movements = ray_cast(shape.clone(), movement);
+    println!("{mini_movements:#?}");
 }
 
 struct ServerFuture {
