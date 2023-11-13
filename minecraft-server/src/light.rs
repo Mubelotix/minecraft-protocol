@@ -2,7 +2,7 @@ use std::{collections::BinaryHeap, ops::AddAssign};
 
 use minecraft_protocol::ids::blocks::Block;
 
-use crate::prelude::*;
+use crate::{prelude::*, position};
 
 
 #[derive(Debug, Clone)]
@@ -166,9 +166,9 @@ impl Light {
 
 #[derive(Debug, Clone)]
 struct LightPositionInChunkColumn {
-    bx: u8,
-    y: usize,
-    bz: u8,
+    pub bx: u8,
+    pub y: usize,
+    pub bz: u8,
 }
 
 impl LightPositionInChunkColumn {
@@ -261,7 +261,6 @@ impl ChunkColumn {
 
     fn explore_sky_light_from_heap(&mut self, to_explore: &mut BinaryHeap<LightPositionInChunkColumn>) -> Result<(), ()> {
         while let Some(position) = to_explore.pop() {
-            println!("Exploring {:?}", position);
             let mut neighbors = Vec::new();
             let is_inside = self.get_hiest_block_at(&position.clone().into()) > position.y as u16;
             let my_level = self.light.sky_light.get_level(position.clone())?;
@@ -287,13 +286,12 @@ impl ChunkColumn {
             for neighbor in neighbors {
                 let neighbor_level = self.light.sky_light.get_level(neighbor.clone())?;
 
-                println!("Neighbor: {:?}, level: {}", neighbor, neighbor_level);
                 let block = Block::from(self.get_block(neighbor.clone().into())); 
-                println!("Is transparent {}", block.is_transparent());
                 if block.is_transparent() 
                     && (neighbor_level < my_level.saturating_sub(1)) 
                 {
-                    println!("Updating light at {:?} from {:?}", neighbor, position);
+                    let highest_block = self.get_hiest_block_at(&neighbor.clone().into()) + 16;
+                    let is_inside = highest_block > neighbor.y as u16 + 1;
                     to_explore.push(neighbor.clone());
                     let new_level = if is_inside { my_level - 1 } else { self.light.sky_light.level };
                     self.light.sky_light.set_level(neighbor, new_level)?;
@@ -304,10 +302,17 @@ impl ChunkColumn {
     }
 
     pub(super) fn update_light_at(&mut self, position: BlockPositionInChunkColumn) {
-        let mut start_position: LightPositionInChunkColumn = position.into();
-        start_position += 1;
-        let mut to_explore: BinaryHeap<LightPositionInChunkColumn> = BinaryHeap::new();
-        to_explore.push(start_position );
+        let position = LightPositionInChunkColumn::from(position);
+        let (bx, y, bz) = (position.bx, position.y, position.bz);
+        
+        let mut to_explore: BinaryHeap<LightPositionInChunkColumn> = BinaryHeap::from(vec![
+            LightPositionInChunkColumn { bx, y: y + 1, bz },
+            LightPositionInChunkColumn { bx: (bx + 1) % 16, y, bz },
+            LightPositionInChunkColumn { bx: bx.saturating_sub(1), y, bz },
+            LightPositionInChunkColumn { bx, y, bz: (bz + 1) % 16 },
+            LightPositionInChunkColumn { bx, y, bz: bz.saturating_sub(1)},
+        ]);
+
         self.explore_sky_light_from_heap(&mut to_explore).map_err(|_| error!("Error while updating light")).unwrap();
     }
 }
@@ -408,6 +413,12 @@ mod tests {
         flat_chunk.set_block_for_test(BlockPositionInChunkColumn { bx: 0, y: -50, bz: 1 }, Block::Air.into());
         assert_eq!(flat_chunk.light.sky_light.sky_light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 14, bz: 1 }).unwrap(), 14);
         assert_eq!(flat_chunk.light.sky_light.sky_light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 0, bz: 10 }).unwrap(), 0);
+
+        flat_chunk.set_block_for_test(BlockPositionInChunkColumn { bx: 0, y: -50, bz: 2 }, Block::Air.into());
+        assert_eq!(flat_chunk.light.sky_light.sky_light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 14, bz: 2 }).unwrap(), 13);
+
+        flat_chunk.set_block_for_test(BlockPositionInChunkColumn { bx: 0, y: -51, bz: 2 }, Block::Air.into());
+        assert_eq!(flat_chunk.light.sky_light.sky_light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 13, bz: 2 }).unwrap(), 12);
 
     }
 }
