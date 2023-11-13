@@ -8,6 +8,8 @@ mod map;
 use map::*;
 mod ecs;
 use ecs::*;
+mod collisions;
+use collisions::*;
 
 /// World is the union of the map and entities.
 /// World handles loaded chunks and entities.
