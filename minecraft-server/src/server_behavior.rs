@@ -58,7 +58,7 @@ impl ServerBehavior {
 
         for i in (0..self.player_handlers.len()).rev() {
             let handler = &mut self.player_handlers[i];
-            match handler.as_mut().poll(cx) {
+            match handler.as_mut().poll(cx) { // TODO: spawn tasks instead of polling them here
                 Ready(_) => {
                     debug!("Player handler finished");
                     self.player_handlers.swap_remove(i);

@@ -147,7 +147,7 @@ impl PlayerHandler {
             },
             DigBlock { status, location, face: _, sequence: _ } => {
                 use minecraft_protocol::components::blocks::DiggingState;
-
+                // TODO: Check legitimacy 
                 if self.game_mode == Gamemode::Creative || status == DiggingState::Finished {
                     self.world.set_block(location.into(), BlockWithState::Air).await;
                 }

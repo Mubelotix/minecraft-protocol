@@ -2,8 +2,6 @@ use crate::{prelude::*, entities::AnyEntity};
 use minecraft_protocol::packets::UUID;
 use super::tags::Tag;
 
-pub type Eid = u32;
-
 pub struct Entities {    
     pub entities: RwLock<HashMap<Eid, AnyEntity>>,
 
@@ -46,7 +44,7 @@ impl Entities {
             Some(r)
         } else {
             None
-        }
+      }
     }
 
     /// Remove an entity
