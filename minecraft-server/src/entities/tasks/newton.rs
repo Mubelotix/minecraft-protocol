@@ -26,6 +26,7 @@ pub async fn newton_task<T: EntityDescendant>(h: Handler<T>, mut server_msg_rcvr
         };
 
         // Apply velocity and collisions
+        let mut changes = EntityChanges::nothing();
         velocity.y -= 9.81/20.0;
         let bounding_box = CollisionShape {
             x1: position.x - width/2.0,
@@ -38,22 +39,31 @@ pub async fn newton_task<T: EntityDescendant>(h: Handler<T>, mut server_msg_rcvr
         let allowed_velocity = h.world.try_move(&bounding_box, &velocity).await;
         if velocity.x != allowed_velocity.x {
             velocity.x = 0.0;
+            changes += EntityChanges::velocity();
         }
         if velocity.y != allowed_velocity.y {
             velocity.y = 0.0;
+            changes += EntityChanges::velocity();
         }
         if velocity.z != allowed_velocity.z {
             velocity.z = 0.0;
+            changes += EntityChanges::velocity();
         }
-        position += allowed_velocity;
+        if !allowed_velocity.is_zero() {
+            changes += EntityChanges::position();
+            position += allowed_velocity;
+        }
 
         // Mutate entity
         // TODO(correctness): Before modifying entity values, we should ensure the original values we based the changes on are still the same
+        if changes.nothing_changed() {
+            continue;
+        }
         h.mutate(|entity| {
             let entity = entity.get_entity_mut();
             entity.velocity = velocity;
             entity.position = position;
-            ((), EntityChanges::position()+EntityChanges::velocity())
+            ((), changes)
         }).await;
     }
 }

@@ -110,20 +110,20 @@ impl World {
             Some((r, changes)) => {
                 // TODO: make only one lookup and group into a single message with optional fields
                 let position = self.entities.observe_entity(eid, |e| e.as_entity().position.clone()).await?;
-                if changes.has_position_changed() {
+                if changes.position_changed() {
                     self.notify(&position.chunk_column(), WorldChange::EntityPosition {
                         eid,
                         position: position.clone(),
                     }).await;
                 }
-                if changes.has_velocity_changed() {
+                if changes.velocity_changed() {
                     let velocity = self.entities.observe_entity(eid, |e| e.as_entity().velocity.clone()).await?;
                     self.notify(&position.chunk_column(), WorldChange::EntityVelocity {
                         eid,
                         velocity,
                     }).await;
                 }
-                if changes.has_pitch_changed() {
+                if changes.pitch_changed() {
                     let (pitch, yaw, head_yaw) = self.entities.observe_entity(eid, |e| (e.as_entity().pitch, e.as_entity().yaw, e.as_other::<LivingEntity>().map(|e| e.head_yaw).unwrap_or(0.0))).await?;
                     self.notify(&position.chunk_column(), WorldChange::EntityPitch {
                         eid,
@@ -132,7 +132,7 @@ impl World {
                         head_yaw,
                     }).await;
                 }
-                if changes.has_metadata_changed() {
+                if changes.metadata_changed() {
                     todo!()
                 }
                 Some(r)

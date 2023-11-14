@@ -193,6 +193,10 @@ impl Translation {
         (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
     }
 
+    pub fn is_zero(&self) -> bool {
+        self.x == 0.0 && self.y == 0.0 && self.z == 0.0
+    }
+
     // TODO: turn CollisionShape.fragment into an iterator
     pub fn fragment(self, position: &CollisionShape) -> Vec<Translation> {
         let mut result = Vec::new();
