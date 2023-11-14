@@ -30,7 +30,7 @@ pub struct Entity {
 
 impl Handler<Entity> {
     async fn init(self, server_msg_rcvr: BroadcastReceiver<ServerMessage>) {
-        self.insert_task("gravity", tokio::spawn(gravity_task(self.clone(), server_msg_rcvr))).await;
+        self.insert_task("newton", tokio::spawn(newton_task(self.clone(), server_msg_rcvr))).await;
     }
 }
 

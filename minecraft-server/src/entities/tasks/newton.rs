@@ -2,7 +2,7 @@ use crate::CollisionShape;
 
 use super::*;
 
-pub async fn gravity_task<T: EntityDescendant>(h: Handler<T>, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>) where AnyEntity: TryAsEntityRef<T> {
+pub async fn newton_task<T: EntityDescendant>(h: Handler<T>, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>) where AnyEntity: TryAsEntityRef<T> {
     loop {
         let msg = server_msg_rcvr.recv().await.unwrap();
 

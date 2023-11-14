@@ -1,4 +1,4 @@
 pub use super::*;
 
-mod gravity;
-pub use gravity::*;
+mod newton;
+pub use newton::*;
