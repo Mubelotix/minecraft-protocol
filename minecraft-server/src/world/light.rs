@@ -284,7 +284,6 @@ impl ChunkColumn {
     }
 
     fn explore_sky_light_from_heap(&mut self, to_explore: &mut BinaryHeap<LightPositionInChunkColumn>) -> Result<(), ()> {
-        error!("start loop");
         // We get the neighbors and determine the light source from them
         // The neighbor with the highest light level is the light source
         // So we explore from it
@@ -308,7 +307,6 @@ impl ChunkColumn {
                 }
             }
         }
-        error!("end loop");
         Ok(())
     }
 

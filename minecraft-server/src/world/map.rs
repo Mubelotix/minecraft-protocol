@@ -1,4 +1,4 @@
-use std::{collections::HashMap, cmp::Ordering};
+use std::{collections::HashMap, cmp::Ordering, vec};
 use minecraft_protocol::{components::chunk::PalettedData, ids::blocks::Block};
 use tokio::sync::RwLock;
 use crate::prelude::*;
@@ -429,6 +429,7 @@ impl ChunkColumn {
             },
             _ => {}   
         }
+        trace!("setting");
         self.update_light_as_block_changed_at(position, !not_filter_sunlight);
     }
 }
@@ -456,30 +457,16 @@ impl WorldMap {
         inner_get_block(self, position).await.unwrap_or(BlockWithState::Air)
     }
 
-    pub async fn get_network_chunk_column_data(&self, position: ChunkColumnPosition) -> Option<Vec<u8>> {
-        let shard = position.shard(self.shard_count);
+    pub async fn get_network_chunk(&self, position: ChunkPosition) -> Option<NetworkChunk> {
+        let chunk_column_position = position.chunk_column();
+        let shard = chunk_column_position.shard(self.shard_count);
+        let cy_in_vec: usize = position.cy.saturating_add(4).try_into().ok()?;
+
         let shard = self.shards[shard].read().await;
-        let chunk_column = shard.get(&position)?;
-        
-        let serialized = NetworkChunk::into_data(chunk_column.chunks.iter().map(|c| c.data.clone()).collect()).unwrap();
-        let chunk_data = PlayClientbound::ChunkData { value: NetworkChunkColumnData {
-            chunk_x: position.cx,
-            chunk_z: position.cz,
-            heightmaps: chunk_column.heightmap.to_tag(),
-            data: Array::from(serialized.clone()),
-            block_entities: Array::default(),
-            sky_light_mask: Array::default(),
-            block_light_mask: Array::default(),
-            empty_sky_light_mask: Array::default(),
-            empty_block_light_mask: Array::default(),
-            sky_light: Array::default(),
-            block_light: Array::default(),
-        }};
-        
-        let chunk_data = chunk_data.serialize_minecraft_packet().map_err(|e| {
-            error!("Failed to serialize chunk column data: {:?}", e);
-        }).ok()?;
-        Some(chunk_data)
+        let chunk_column = shard.get(&chunk_column_position)?;
+        let chunk = chunk_column.chunks.get(cy_in_vec)?;
+
+        Some(chunk.as_network_chunk().clone())
     }
     
     pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {

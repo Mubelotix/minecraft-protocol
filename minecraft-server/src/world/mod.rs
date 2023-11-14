@@ -33,8 +33,8 @@ impl World {
         Some(self.map.get_block(position).await)
     }
 
-    pub async fn get_network_chunk_column_data(&self, position: ChunkColumnPosition) -> Option<Vec<u8>> {
-        self.map.get_network_chunk_column_data(position).await
+    pub async fn get_network_chunk(&self, position: ChunkPosition) -> Option<NetworkChunk> {
+        self.map.get_network_chunk(position).await
     }
 
     pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
