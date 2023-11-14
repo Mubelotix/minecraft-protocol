@@ -107,10 +107,18 @@ impl<T> Handler<T> where AnyEntity: TryAsEntityRef<T> {
         }).await
     }
 
+    pub async fn observe_any<R>(&self, observer: impl FnOnce(&AnyEntity) -> R) -> Option<R> {
+        self.world.observe_entity(self.eid, observer).await
+    }
+
     pub async fn mutate<R>(&self, mutator: impl FnOnce(&mut T) -> (R, EntityChanges)) -> Option<R> {
         self.world.mutate_entity(self.eid, move |entity| {
             mutator(entity.try_as_entity_mut().unwrap())
         }).await
+    }
+
+    pub async fn mutate_any<R>(&self, mutator: impl FnOnce(&mut AnyEntity) -> (R, EntityChanges)) -> Option<R> {
+        self.world.mutate_entity(self.eid, mutator).await
     }
 }
 
