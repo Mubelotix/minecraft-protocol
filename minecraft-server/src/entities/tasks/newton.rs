@@ -55,6 +55,9 @@ pub async fn newton_task<T: EntityDescendant>(h: Handler<T>, mut server_msg_rcvr
             position += new_velocity;
         }
 
+        // TODO(feat): Apply air resistance to x and z velocity
+        // Keep in mind that velocity shouldn't flicker when constantly kept up by another task but slowed down in this task
+
         // Mutate entity
         // TODO(correctness): Before modifying entity values, we should ensure the original values we based the changes on are still the same
         if changes.nothing_changed() {
