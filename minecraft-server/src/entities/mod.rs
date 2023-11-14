@@ -103,7 +103,7 @@ impl<T> Handler<T> where AnyEntity: TryAsEntityRef<T> {
 
     pub async fn observe<R>(&self, observer: impl FnOnce(&T) -> R) -> Option<R> {
         self.world.observe_entity(self.eid, move |entity| {
-            observer(entity.try_as_entity_ref().unwrap())
+            observer(entity.try_as_entity_ref().expect("Called observe on the wrong entity"))
         }).await
     }
 
@@ -113,7 +113,7 @@ impl<T> Handler<T> where AnyEntity: TryAsEntityRef<T> {
 
     pub async fn mutate<R>(&self, mutator: impl FnOnce(&mut T) -> (R, EntityChanges)) -> Option<R> {
         self.world.mutate_entity(self.eid, move |entity| {
-            mutator(entity.try_as_entity_mut().unwrap())
+            mutator(entity.try_as_entity_mut().expect("Called mutate on the wrong entity"))
         }).await
     }
 

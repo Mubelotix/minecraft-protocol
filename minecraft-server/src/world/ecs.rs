@@ -12,7 +12,7 @@ pub struct Entities {
     pub entities: RwLock<HashMap<Eid, AnyEntity>>,
 
     /// A hashmap of chunk positions to get a list of entities in a chunk
-    pub chunks: RwLock<HashMap<ChunkPosition, HashSet<Eid>>>,
+    pub chunks: RwLock<HashMap<ChunkColumnPosition, HashSet<Eid>>>,
     pub uuids: RwLock<HashMap<UUID, Eid>>,
     pub entity_tasks: RwLock<HashMap<Eid, HashMap<&'static str, EntityTaskHandle>>>,
 }
@@ -34,6 +34,22 @@ impl Entities {
         self.entities.read().await.get(&eid).map(observer)
     }
 
+    /// Observe entities in a chunk through a closure
+    /// That closure will be applied to each entity, and the results will be returned in a vector
+    pub(super) async fn observe_entities<R>(&self, chunk: ChunkColumnPosition, mut observer: impl FnMut(&AnyEntity) -> Option<R>) -> Vec<R> {
+        let entities = self.chunks.read().await;
+        let Some(eids) = entities.get(&chunk) else {return Vec::new()};
+        let mut results = Vec::with_capacity(eids.len());
+        for eid in eids {
+            if let Some(entity) = self.entities.read().await.get(eid) {
+                if let Some(r) = observer(entity) {
+                    results.push(r);
+                }
+            }
+        }
+        results
+    }
+
     /// Mutate an entity through a closure
     pub(super) async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> (R, EntityChanges)) -> Option<(R, EntityChanges)> {
         let mut entities = self.entities.write().await;
@@ -42,8 +58,8 @@ impl Entities {
             let prev_position = entity.as_entity().position.clone();
             let r = mutator(entity);
             if prev_position != entity.as_entity().position {
-                let old_chunk = prev_position.chunk();
-                let new_chunk = entity.as_entity().position.chunk();
+                let old_chunk = prev_position.chunk_column();
+                let new_chunk = entity.as_entity().position.chunk_column();
                 drop(entities);
                 let mut chunks = self.chunks.write().await;
                 chunks.entry(old_chunk).and_modify(|set| { set.remove(&eid); }); // TODO: ensure it gets removed
@@ -55,19 +71,21 @@ impl Entities {
         }
     }
 
-    pub(super) async fn spawn_entity(&self, entity: AnyEntity, world: &'static World, receiver: BroadcastReceiver<ServerMessage>) -> (Eid, UUID) {
+    pub(super) async fn spawn_entity<E>(&self, entity: AnyEntity, world: &'static World, receiver: BroadcastReceiver<ServerMessage>) -> (Eid, UUID)
+        where AnyEntity: TryAsEntityRef<E>, Handler<E>: EntityExt
+    {
         let eid = self.eid_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         let uuid = self.uuid_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u128;
         let mut entities = self.entities.write().await;
         let mut chunks = self.chunks.write().await;
         let mut uuids = self.uuids.write().await;
-        chunks.entry(entity.as_entity().position.chunk()).or_insert(HashSet::new()).insert(eid);
+        chunks.entry(entity.as_entity().position.chunk_column()).or_insert(HashSet::new()).insert(eid);
         entities.insert(eid, entity);
         uuids.insert(uuid, eid);
         drop(entities);
         drop(chunks);
         drop(uuids);
-        let h = Handler::<Zombie>::assume(eid, world); // TODO other than zombie
+        let h = Handler::<E>::assume(eid, world);
         h.init(receiver).await;
         (eid, uuid)
     }

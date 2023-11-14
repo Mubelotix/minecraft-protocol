@@ -189,8 +189,19 @@ impl Translation {
         self.z *= limit;
     }
 
-    fn norm(&self) -> f64 {
+    pub fn norm(&self) -> f64 {
         (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
+    }
+
+    /// Keep direction but change norm
+    pub fn set_norm(&mut self, norm: f64) {
+        let current_norm = self.norm();
+        if current_norm == 0.0 {
+            return;
+        }
+        self.x *= norm / current_norm;
+        self.y *= norm / current_norm;
+        self.z *= norm / current_norm;
     }
 
     pub fn is_zero(&self) -> bool {

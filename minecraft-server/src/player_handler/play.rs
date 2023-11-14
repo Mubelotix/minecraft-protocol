@@ -206,7 +206,7 @@ impl PlayerHandler {
                     let mut position = self.position.clone();
                     position.y += 20.0;
                     zombie.get_entity_mut().position = position;
-                    self.world.spawn_entity(AnyEntity::Zombie(zombie)).await;
+                    self.world.spawn_entity::<Zombie>(AnyEntity::Zombie(zombie)).await;
                 }
             }
             packet => warn!("Unsupported packet received: {packet:?}"),
@@ -216,7 +216,7 @@ impl PlayerHandler {
 
 pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>, world: &'static World, mut change_receiver: MpscReceiver<WorldChange>) -> Result<(), ()> {
     let (packet_sender, mut packet_receiver) = mpsc_channel(100);
-    let eid = world.spawn_entity(AnyEntity::Player(Player::default())).await;
+    let eid = world.spawn_entity::<Player>(AnyEntity::Player(Player::default())).await;
     
     let mut handler = PlayerHandler {
         eid,

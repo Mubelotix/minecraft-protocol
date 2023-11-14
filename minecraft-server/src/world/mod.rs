@@ -77,14 +77,16 @@ impl World {
         }
     }
 
-    pub async fn spawn_entity(&'static self, entity: AnyEntity) -> Eid {
+    pub async fn spawn_entity<E>(&'static self, entity: AnyEntity) -> Eid
+        where AnyEntity: TryAsEntityRef<E>, Handler<E>: EntityExt
+    {
         let position = entity.as_entity().position.clone();
         let velocity = entity.as_entity().velocity.clone();
         let ty = entity.to_network().unwrap(); // TODO: error handling
         let pitch = entity.as_entity().pitch;
         let yaw = entity.as_entity().yaw;
         let head_yaw = entity.as_other::<LivingEntity>().map(|e| e.head_yaw).unwrap_or(0.0);
-        let (eid, uuid) = self.entities.spawn_entity(entity, self, self.receiver.resubscribe()).await;
+        let (eid, uuid) = self.entities.spawn_entity::<E>(entity, self, self.receiver.resubscribe()).await;
         self.notify(&position.chunk_column(), WorldChange::EntitySpawned {
             eid,
             uuid,
@@ -102,6 +104,10 @@ impl World {
 
     pub async fn observe_entity<R>(&self, eid: Eid, observer: impl FnOnce(&AnyEntity) -> R) -> Option<R> {
         self.entities.observe_entity(eid, observer).await
+    }
+
+    pub async fn observe_entities<R>(&self, chunk: ChunkColumnPosition, observer: impl FnMut(&AnyEntity) -> Option<R>) -> Vec<R> {
+        self.entities.observe_entities(chunk, observer).await
     }
 
     pub async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> (R, EntityChanges)) -> Option<R> {

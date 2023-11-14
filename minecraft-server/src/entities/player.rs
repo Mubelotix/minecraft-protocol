@@ -2,6 +2,9 @@ use super::*;
 
 #[MinecraftEntity(
     ancestors { LivingEntity, Entity },
+    defines {
+        Entity.init(self, server_msg_rcvr: BroadcastReceiver<ServerMessage>);
+    }
 )]
 pub struct Player {
     pub living_entity: LivingEntity,
@@ -17,6 +20,12 @@ pub struct Player {
     pub main_hand: Hand,
     pub left_shoulder_entity: NbtTag,
     pub right_shoulder_entity: NbtTag,
+}
+
+impl Handler<Player> {
+    pub async fn init(self, server_msg_rcvr: BroadcastReceiver<ServerMessage>) {
+        //self.insert_task("newton", tokio::spawn(newton_task(self.clone(), server_msg_rcvr))).await;
+    }
 }
 
 impl Default for Player {

@@ -195,6 +195,12 @@ pub fn MinecraftEntity(attr: proc_macro::TokenStream, item: proc_macro::TokenStr
         codes.push(code);
 
         let code = quote! {
+            impl From<#this> for AnyEntity {
+                fn from(val: #this) -> Self {
+                    AnyEntity::#this(val)
+                }
+            }
+
             #[cfg(test)]
             #[automatically_derived]
             #[test]

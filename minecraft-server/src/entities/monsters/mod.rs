@@ -1,4 +1,4 @@
-use super::*;
+pub use super::*;
 
 mod piglin;
 pub use piglin::*;
