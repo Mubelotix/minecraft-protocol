@@ -1,6 +1,7 @@
 use super::*;
 
 struct PlayerHandler {
+    eid: Eid,
     world: &'static World,
     game_mode: Gamemode,
     info: PlayerInfo,
@@ -81,6 +82,13 @@ impl PlayerHandler {
 
     async fn on_move(&mut self) {
         let new_center_chunk = self.position.chunk();
+
+        // Tell the ECS about the changes
+        self.world.mutate_entity(self.eid, |entity| {
+            let entity: &mut Entity = entity.try_as_entity_mut().unwrap(); // Cannot fail
+            entity.position = self.position.clone();
+            ((), EntityChanges::position())
+        }).await;
 
         // Tell the client which chunk he is in
         if new_center_chunk == self.center_chunk { return };
@@ -208,8 +216,10 @@ impl PlayerHandler {
 
 pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>, world: &'static World, mut change_receiver: MpscReceiver<WorldChange>) -> Result<(), ()> {
     let (packet_sender, mut packet_receiver) = mpsc_channel(100);
+    let eid = world.spawn_entity(AnyEntity::Player(Player::default())).await;
     
     let mut handler = PlayerHandler {
+        eid,
         world,
         game_mode: Gamemode::Creative,
         position: Position { x: 0.0, y: 60.0, z: 0.0 },
@@ -227,6 +237,8 @@ pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut serve
         info: player_info,
     };
 
+    // TODO: player should load existing entities
+    
     for cx in -3..=3 {
         for cz in -3..=3 {
             handler.loaded_chunks.insert(ChunkColumnPosition { cx, cz });
