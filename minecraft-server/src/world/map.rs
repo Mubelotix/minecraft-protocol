@@ -429,7 +429,7 @@ impl ChunkColumn {
             },
             _ => {}   
         }
-        self.update_light_at(position);
+        self.update_light_as_block_changed_at(position, !not_filter_sunlight);
     }
 }
 
@@ -492,7 +492,6 @@ impl WorldMap {
             let mut shard = s.shards[shard].write().await;
             let chunk_column = shard.get_mut(&chunk_column_position)?;
             chunk_column.set_block(position_in_chunk_column.clone(), block);
-            chunk_column.update_light_at(position_in_chunk_column);
             Some(())
         }
         inner_get_block(self, position, block).await;
