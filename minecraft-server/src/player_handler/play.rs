@@ -40,7 +40,7 @@ impl PlayerHandler {
         }).await;
     }
 
-    async fn on_entity_spawned(&mut self, eid: Eid, uuid: UUID, ty: NetworkEntity, position: Position, pitch: f32, yaw: f32, head_yaw: f32, data: u32, velocity: Position, metadata: ()) {
+    async fn on_entity_spawned(&mut self, eid: Eid, uuid: UUID, ty: NetworkEntity, position: Position, pitch: f32, yaw: f32, head_yaw: f32, data: u32, velocity: Translation, metadata: ()) {
         self.entity_prev_positions.insert(eid, position.clone());
         self.send_packet(PlayClientbound::SpawnEntity {
             id: VarInt(eid as i32),
@@ -70,7 +70,7 @@ impl PlayerHandler {
         }).await;
     }
 
-    async fn on_entity_velocity_changes(&mut self, eid: Eid, velocity: Position) {
+    async fn on_entity_velocity_changes(&mut self, eid: Eid, velocity: Translation) {
         self.send_packet(PlayClientbound::SetEntityVelocity {
             entity_id: VarInt(eid as i32),
             velocity_x: (velocity.x * 8000.0) as i16,

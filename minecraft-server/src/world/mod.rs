@@ -47,6 +47,10 @@ impl World {
         self.notify(&position.chunk_column(), WorldChange::Block(position, block)).await;
     }
 
+    pub async fn try_move(&self, object: &CollisionShape, movement: &Translation) -> Translation {
+        self.map.try_move(object, movement).await
+    }
+
     pub async fn add_loader(&self, uuid: UUID) -> MpscReceiver<WorldChange> {
         let (sender, receiver) = mpsc_channel(100);
         self.change_senders.write().await.insert(uuid, sender);

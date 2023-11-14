@@ -12,7 +12,7 @@ pub enum WorldChange {
         yaw: f32,
         head_yaw: f32,
         data: u32,
-        velocity: Position,
+        velocity: Translation,
         metadata: (),
     },
     EntityDispawned {
@@ -28,7 +28,7 @@ pub enum WorldChange {
     },
     EntityVelocity {
         eid: Eid,
-        velocity: Position,
+        velocity: Translation,
     },
     EntityPitch {
         eid: Eid,

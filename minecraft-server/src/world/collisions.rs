@@ -319,6 +319,14 @@ impl std::ops::AddAssign<&Translation> for CollisionShape {
     }
 }
 
+impl std::ops::AddAssign<Translation> for Position {
+    fn add_assign(&mut self, rhs: Translation) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+        self.z += rhs.z;
+    }
+}
+
 impl std::ops::Mul<f64> for Translation {
     type Output = Translation;
 

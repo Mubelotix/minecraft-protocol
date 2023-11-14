@@ -271,7 +271,7 @@ impl WorldMap {
         inner_get_block(self, position, block).await;
     }
 
-    pub async fn try_move(&self, object: CollisionShape, movement: Translation) -> Translation {
+    pub async fn try_move(&self, object: &CollisionShape, movement: &Translation) -> Translation {
         // TODO(perf): Optimize Map.try_move by preventing block double-checking
         // Also lock the map only once
         let movement_fragments = movement.clone().fragment(&object);
@@ -287,7 +287,7 @@ impl WorldMap {
             }
             validated = validating;
         }
-        movement
+        movement.clone() // Would be more logic if it returned validated, but this way we avoid precision errors
     }
 
     pub async fn load(&self, position: ChunkColumnPosition) {
@@ -467,19 +467,19 @@ mod tests {
         // Position on ground and try to go through it
         let positionned_box = bounding_box.clone() + &Translation { x: 0.0, y: -3.0*16.0, z: 0.0 };
         let movement = Translation { x: 0.0, y: -10.0, z: 0.0 };
-        let movement = map.try_move(positionned_box, movement).await;
+        let movement = map.try_move(&positionned_box, &movement).await;
         assert_eq!(movement, Translation { x: 0.0, y: 0.0, z: 0.0 }); // It doesn't get through
 
         // Place it a little above ground
         let positionned_box = bounding_box.clone() + &Translation { x: 0.0, y: -3.0*16.0 + 1.0, z: 0.0 };
         let movement = Translation { x: 0.0, y: -10.0, z: 0.0 };
-        let movement = map.try_move(positionned_box, movement).await;
+        let movement = map.try_move(&positionned_box, &movement).await;
         assert_eq!(movement, Translation { x: 0.0, y: -1.0, z: 0.0 }); // It falls down but doesn't get through
 
         // Place it above but not on round coordinates
         let positionned_box = bounding_box.clone() + &Translation { x: 0.0, y: -3.0*16.0 + 1.1, z: 0.2 };
         let movement = Translation { x: 2.0, y: -10.0, z: 0.0 };
-        let movement = map.try_move(positionned_box, movement).await;
+        let movement = map.try_move(&positionned_box, &movement).await;
         assert_eq!(movement, Translation { x: 0.2200000000000003, y: -1.1000000000000014, z: 0.0 }); // It falls down but doesn't get through
     }
 }

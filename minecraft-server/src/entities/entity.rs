@@ -9,7 +9,7 @@ use super::*;
 )]
 pub struct Entity {
     pub position: Position,
-    pub velocity: Position,
+    pub velocity: Translation,
     pub pitch: f32,
     pub yaw: f32,
     pub is_on_fire: bool,
@@ -38,7 +38,7 @@ impl Default for Entity {
     fn default() -> Self {
         Entity {
             position: Position { x: 0.0, y: 0.0, z: 0.0 },
-            velocity: Position { x: 0.0, y: 0.0, z: 0.0 },
+            velocity: Translation { x: 0.0, y: 0.0, z: 0.0 },
             pitch: 0.0,
             yaw: 0.0,
             is_on_fire: false,
