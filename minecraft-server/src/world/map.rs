@@ -481,14 +481,6 @@ impl WorldMap {
         }).ok()?;
         Some(chunk_data)
     }
-
-    pub async fn get_network_heightmap(&self, position: ChunkColumnPosition) -> Option<NbtTag> {
-        let shard = position.shard(self.shard_count);
-        let shard = self.shards[shard].read().await;
-        let chunk_column = shard.get(&position)?;
-
-        Some(chunk_column.heightmap.to_tag())
-    }
     
     pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
         async fn inner_get_block(s: &WorldMap, position: BlockPosition, block: BlockWithState) -> Option<()> {
