@@ -214,7 +214,7 @@ impl Handler<Player> {
             WorldChange::EntityDispawned { eid } => todo!(),
             WorldChange::EntityMetadata { eid, metadata } => todo!(),
             WorldChange::EntityPosition { eid, position } => {
-                let Some(prev_position) = self.observe(|player| player.entity_prev_positions.get(&eid).cloned()).await else {return};
+                let Some(prev_position) = self.mutate(|player| ((player.entity_prev_positions.insert(eid, position.clone())), EntityChanges::other())).await else {return};
                 match prev_position {
                     Some(prev_position) => {
                         self.send_packet(PlayClientbound::UpdateEntityPosition {
@@ -263,7 +263,14 @@ impl Handler<Player> {
                     velocity_z: (velocity.z * 8000.0) as i16,
                 }).await;
             },
-            WorldChange::EntityPitch { eid, pitch, yaw, head_yaw } => todo!(),
+            WorldChange::EntityPitch { eid, pitch, yaw, head_yaw } => {
+                self.send_packet(PlayClientbound::UpdateEntityRotation {
+                    entity_id: VarInt(eid as i32),
+                    yaw: (yaw * (256.0 / 360.0)) as u8,
+                    pitch: (pitch * (256.0 / 360.0)) as u8,
+                    on_ground: true, // TODO add on_ground in entity position
+                }).await;
+            },
         }
     }
 
@@ -320,6 +327,7 @@ impl Handler<Player> {
                     position.y += 20.0;
                     zombie.get_entity_mut().position = position;
                     self.world.spawn_entity::<Zombie>(AnyEntity::Zombie(zombie)).await;
+                            debug!("zombie spawned");
                 }
             }
             packet => warn!("Unsupported packet received: {packet:?}"),
