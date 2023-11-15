@@ -194,7 +194,7 @@ pub fn MinecraftEntity(attr: proc_macro::TokenStream, item: proc_macro::TokenStr
         let code: TokenStream = code.into_iter().collect();
         codes.push(code);
 
-        let code = quote! {
+        let mut code = quote! {
             impl From<#this> for AnyEntity {
                 fn from(val: #this) -> Self {
                     AnyEntity::#this(val)
@@ -210,6 +210,15 @@ pub fn MinecraftEntity(attr: proc_macro::TokenStream, item: proc_macro::TokenStr
                 assert!(#parent_snake.is_some(), "Please add {} to {} list", stringify!(#this), stringify!(#parent));
             }
         };
+        if struct_name == "Player" {
+            code = quote! {
+                impl From<#this> for AnyEntity {
+                    fn from(val: #this) -> Self {
+                        AnyEntity::#this(val)
+                    }
+                }
+            }
+        }
         codes.push(code);
     }
 

@@ -14,9 +14,8 @@ pub async fn handle_connection(
             let player_info = login(&mut stream, addr).await?;
             let (player_info, change_receiver) = handshake(&mut stream, player_info, world).await?;
             let uuid = player_info.uuid;
-            let r = handle_player(stream, player_info, server_msg_rcvr, world, change_receiver).await;
-            world.remove_loader(uuid).await;
-            r
+            let eid = Player::spawn_player(world, stream, player_info, server_msg_rcvr, change_receiver).await;
+            Ok(())
         },
         ConnectionState::Status => {
             status(&mut stream).await;
