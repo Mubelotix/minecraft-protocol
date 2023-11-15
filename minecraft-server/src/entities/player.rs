@@ -22,9 +22,6 @@ pub struct Player {
 
     game_mode: Gamemode,
     info: PlayerInfo,
-    position: Position,
-    yaw: f32,
-    pitch: f32,
     on_ground: bool,
     packet_sender: MpscSender<Vec<u8>>,
     entity_prev_positions: HashMap<Eid, Position>,
@@ -59,9 +56,6 @@ impl Player {
             right_shoulder_entity: NbtTag::Null,
 
             game_mode: Gamemode::Creative,
-            position: Position { x: 0.0, y: 60.0, z: 0.0 },
-            yaw: 0.0,
-            pitch: 0.0,
             on_ground: false,
             packet_sender,
     
@@ -94,7 +88,7 @@ impl Handler<Player> {
     async fn update_center_chunk(self) {
         let Some((old_center_chunk, new_center_chunk, render_distance)) = self.mutate(|player| {
             let old_center_chunk = player.center_chunk.clone();
-            let new_center_chunk = player.position.chunk();
+            let new_center_chunk = player.get_entity().position.chunk();
             player.center_chunk = new_center_chunk.clone();
             ((old_center_chunk, new_center_chunk, player.render_distance), EntityChanges::other())
         }).await else {return};
@@ -322,7 +316,7 @@ impl Handler<Player> {
             ChatMessage { message, .. } => {
                 if message == "summon" {
                     let mut zombie = Zombie::default();
-                    let Some(mut position) = self.observe(|player| player.position.clone()).await else {return};
+                    let Some(mut position) = self.observe(|player| player.get_entity().position.clone()).await else {return};
                     position.y += 20.0;
                     zombie.get_entity_mut().position = position;
                     self.world.spawn_entity::<Zombie>(AnyEntity::Zombie(zombie)).await;
