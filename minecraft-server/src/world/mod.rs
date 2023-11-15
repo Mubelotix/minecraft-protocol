@@ -110,8 +110,9 @@ impl World {
         self.entities.observe_entities(chunk, observer).await
     }
 
+    // TODO: add version that doesn't notify modified entity
     pub async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> (R, EntityChanges)) -> Option<R> {
-        // TODO change events
+        // TODO: change events
         match self.entities.mutate_entity(eid, mutator).await {
             Some((r, changes)) => {
                 // TODO: make only one lookup and group into a single message with optional fields
