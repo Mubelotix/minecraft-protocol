@@ -25,7 +25,7 @@ pub struct CollisionShape {
     pub z2: f64,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BlockRange {
     x: std::ops::Range<i32>,
     y: std::ops::Range<i32>,
@@ -95,12 +95,13 @@ impl Iterator for BlockRangeIntoIter {
                 }
             }
         }
-        self.x += 1;
-        Some(BlockPosition {
+        let r = BlockPosition {
             x: self.x,
             y: self.y,
             z: self.z,
-        })
+        };
+        self.x += 1;
+        Some(r)
     }
 }
 
@@ -119,15 +120,16 @@ impl Iterator for ExcludingBlockRangeIntoIter {
                 }
             }
         }
-        self.x += 1;
-        if self.range.exclusion.x.contains(&self.x) && self.range.exclusion.y.contains(&self.y) && self.range.exclusion.z.contains(&self.z) {
-            return self.next();
-        }
-        Some(BlockPosition {
+        let r = BlockPosition {
             x: self.x,
             y: self.y,
             z: self.z,
-        })
+        };
+        self.x += 1;
+        if self.range.exclusion.x.contains(&r.x) && self.range.exclusion.y.contains(&r.y) && self.range.exclusion.z.contains(&r.z) {
+            return self.next();
+        }
+        Some(r)
     }
 }
 
@@ -142,9 +144,9 @@ impl CollisionShape {
     // TODO(perf): Return an iterator yielding blocks instead of a vec of blocks
     pub fn containing_blocks(&self) -> BlockRange {
         BlockRange {
-            x: (self.x1.floor() as i32)..(self.x2.floor() as i32 + 1),
-            y: (self.y1.floor() as i32)..(self.y2.floor() as i32 + 1),
-            z: (self.z1.floor() as i32)..(self.z2.floor() as i32 + 1),
+            x: (self.x1.floor() as i32)..(self.x2.ceil() as i32),
+            y: (self.y1.floor() as i32)..(self.y2.ceil() as i32),
+            z: (self.z1.floor() as i32)..(self.z2.ceil() as i32),
         }
     }
 }
@@ -281,9 +283,21 @@ pub struct TranslationFragmentIterator<'a> {
 }
 
 impl<'a> Iterator for TranslationFragmentIterator<'a> {
-    type Item = (Translation, BlockRange);
+    type Item = (Translation, ExcludingBlockRange);
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.previous_block_range.is_none() {
+            let block_range = self.position.containing_blocks();
+            self.previous_block_range = Some(block_range.clone());
+            return Some((self.fragmented.clone(), ExcludingBlockRange {
+                range: block_range,
+                exclusion: BlockRange {
+                    x: 0..0,
+                    y: 0..0,
+                    z: 0..0,
+                },
+            }));
+        }
         let mut mini_translation = if self.fragmented.norm() < self.translation.norm() {
             let x_dist = if self.translation.x > 0.0 {
                 let next_x = (self.position.x2 + self.fragmented.x).floor()+1.0;
@@ -328,27 +342,16 @@ impl<'a> Iterator for TranslationFragmentIterator<'a> {
             };
             mini_translation = difference;
         }
-        let current_position = self.position.clone() + &mini_translation;
+        let current_position = self.position.clone() + &self.fragmented;
         let block_range = current_position.containing_blocks();
-        let excluding_block_range = match &self.previous_block_range {
-            Some(previous_block_range) => BlockRange {
-                x: if previous_block_range.x.start < block_range.x.start {
-                    previous_block_range.x.end..block_range.x.end
-                } else {
-                    block_range.x.start..previous_block_range.x.start
-                },
-                y: if previous_block_range.y.start < block_range.y.start {
-                    previous_block_range.y.end..block_range.y.end
-                } else {
-                    block_range.y.start..previous_block_range.y.start
-                },
-                z: if previous_block_range.z.start < block_range.z.start {
-                    previous_block_range.z.end..block_range.z.end
-                } else {
-                    block_range.z.start..previous_block_range.z.start
-                },
-            },
-            None => block_range.clone(),
+        let previous_block_range = self.previous_block_range.take().unwrap_or(BlockRange {
+            x: 0..0,
+            y: 0..0,
+            z: 0..0,
+        });
+        let excluding_block_range = ExcludingBlockRange {
+            range: block_range.clone(),
+            exclusion: previous_block_range,
         };
         self.previous_block_range = Some(block_range);
         Some((mini_translation, excluding_block_range))
@@ -499,6 +502,31 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_containing_blocks() {
+        let shape = CollisionShape {
+            x1: 0.0,
+            y1: 0.0,
+            z1: 0.0,
+            x2: 1.0,
+            y2: 1.0,
+            z2: 1.0,
+        };
+        assert_eq!(shape.containing_blocks(), BlockRange { x: 0..1, y: 0..1, z: 0..1 });
+        assert_eq!(shape.containing_blocks().into_iter().collect::<Vec<_>>(), vec![BlockPosition {x: 0, y: 0, z: 0}]);
+
+        let shape = CollisionShape {
+            x1: 0.0,
+            y1: 0.0,
+            z1: 0.0,
+            x2: 1.1,
+            y2: 1.0,
+            z2: 1.0,
+        };
+        assert_eq!(shape.containing_blocks(), BlockRange { x: 0..2, y: 0..1, z: 0..1 });
+        assert_eq!(shape.containing_blocks().into_iter().collect::<Vec<_>>(), vec![BlockPosition {x: 0, y: 0, z: 0}, BlockPosition {x: 1, y: 0, z: 0}]);
+    }
+
+    #[test]
     fn test() {
         let shape1 = CollisionShape {
             x1: 0.0,
@@ -571,13 +599,20 @@ mod tests {
 
         let movement = Translation { x: 3.0, y: 0.0, z: 0.0 };
         let fragments = movement.fragment(&shape);
-        assert_eq!(fragments.map(|(t,_)| t).collect::<Vec<Translation>>(), vec![
-            Translation { x: 1.0, y: 0.0, z: 0.0 }; 3
-        ]);
+        assert_eq!(
+            fragments.map(|(t,b)| (t, b.into_iter().collect::<Vec<_>>())).collect::<Vec<_>>(),
+            vec![
+                (Translation { x: 0.0, y: 0.0, z: 0.0 }, vec![BlockPosition { x: 0, y: 0, z: 0 }]),
+                (Translation { x: 1.0, y: 0.0, z: 0.0 }, vec![BlockPosition { x: 1, y: 0, z: 0 }]),
+                (Translation { x: 1.0, y: 0.0, z: 0.0 }, vec![BlockPosition { x: 2, y: 0, z: 0 }]),
+                (Translation { x: 1.0, y: 0.0, z: 0.0 }, vec![BlockPosition { x: 3, y: 0, z: 0 }])
+            ]
+        );
 
         let movement = Translation { x: 2.3, y: 0.0, z: 0.0 };
         let fragments = movement.fragment(&shape);
         assert_eq!(fragments.map(|(t,_)| t).collect::<Vec<Translation>>(), vec![
+            Translation { x: 0.0, y: 0.0, z: 0.0 },
             Translation { x: 1.0, y: 0.0, z: 0.0 },
             Translation { x: 1.0, y: 0.0, z: 0.0 },
             Translation { x: 0.2999999999999998, y: 0.0, z: 0.0 }
@@ -586,6 +621,7 @@ mod tests {
         let movement = Translation { x: 1.0, y: 0.75, z: 0.0 } * 4.0;
         let fragments = movement.fragment(&shape);
         assert_eq!(fragments.map(|(t,_)| t).collect::<Vec<Translation>>(), vec![
+            Translation { x: 0.0, y: 0.0, z: 0.0 },
             Translation { x: 1.0, y: 0.75, z: 0.0 },
             Translation { x: 0.3333333333333333, y: 0.25, z: 0.0 },
             Translation { x: 0.666666666666667, y: 0.5000000000000002, z: 0.0 },
