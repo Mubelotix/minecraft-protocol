@@ -154,7 +154,7 @@ impl World {
         let Some(loaders) = loading_manager.get_loaders(position) else {return};
         for loader in loaders {
             if let Some(sender) = senders.get_mut(loader) {
-                let _ = sender.send(change.clone()).await;
+                let _ = sender.try_send(change.clone());
             }
         }
     }

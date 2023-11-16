@@ -28,6 +28,7 @@ pub struct Player {
     render_distance: i32,
     loaded_chunks: HashSet<ChunkColumnPosition>,
     center_chunk: ChunkPosition,
+    packets_sent: usize,
 }
 
 impl Player {
@@ -38,7 +39,7 @@ impl Player {
         server_msg_rcvr: BroadcastReceiver<ServerMessage>,
         change_receiver: MpscReceiver<WorldChange>
     ) -> Eid {
-        let (packet_sender, packet_receiver) = mpsc_channel(100);
+        let (packet_sender, packet_receiver) = mpsc_channel(1000);
         let uuid = player_info.uuid;
 
         let mut player = Player {
@@ -66,6 +67,7 @@ impl Player {
             loaded_chunks: HashSet::new(),
     
             info: player_info,
+            packets_sent: 0,
         };
         
         // TODO: player should load existing entities
@@ -172,6 +174,13 @@ impl Handler<Player> {
 
     async fn send_packet<'a>(&self, packet: PlayClientbound<'a>) {
         let packet = packet.serialize_minecraft_packet().unwrap();
+        let packets_sent = self.mutate(|player| {
+            player.packets_sent += 1;
+            (player.packets_sent, EntityChanges::other())
+        }).await.unwrap_or(0);
+        if packets_sent > 500 {
+            warn!("Many packets sent ({packets_sent})");
+        }
         let Some(packet_sender) = self.observe(|player| player.packet_sender.clone()).await else {return};
         packet_sender.send(packet).await.unwrap();
     }
@@ -179,7 +188,14 @@ impl Handler<Player> {
     async fn on_server_message(self, message: ServerMessage) {
         use ServerMessage::*;
         match message {
-            Tick => {
+            Tick(tick_id) => {
+                if tick_id % (20*10) == 0 {
+                    self.send_packet(PlayClientbound::KeepAlive { keep_alive_id: tick_id as u64 }).await;
+                }
+                self.mutate(|player| {
+                    player.packets_sent = 0;
+                    (player.packets_sent, EntityChanges::other())
+                }).await;
                 self.send_packet(PlayClientbound::BundleDelimiter).await;
             }
         }
@@ -327,8 +343,21 @@ impl Handler<Player> {
                     position.y += 20.0;
                     zombie.get_entity_mut().position = position;
                     self.world.spawn_entity::<Zombie>(AnyEntity::Zombie(zombie)).await;
-                            debug!("zombie spawned");
+                } else if message == "stress" {
+                    tokio::spawn(async move {
+                        for i in 0..1000 {
+                            let mut zombie = Zombie::default();
+                            let Some(mut position) = self.observe(|player| player.get_entity().position.clone()).await else {return};
+                            position.y += 20.0;
+                            zombie.get_entity_mut().position = position;
+                            self.world.spawn_entity::<Zombie>(AnyEntity::Zombie(zombie)).await;
+                            tokio::time::sleep(Duration::from_millis(50)).await;
+                        }
+                    });
                 }
+            }
+            RequestPing { payload } => {
+                self.send_packet(PlayClientbound::Ping { id: payload as i32 }).await;
             }
             packet => warn!("Unsupported packet received: {packet:?}"),
         }

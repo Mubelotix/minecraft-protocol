@@ -6,7 +6,7 @@ use crate::prelude::*;
 #[derive(Clone, Debug)]
 pub enum ServerMessage {
     /// Message indicating a new tick has started
-    Tick,
+    Tick(usize),
 }
 
 pub struct ServerBehavior {
@@ -22,10 +22,12 @@ impl ServerBehavior {
 
         // Send ticks to player handlers
         tokio::spawn(async move {
+            let mut tick_id = 0;
             let mut tick = tokio::time::interval(Duration::from_millis(50));
             loop {
                 tick.tick().await;
-                let _ = sender.send(ServerMessage::Tick);
+                let _ = sender.send(ServerMessage::Tick(tick_id));
+                tick_id += 1;
             }
         });
 

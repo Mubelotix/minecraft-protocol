@@ -6,7 +6,7 @@ pub async fn newton_task<T: EntityDescendant>(h: Handler<T>, mut server_msg_rcvr
     loop {
         let msg = server_msg_rcvr.recv().await.unwrap();
 
-        if !matches!(&msg, &ServerMessage::Tick) {
+        if !matches!(&msg, &ServerMessage::Tick(_)) {
             continue;
         }
 
