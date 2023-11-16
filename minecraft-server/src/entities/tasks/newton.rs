@@ -4,7 +4,7 @@ use super::*;
 
 pub async fn newton_task<T: EntityDescendant>(h: Handler<T>, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>) where AnyEntity: TryAsEntityRef<T> {
     loop {
-        let msg = server_msg_rcvr.recv().await.unwrap();
+        let Ok(msg) = server_msg_rcvr.recv().await else {continue};
 
         if !matches!(&msg, &ServerMessage::Tick(_)) {
             continue;
