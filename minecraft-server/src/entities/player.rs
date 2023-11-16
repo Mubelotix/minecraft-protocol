@@ -227,7 +227,10 @@ impl Handler<Player> {
                     velocity_z: (velocity.z * 8000.0) as i16,
                 }).await;
             },
-            WorldChange::EntityDispawned { eid } => todo!(),
+            WorldChange::EntityDispawned { eid } => {
+                self.mutate(|player| {player.entity_prev_positions.remove(&eid); ((), EntityChanges::other())}).await;
+                self.send_packet(PlayClientbound::RemoveEntities { entity_ids: Array::from(vec![VarInt(eid as i32)]) }).await;
+            },
             WorldChange::EntityMetadata { eid, metadata } => todo!(),
             WorldChange::EntityPosition { eid, position } => {
                 let Some(prev_position) = self.mutate(|player| ((player.entity_prev_positions.insert(eid, position.clone())), EntityChanges::other())).await else {return};
