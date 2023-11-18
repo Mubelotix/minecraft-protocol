@@ -1,5 +1,7 @@
 mod shards;
 
+use std::ops::{AddAssign, Add};
+
 pub use minecraft_protocol::packets::Position as NetworkPosition;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
@@ -166,6 +168,17 @@ impl std::ops::Add<BlockPositionInChunk> for ChunkPosition {
 pub struct ChunkColumnPosition {
     pub cx: i32,
     pub cz: i32,
+}
+
+impl Add<ChunkColumnPosition> for ChunkColumnPosition {
+    type Output = ChunkColumnPosition;
+
+    fn add(self, rhs: ChunkColumnPosition) -> Self::Output {
+        ChunkColumnPosition {
+            cx: self.cx + rhs.cx,
+            cz: self.cz + rhs.cz,
+        }
+    }
 }
 
 impl ChunkColumnPosition {

@@ -82,6 +82,63 @@ impl SectionLightData {
 }
 
 #[derive(Debug, Clone)]
+pub struct EdgesLightToPropagate {
+    pub edges: [BinaryHeap<(LightPositionInChunkColumn, u8)>; 4],
+}
+
+impl EdgesLightToPropagate {
+    pub fn new() -> Self {
+        Self {
+            edges: [BinaryHeap::new(), BinaryHeap::new(), BinaryHeap::new(), BinaryHeap::new()],
+        }
+    }
+
+    pub fn push(&mut self, position: LightPositionInChunkColumn, level: u8) {
+        let index = match position {
+            LightPositionInChunkColumn { bx: 0, y: _, bz: _ } => 0,
+            LightPositionInChunkColumn { bx: _, y: _, bz: 0 } => 1,
+            LightPositionInChunkColumn { bx: 15, y: _, bz: _ } => 2,
+            LightPositionInChunkColumn { bx: _, y: _, bz: 15 } => 3,
+            _ => return,
+        };
+        self.edges[index].push((position, level));
+    }
+
+    pub fn pop(&mut self) -> Option<(LightPositionInChunkColumn, u8)> {
+        for edge in self.edges.iter_mut() {
+            if let Some((position, level)) = edge.pop() {
+                return Some((position, level));
+            }
+        }
+        None
+    }
+
+    pub fn expand(&mut self, edges: EdgesLightToPropagate) {
+        for (i, edge) in edges.edges.iter().enumerate() {
+            self.edges[i].extend(edge.clone());
+        }
+    }
+
+    pub fn chunk_positions_to_propagate(&self, from: ChunkColumnPosition) -> Vec<(ChunkColumnPosition, BinaryHeap<(LightPositionInChunkColumn, u8)>)> {
+        let mut result = Vec::new();
+        if !self.edges[0].is_empty() {
+            result.push((from.clone() + ChunkColumnPosition { cx: -1, cz: 0 }, self.edges[0].clone()));
+        }
+        if !self.edges[1].is_empty() {
+            result.push((from.clone() + ChunkColumnPosition { cx: 0, cz: -1 }, self.edges[1].clone()));
+        }
+        if !self.edges[2].is_empty() {
+            result.push((from.clone() + ChunkColumnPosition { cx: 1, cz: 0 }, self.edges[2].clone()));
+        }
+        if !self.edges[3].is_empty() {
+            result.push((from.clone() + ChunkColumnPosition { cx: 0, cz: 1 }, self.edges[3].clone()));
+        }
+
+        result
+    }
+}
+
+#[derive(Debug, Clone)]
 struct LightSystem {
     /// The level of the sky light, 15 is the maximum.
     pub level: u8,
@@ -91,7 +148,7 @@ struct LightSystem {
     pub light_mask: u64,
     /// The mask of sections that don't have sky light data.
     pub empty_light_mask: u64,
-    zero_chunk_index: usize,
+    edge_light_to_propagate: EdgesLightToPropagate,
 }
 
 impl LightSystem {
@@ -113,7 +170,7 @@ impl LightSystem {
     /// Get the light mask and the empty light mask as bitsets.
     /// return (light_mask, empty_light_mask)
     fn masks_to_bitset<'a>(&self) -> (BitSet<'a>, BitSet<'a>) {
-        let mut light_mask = BitSet::from(vec![self.light_mask as i64]);
+        let light_mask = BitSet::from(vec![self.light_mask as i64]);
         let empty_light_mask = BitSet::from(vec![self.empty_light_mask as i64]);
         (light_mask, empty_light_mask)
     } 
@@ -127,7 +184,7 @@ impl LightSystem {
     }
 
     /// Set the sky light in the given section.
-    pub fn set_region(&mut self, from_y: usize, to_y: usize, level: u8) -> Result<(), ()> {
+    pub fn set_region(&mut self, from_y: usize, to_y: usize, level: u8) -> Result<EdgesLightToPropagate, ()> {
         if level > self.level {
             return Err(());
         }
@@ -139,17 +196,32 @@ impl LightSystem {
         let last_section = to_y.div_euclid(16);
         let last_section_offset = to_y.rem_euclid(16);
 
-        println!("Setting sky light from {} to {} in sections {} to {}", from_y, to_y, first_section, last_section);
+        let mut edges = EdgesLightToPropagate::new();
+
         for section in first_section..=last_section {
             if section != first_section && section != last_section {
                 // Set the whole section
                 self.light_arrays[section].set_with(level);
+                for y in 0..16 {
+                    for i in 0..16 {
+                        edges.push(LightPositionInChunkColumn { bx: i, y: section * 16 + y, bz: 0 }, level);
+                        edges.push(LightPositionInChunkColumn { bx: i, y: section * 16 + y, bz: 15 }, level);
+                        edges.push(LightPositionInChunkColumn { bx: 0, y: section * 16 + y, bz: i }, level);
+                        edges.push(LightPositionInChunkColumn { bx: 15, y: section * 16 + y, bz: i }, level);
+                    }
+                }
             } else {
                 // Set the part of the section
                 let first_offset = if section == first_section { first_secion_offset } else { 0 };
                 let last_offset = if section == last_section { last_section_offset } else { 15 };
                 for y in first_offset..=last_offset {
                     self.light_arrays[section].set_layer(y as u8, level)?;
+                    for i in 0..16 {
+                        edges.push(LightPositionInChunkColumn { bx: i, y: section * 16 + y, bz: 0 }, level);
+                        edges.push(LightPositionInChunkColumn { bx: i, y: section * 16 + y, bz: 15 }, level);
+                        edges.push(LightPositionInChunkColumn { bx: 0, y: section * 16 + y, bz: i }, level);
+                        edges.push(LightPositionInChunkColumn { bx: 15, y: section * 16 + y, bz: i }, level);
+                    }
                 }
             }
 
@@ -164,7 +236,7 @@ impl LightSystem {
             }
         }
 
-        Ok(())
+        Ok(edges)
     }
 
     pub(super) fn get_level(&self, position: LightPositionInChunkColumn) -> Result<u8, ()> {
@@ -172,7 +244,7 @@ impl LightSystem {
         self.light_arrays[section.max(0)].get(position.in_chunk())
     }
 
-    pub(super) fn set_level(&mut self, position: LightPositionInChunkColumn, level: u8) -> Result<(), ()> {
+    pub(super) fn set_level(&mut self, position: LightPositionInChunkColumn, level: u8) -> Result<EdgesLightToPropagate, ()> {
         let section = position.y.div_euclid(16);
         // Update the mask
         let mask = 1 << section;
@@ -184,7 +256,10 @@ impl LightSystem {
             self.empty_light_mask |= mask;
             self.light_mask &= !mask;
         }
-        self.light_arrays[section.max(0)].set(position.in_chunk(), level)
+        self.light_arrays[section.max(0)].set(position.in_chunk(), level)?;
+        let mut edges = EdgesLightToPropagate::new();
+        edges.push(position, level);
+        Ok(edges)
     }
 }
 
@@ -201,7 +276,7 @@ impl Light {
                 light_arrays: vec![SectionLightData::new(); 24+2],
                 light_mask: 0,
                 empty_light_mask: !0,
-                zero_chunk_index: 4, // We start at y=-64, and we have a chunk under that. 
+                edge_light_to_propagate: EdgesLightToPropagate::new(),
             },
         }
     }
@@ -213,7 +288,7 @@ impl Light {
 }
 
 #[derive(Debug, Clone)]
-struct LightPositionInChunkColumn {
+pub struct LightPositionInChunkColumn {
     pub bx: u8,
     pub y: usize,
     pub bz: u8,
@@ -299,17 +374,18 @@ impl std::cmp::Ord for LightPositionInChunkColumn {
 }
 
 impl ChunkColumn {
-    pub(super) fn init_light(&mut self) -> Result<(), ()> {
+    pub(super) fn init_light(&mut self) -> Result<EdgesLightToPropagate, ()> {
         self.propagate_sky_light_inside()
     }
 
-    fn propagate_sky_light_inside(&mut self) -> Result<(), ()> {
+    fn propagate_sky_light_inside(&mut self) -> Result<EdgesLightToPropagate, ()> {
+        let mut to_propagate = EdgesLightToPropagate::new();
         // Set all highest blocks to the highest block
         let highest_blocks = self.get_highest_block();
 
         let max_y = self.light.sky_light.light_arrays.len() * 16 - 1;
-        self.light.sky_light.set_region(highest_blocks as usize + 16, max_y, self.light.sky_light.level)?;
         let mut to_explore: BinaryHeap<LightPositionInChunkColumn> = BinaryHeap::new();
+        to_propagate.expand(self.light.sky_light.set_region(highest_blocks as usize + 16, max_y, self.light.sky_light.level)?);
         
         // Add all highest blocks to the queue
         for x in 0..16 {
@@ -323,16 +399,15 @@ impl ChunkColumn {
             } 
         }
 
-        self.explore_sky_light_from_heap(&mut to_explore).map_err(|_| error!("Error while updating light")).unwrap();
-
-        Ok(())
+        to_propagate.expand(self.explore_sky_light_from_heap(&mut to_explore).map_err(|_| error!("Error while updating light"))?);
+        Ok(to_propagate)
     }
 
-    fn explore_sky_light_from_heap(&mut self, to_explore: &mut BinaryHeap<LightPositionInChunkColumn>) -> Result<(), ()> {
+    fn explore_sky_light_from_heap(&mut self, to_explore: &mut BinaryHeap<LightPositionInChunkColumn>) -> Result<EdgesLightToPropagate, ()> {
         // We get the neighbors and determine the light source from them
         // The neighbor with the highest light level is the light source
         // So we explore from it
-
+        let mut edges = EdgesLightToPropagate::new();
         while let Some(position) = to_explore.pop() {
             let neighbors = position.get_neighbors(self.light.sky_light.light_arrays.len());
             let my_level = self.light.sky_light.get_level(position.clone())?;
@@ -348,15 +423,16 @@ impl ChunkColumn {
                     let is_inside = highest_block > neighbor.y as u16 + 1;
                     to_explore.push(neighbor.clone());
                     let new_level = if is_inside { my_level - 1 } else { self.light.sky_light.level };
-                    self.light.sky_light.set_level(neighbor, new_level)?;
+                    edges.expand(self.light.sky_light.set_level(neighbor, new_level)?);
                 }
             }
         }
-        Ok(())
+        Ok(edges)
     }
 
-    fn clear_lightsystem_from(&mut self, position: LightPositionInChunkColumn) -> Result<(), ()> {
+    fn clear_lightsystem_from(&mut self, position: LightPositionInChunkColumn) -> Result<EdgesLightToPropagate, ()> {
         let mut to_explore: BinaryHeap<LightPositionInChunkColumn> = BinaryHeap::new();
+        let mut edges = EdgesLightToPropagate::new();
         // We get the neighbors and determine the light source from them
         // The neighbor with the highest light level is the light source
         // then we clear from the other neighbors
@@ -384,21 +460,23 @@ impl ChunkColumn {
                     let is_inside = highest_block > neighbor.y as u16 + 1;
                     to_explore.push(neighbor.clone());
                     let new_level = if is_inside { my_level - block.light_absorption() - 1 } else { self.light.sky_light.level };
-                    self.light.sky_light.set_level(neighbor, new_level)?;
+                    edges.expand(self.light.sky_light.set_level(neighbor, new_level)?);
                 }
             }
         }
-        Ok(())
+        Ok(edges)
     }
 
-    pub(super) fn update_light_as_block_changed_at(&mut self, position: BlockPositionInChunkColumn, blocking: bool) {
+    pub(super) fn update_light_as_block_changed_at(&mut self, position: BlockPositionInChunkColumn) -> Result<EdgesLightToPropagate, ()> {
         let position = LightPositionInChunkColumn::from(position);
-
+        let blocking = !Block::from(self.get_block(position.clone().into())).is_transparent();
         let mut to_explore: BinaryHeap<LightPositionInChunkColumn> = BinaryHeap::from(position.get_neighbors(self.light.sky_light.light_arrays.len()));
+        let mut to_propagate = EdgesLightToPropagate::new();
         if blocking {
-            let _ = self.clear_lightsystem_from(position.clone()).map_err(|_| error!("Error while updating light"));
+            to_propagate.expand(self.clear_lightsystem_from(position.clone()).map_err(|_| error!("Error while updating light"))?);
         } 
-        let _ = self.explore_sky_light_from_heap(&mut to_explore).map_err(|_| error!("Error while updating light"));
+        to_propagate.expand(self.explore_sky_light_from_heap(&mut to_explore).map_err(|_| error!("Error while updating light"))?);
+        Ok(to_propagate)
     }
 }
 
@@ -457,7 +535,7 @@ mod tests {
             light_arrays: vec![SectionLightData::new(); 16+2],
             light_mask: 0,
             empty_light_mask: !0,
-            zero_chunk_index: 4, // We start at y=-64, and we have a chunk under that. 
+            edge_light_to_propagate: EdgesLightToPropagate::new(),
         };
 
         sky_light.set_region(1, 33, 15).unwrap();

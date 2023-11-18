@@ -1,8 +1,8 @@
-use std::{collections::HashMap, cmp::Ordering, vec};
+use std::{collections::{HashMap, BinaryHeap}, cmp::Ordering, vec};
 use minecraft_protocol::{components::chunk::PalettedData, ids::blocks::Block};
 use tokio::sync::RwLock;
-use crate::prelude::*;
-use super::light::Light;
+use crate::{prelude::*, world::light::EdgesLightToPropagate};
+use super::light::{Light, LightPositionInChunkColumn};
 
 pub struct WorldMap {
     /// The map is divided in shards.
@@ -429,8 +429,6 @@ impl ChunkColumn {
             },
             _ => {}   
         }
-        trace!("setting");
-        self.update_light_as_block_changed_at(position, !not_filter_sunlight);
     }
 }
 
@@ -457,7 +455,7 @@ impl WorldMap {
         inner_get_block(self, position).await.unwrap_or(BlockWithState::Air)
     }
 
-    pub async fn get_network_chunk_column_data<'a>(&self, position: ChunkColumnPosition) -> Option<Vec<u8>> {
+    pub async fn get_network_chunk_column_data(&self, position: ChunkColumnPosition) -> Option<Vec<u8>> {
         let shard = position.shard(self.shard_count);
         let shard = self.shards[shard].read().await;
         let chunk_column = shard.get(&position)?;
@@ -483,7 +481,7 @@ impl WorldMap {
     }
     
     pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
-        async fn inner_get_block(s: &WorldMap, position: BlockPosition, block: BlockWithState) -> Option<()> {
+        async fn inner_get_block(s: &WorldMap, position: BlockPosition, block: BlockWithState) -> Option<(EdgesLightToPropagate, ChunkColumnPosition)> {
             let chunk_position = position.chunk();
             let position_in_chunk_column = position.in_chunk_column();
             let chunk_column_position = chunk_position.chunk_column();
@@ -492,9 +490,26 @@ impl WorldMap {
             let mut shard = s.shards[shard].write().await;
             let chunk_column = shard.get_mut(&chunk_column_position)?;
             chunk_column.set_block(position_in_chunk_column.clone(), block);
-            Some(())
+            chunk_column.update_light_as_block_changed_at(position_in_chunk_column).ok().map(|to_propagate| (to_propagate, chunk_column_position))
+
         }
-        inner_get_block(self, position, block).await;
+        let to_propagate = inner_get_block(self, position, block).await;
+        if let Some(to_propagate) = to_propagate {
+            let (to_propagate, from) = to_propagate;
+            let to_popagate = to_propagate.chunk_positions_to_propagate(from);
+            for (chunk_column_position, to_propagate) in to_popagate {
+                self.update_light_from_edge(self, chunk_column_position, to_propagate).await;
+            }
+        }
+    }
+
+    async fn update_light_from_edge(&self, s: &WorldMap, chunk_column_position: ChunkColumnPosition, to_propagate: BinaryHeap<(LightPositionInChunkColumn, u8)>) {
+        let shard = chunk_column_position.shard(self.shard_count);
+
+        let mut shard = s.shards[shard].write().await;
+        let chunk_column = shard.get_mut(&chunk_column_position);
+        
+
     }
 
     pub async fn load(&self, position: ChunkColumnPosition) {
