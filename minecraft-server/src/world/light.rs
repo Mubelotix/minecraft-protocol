@@ -369,7 +369,7 @@ impl ChunkColumn {
         while let Some(position) = to_explore.pop() {
             let neighbors = position.get_neighbors(self.light.sky_light.light_arrays.len());
             let my_level = self.light.sky_light.get_level(position.clone())?;
-            let my_is_inside = false; // get it 
+            let my_is_inside = self.get_highest_block_at(&position.clone().into()) + 16 > position.y as u16 + 1;
 
             for neighbor in neighbors {
                 let neighbor_level = self.light.sky_light.get_level(neighbor.clone()).unwrap();
