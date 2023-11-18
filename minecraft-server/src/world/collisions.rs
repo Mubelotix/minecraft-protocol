@@ -2,10 +2,10 @@ use super::*;
 
 /// Returns minimum of two floats, but not NaN
 fn min2(a: f64, b: f64) -> f64 {
-    if a < b || b.is_nan() {
-        a
-    } else {
+    if a > b {
         b
+    } else {
+        a
     }
 }
 
