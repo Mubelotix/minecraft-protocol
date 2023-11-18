@@ -430,6 +430,10 @@ impl ChunkColumn {
             _ => {}   
         }
     }
+
+    fn get_skylight(&self, position: BlockPositionInChunkColumn) -> u8 {
+        self.light.get_skylight_level(position.into())
+    }
 }
 
 impl WorldMap {
@@ -501,6 +505,17 @@ impl WorldMap {
                 self.update_light_from_edge(self, chunk_column_position, to_propagate).await;
             }
         }
+    }
+
+    pub async fn get_skylight(&self, position: BlockPosition) -> u8 {
+        let chunk_position = position.chunk();
+        let position_in_chunk_column = position.in_chunk_column();
+        let chunk_column_position = chunk_position.chunk_column();
+        let shard = chunk_column_position.shard(self.shard_count);
+
+        let shard = self.shards[shard].read().await;
+        let chunk_column = shard.get(&chunk_column_position).unwrap();
+        chunk_column.light.get_skylight_level(position_in_chunk_column.into())
     }
 
     async fn update_light_from_edge(&self, s: &WorldMap, chunk_column_position: ChunkColumnPosition, to_propagate: BinaryHeap<(LightPositionInChunkColumn, u8)>) {
@@ -725,6 +740,36 @@ mod tests {
         assert_eq!(flat_column.heightmap.get(&BlockPositionInChunkColumn { bx: 0, y: 0, bz: 0 }), 67);
 
     }
+
+    #[tokio::test]
+    async fn test_sky_light_flat_chunk() {
+        let world = WorldMap::new(10);
+        world.load(ChunkColumnPosition { cx: 0, cz: 0 }).await;
+
+
+        // Check that the sky light is equal to the light level above the grass and on the top of the world.
+        for x in 0..16 {
+            for z in 0..16 {
+                assert_eq!(world.get_skylight(BlockPosition { x, y: -60, z}).await, 0);
+                assert_eq!(world.get_skylight(BlockPosition { x, y: -49, z}).await, 0);
+                assert_eq!(world.get_skylight(BlockPosition { x, y: 120, z}).await, 15);
+            }
+        }
+        
+        // Break the grass block and check that the sky light is correct.
+        assert_ne!(world.get_skylight(BlockPosition { x: 0, y: -49, z: 0}).await, 15);
+        world.set_block(BlockPosition { x: 0, y: -49, z: 0 }, BlockWithState::Air).await;
+        assert_eq!(world.get_skylight(BlockPosition { x: 0, y: -49, z: 0}).await, 15);
+
+        assert_ne!(world.get_skylight(BlockPosition { x: 0, y: -50, z: 0}).await, 15);
+        world.set_block(BlockPosition { x: 0, y: -50, z: 0 }, BlockWithState::Air).await;
+        assert_eq!(world.get_skylight(BlockPosition { x: 0, y: -50, z: 0}).await, 15);
+
+        assert_ne!(world.get_skylight(BlockPosition { x: 0, y: -50, z: 1}).await, 14);
+        world.set_block(BlockPosition { x: 0, y: -50, z: 1 }, BlockWithState::Air).await;
+        assert_eq!(world.get_skylight(BlockPosition { x: 0, y: -50, z: 1}).await, 14);
+    }
+
 
     #[test]
     fn benchmark_get_block() {

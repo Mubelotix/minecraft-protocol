@@ -285,6 +285,9 @@ impl Light {
         self.sky_light.get_packet_data()
     }
 
+    pub fn get_skylight_level(&self, position: LightPositionInChunkColumn) -> u8 {
+        self.sky_light.get_level(position).unwrap_or_default()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -551,36 +554,4 @@ mod tests {
         assert_eq!(sky_light.light_arrays[4].get(BlockPositionInChunk { bx: 9, by: 0, bz: 10 }).unwrap(), 0);
     }
 
-    #[test]
-    fn test_sky_light_flat_chunk() {
-        let mut flat_chunk = ChunkColumn::flat();
-
-        // Check that the sky light is equal to the light level above the grass and on the top of the world.
-        for x in 0..16 {
-            for z in 0..16 {
-                assert_eq!(flat_chunk.light.sky_light.light_arrays[0].get(BlockPositionInChunk { bx: x, by: 0, bz: z }).unwrap(), 0);
-                assert_eq!(flat_chunk.light.sky_light.light_arrays[4].get(BlockPositionInChunk { bx: x, by: 0, bz: z }).unwrap(), 15);
-                assert_eq!(flat_chunk.light.sky_light.light_arrays[25].get(BlockPositionInChunk { bx: x, by: 15, bz: z }).unwrap(), 15);
-            }
-        }
-        
-        // Break the grass block and check that the sky light is correct.
-        assert_eq!(flat_chunk.light.sky_light.light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 15, bz: 0 }).unwrap(), 0);
-        flat_chunk.set_block_for_test(BlockPositionInChunkColumn { bx: 0, y: -49, bz: 0 }, Block::Air.into());
-        assert_eq!(flat_chunk.light.sky_light.light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 15, bz: 0 }).unwrap(), 15);
-        
-        assert_eq!(flat_chunk.light.sky_light.light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 14, bz: 0 }).unwrap(), 0);
-        flat_chunk.set_block_for_test(BlockPositionInChunkColumn { bx: 0, y: -50, bz: 0 }, Block::Air.into());
-        assert_eq!(flat_chunk.light.sky_light.light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 14, bz: 0 }).unwrap(), 15);
-
-        flat_chunk.set_block_for_test(BlockPositionInChunkColumn { bx: 0, y: -50, bz: 1 }, Block::Air.into());
-        assert_eq!(flat_chunk.light.sky_light.light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 14, bz: 1 }).unwrap(), 14);
-        assert_eq!(flat_chunk.light.sky_light.light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 0, bz: 10 }).unwrap(), 0);
-
-        flat_chunk.set_block_for_test(BlockPositionInChunkColumn { bx: 0, y: -50, bz: 2 }, Block::Air.into());
-        assert_eq!(flat_chunk.light.sky_light.light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 14, bz: 2 }).unwrap(), 13);
-
-        flat_chunk.set_block_for_test(BlockPositionInChunkColumn { bx: 0, y: -51, bz: 2 }, Block::Air.into());
-        assert_eq!(flat_chunk.light.sky_light.light_arrays[1].get(BlockPositionInChunk { bx: 0, by: 13, bz: 2 }).unwrap(), 12);
-    }
 }
