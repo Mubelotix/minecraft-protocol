@@ -271,6 +271,25 @@ impl WorldMap {
         inner_get_block(self, position, block).await;
     }
 
+    pub async fn try_move(&self, object: &CollisionShape, movement: &Translation) -> Translation {
+        // TODO(perf): Optimize Map.try_move by preventing block double-checking
+        // Also lock the map only once
+        let movement_fragments = movement.clone().fragment(object);
+        let mut validated = Translation{ x: 0.0, y: 0.0, z: 0.0 };
+        for fragment in movement_fragments {
+            let validating = validated.clone() + fragment;
+            let translated_object = object.clone() + &validating;
+            for block in translated_object.containing_blocks() {
+                let block = self.get_block(block).await;
+                if block.block_id() != 0 {
+                    return validated;
+                }
+            }
+            validated = validating;
+        }
+        movement.clone() // Would be more logic if it returned validated, but this way we avoid precision errors
+    }
+
     pub async fn load(&self, position: ChunkColumnPosition) {
         let chunk = ChunkColumn::flat(); // TODO: load from disk
         let shard = position.shard(self.shard_count);
@@ -430,5 +449,37 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[tokio::test]
+    async fn test_try_move() {
+        let map = WorldMap::new(1);
+        map.load(ChunkColumnPosition { cx: 0, cz: 0 }).await;
+        let bounding_box = CollisionShape {
+            x1: 0.0,
+            y1: 0.0,
+            z1: 0.0,
+            x2: 1.0,
+            y2: 1.0,
+            z2: 1.0,
+        };
+
+        // Position on ground and try to go through it
+        let positionned_box = bounding_box.clone() + &Translation { x: 0.0, y: -3.0*16.0, z: 0.0 };
+        let movement = Translation { x: 0.0, y: -10.0, z: 0.0 };
+        let movement = map.try_move(&positionned_box, &movement).await;
+        assert_eq!(movement, Translation { x: 0.0, y: 0.0, z: 0.0 }); // It doesn't get through
+
+        // Place it a little above ground
+        let positionned_box = bounding_box.clone() + &Translation { x: 0.0, y: -3.0*16.0 + 1.0, z: 0.0 };
+        let movement = Translation { x: 0.0, y: -10.0, z: 0.0 };
+        let movement = map.try_move(&positionned_box, &movement).await;
+        assert_eq!(movement, Translation { x: 0.0, y: -1.0, z: 0.0 }); // It falls down but doesn't get through
+
+        // Place it above but not on round coordinates
+        let positionned_box = bounding_box.clone() + &Translation { x: 0.0, y: -3.0*16.0 + 1.1, z: 0.2 };
+        let movement = Translation { x: 2.0, y: -10.0, z: 0.0 };
+        let movement = map.try_move(&positionned_box, &movement).await;
+        assert_eq!(movement, Translation { x: 0.2200000000000003, y: -1.1000000000000014, z: 0.0 }); // It falls down but doesn't get through
     }
 }

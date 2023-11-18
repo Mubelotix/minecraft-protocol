@@ -3,9 +3,8 @@ members = [
     "minecraft-protocol",
     "minecraft-protocol-derive",
     "minecraft-server",
-    "minecraft-entities",
-    "minecraft-positions",
-    "tags-macros"
+    "minecraft-entities-derive",
+    "minecraft-positions"
 ]
 
 workspace.resolver = "2"

@@ -1,7 +1,8 @@
 use super::*;
 
 struct PlayerHandler {
-    world: Arc<World>,
+    eid: Eid,
+    world: &'static World,
     game_mode: Gamemode,
     info: PlayerInfo,
     position: Position,
@@ -9,6 +10,9 @@ struct PlayerHandler {
     pitch: f32,
     on_ground: bool,
     packet_sender: MpscSender<Vec<u8>>,
+
+    // TODO: make this a hashmap
+    entity_prev_positions: HashMap<Eid, Position>,
 
     render_distance: i32,
     loaded_chunks: HashSet<ChunkColumnPosition>,
@@ -30,15 +34,61 @@ impl PlayerHandler {
         }
     }
 
-    async fn on_block_change(&mut self, position: BlockPosition, block: BlockWithState) {
+    async fn on_block_changed(&mut self, position: BlockPosition, block: BlockWithState) {
         self.send_packet(PlayClientbound::BlockUpdate {
             location: position.into(),
             block_state: block,
         }).await;
     }
 
+    async fn on_entity_spawned(&mut self, eid: Eid, uuid: UUID, ty: NetworkEntity, position: Position, pitch: f32, yaw: f32, head_yaw: f32, data: u32, velocity: Translation, metadata: ()) {
+        self.entity_prev_positions.insert(eid, position.clone());
+        self.send_packet(PlayClientbound::SpawnEntity {
+            id: VarInt(eid as i32),
+            uuid,
+            entity_type: ty,
+            x: position.x,
+            y: position.y,
+            z: position.z,
+            pitch: (pitch * (256.0 / 360.0)) as u8,
+            yaw: (yaw * (256.0 / 360.0)) as u8,
+            head_yaw: (head_yaw * (256.0 / 360.0)) as u8,
+            data: VarInt(data as i32),
+            velocity_x: (velocity.x * 8000.0) as i16,
+            velocity_y: (velocity.y * 8000.0) as i16,
+            velocity_z: (velocity.z * 8000.0) as i16,
+        }).await;
+    }
+
+    async fn on_entity_moved(&mut self, eid: Eid, position: Position) {
+        let prev_position = self.entity_prev_positions.insert(eid, position.clone()).unwrap_or_else(|| position.clone());
+        self.send_packet(PlayClientbound::UpdateEntityPosition {
+            entity_id: VarInt(eid as i32),
+            delta_x: (position.x * 4096.0 - prev_position.x * 4096.0) as i16,
+            delta_y: (position.y * 4096.0 - prev_position.y * 4096.0) as i16,
+            delta_z: (position.z * 4096.0 - prev_position.z * 4096.0) as i16,
+            on_ground: true, // TODO
+        }).await;
+    }
+
+    async fn on_entity_velocity_changes(&mut self, eid: Eid, velocity: Translation) {
+        self.send_packet(PlayClientbound::SetEntityVelocity {
+            entity_id: VarInt(eid as i32),
+            velocity_x: (velocity.x * 8000.0) as i16,
+            velocity_y: (velocity.y * 8000.0) as i16,
+            velocity_z: (velocity.z * 8000.0) as i16,
+        }).await;
+    }
+
     async fn on_move(&mut self) {
         let new_center_chunk = self.position.chunk();
+
+        // Tell the ECS about the changes
+        self.world.mutate_entity(self.eid, |entity| {
+            let entity: &mut Entity = entity.try_as_entity_mut().unwrap(); // Cannot fail
+            entity.position = self.position.clone();
+            ((), EntityChanges::position())
+        }).await;
 
         // Tell the client which chunk he is in
         if new_center_chunk == self.center_chunk { return };
@@ -150,15 +200,26 @@ impl PlayerHandler {
                     self.world.set_block(location.into(), BlockWithState::Air).await;
                 }
             }
+            ChatMessage { message, .. } => {
+                if message == "summon" {
+                    let mut zombie = Zombie::default();
+                    let mut position = self.position.clone();
+                    position.y += 20.0;
+                    zombie.get_entity_mut().position = position;
+                    self.world.spawn_entity::<Zombie>(AnyEntity::Zombie(zombie)).await;
+                }
+            }
             packet => warn!("Unsupported packet received: {packet:?}"),
         }
     }
 }
 
-pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>, world: Arc<World>, mut change_receiver: MpscReceiver<WorldChange>) -> Result<(), ()> {
+pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>, world: &'static World, mut change_receiver: MpscReceiver<WorldChange>) -> Result<(), ()> {
     let (packet_sender, mut packet_receiver) = mpsc_channel(100);
+    let eid = world.spawn_entity::<Player>(AnyEntity::Player(Player::default())).await;
     
     let mut handler = PlayerHandler {
+        eid,
         world,
         game_mode: Gamemode::Creative,
         position: Position { x: 0.0, y: 60.0, z: 0.0 },
@@ -167,6 +228,8 @@ pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut serve
         on_ground: false,
         packet_sender,
 
+        entity_prev_positions: HashMap::new(),
+
         center_chunk: ChunkPosition { cx: 0, cy: 11, cz: 0 },
         render_distance: player_info.render_distance.clamp(4, 15) as i32,
         loaded_chunks: HashSet::new(),
@@ -174,6 +237,8 @@ pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut serve
         info: player_info,
     };
 
+    // TODO: player should load existing entities
+    
     for cx in -3..=3 {
         for cz in -3..=3 {
             handler.loaded_chunks.insert(ChunkColumnPosition { cx, cz });
@@ -225,7 +290,13 @@ pub async fn handle_player(stream: TcpStream, player_info: PlayerInfo, mut serve
                 receive_change_fut = Box::pin(change_receiver.recv().fuse());
 
                 match change {
-                    WorldChange::BlockChange(position, block) => handler.on_block_change(position, block).await,
+                    WorldChange::Block(position, block) => handler.on_block_changed(position, block).await,
+                    WorldChange::EntitySpawned { eid, uuid: uid, ty, position, pitch, yaw, head_yaw, data, velocity, metadata } => handler.on_entity_spawned(eid, uid, ty, position, pitch, yaw, head_yaw, data, velocity, metadata).await,
+                    WorldChange::EntityDispawned { eid } => todo!(),
+                    WorldChange::EntityMetadata { eid, metadata } => todo!(),
+                    WorldChange::EntityPosition { eid, position } => handler.on_entity_moved(eid, position).await,
+                    WorldChange::EntityVelocity { eid, velocity } => handler.on_entity_velocity_changes(eid, velocity).await,
+                    WorldChange::EntityPitch { eid, pitch, yaw, head_yaw } => todo!(),
                 }
             },
             Event::Message(Err(recv_error)) => {

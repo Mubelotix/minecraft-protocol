@@ -1,4 +1,4 @@
-pub use crate::{ecs::*, player_handler::*, server_behavior::*, world::*};
+pub use crate::{entities::*, player_handler::*, server_behavior::*, world::*};
 pub use futures::FutureExt;
 pub use log::{debug, error, info, trace, warn};
 pub use minecraft_protocol::{
@@ -22,7 +22,10 @@ pub use minecraft_protocol::{
         status::{ClientboundPacket as StatusClientbound, ServerboundPacket as StatusServerbound},
         Array, ConnectionState, Map, RawBytes, VarInt, VarLong, UUID, Position as NetworkPosition
     },
-    ids::block_states::BlockWithState,
+    ids::{
+        block_states::BlockWithState,
+        entities::Entity as NetworkEntity,
+    },
     MinecraftPacketPart,
 };
 pub use std::{
@@ -54,6 +57,5 @@ pub use tokio::{
     },
 };
 pub use minecraft_positions::*;
-pub use minecraft_entities::*;
 
 pub const MAX_PLAYERS: usize = 1001;

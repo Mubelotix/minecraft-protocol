@@ -1,11 +1,15 @@
 use crate::prelude::*;
 
-mod change_event;
-pub use change_event::*;
+mod change;
+pub use change::*;
 mod loading_manager;
 use loading_manager::*;
 mod map;
 use map::*;
+mod ecs;
+use ecs::*;
+mod collisions;
+pub use collisions::*;
 
 /// World is the union of the map and entities.
 /// World handles loaded chunks and entities.
@@ -16,15 +20,17 @@ pub struct World {
 
     loading_manager: RwLock<WorldLoadingManager>,
     change_senders: RwLock<HashMap<UUID, MpscSender<WorldChange>>>, // TODO: Add a way to select events you want to subscribe to
+    receiver: BroadcastReceiver<ServerMessage>,
 }
 
 impl World {
-    pub fn new() -> World {
+    pub fn new(receiver: BroadcastReceiver<ServerMessage>) -> World {
         World {
             map: WorldMap::new(4),
             entities: Entities::new(),
             loading_manager: RwLock::new(WorldLoadingManager::default()),
             change_senders: RwLock::new(HashMap::new()),
+            receiver,
         }
     }
 
@@ -38,7 +44,11 @@ impl World {
 
     pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
         self.map.set_block(position.clone(), block.clone()).await;
-        self.notify(&position.chunk_column(), WorldChange::BlockChange(position, block)).await;
+        self.notify(&position.chunk_column(), WorldChange::Block(position, block)).await;
+    }
+
+    pub async fn try_move(&self, object: &CollisionShape, movement: &Translation) -> Translation {
+        self.map.try_move(object, movement).await
     }
 
     pub async fn add_loader(&self, uuid: UUID) -> MpscReceiver<WorldChange> {
@@ -67,6 +77,76 @@ impl World {
         }
     }
 
+    pub async fn spawn_entity<E>(&'static self, entity: AnyEntity) -> Eid
+        where AnyEntity: TryAsEntityRef<E>, Handler<E>: EntityExt
+    {
+        let position = entity.as_entity().position.clone();
+        let velocity = entity.as_entity().velocity.clone();
+        let ty = entity.to_network().unwrap(); // TODO: error handling
+        let pitch = entity.as_entity().pitch;
+        let yaw = entity.as_entity().yaw;
+        let head_yaw = entity.as_other::<LivingEntity>().map(|e| e.head_yaw).unwrap_or(0.0);
+        let (eid, uuid) = self.entities.spawn_entity::<E>(entity, self, self.receiver.resubscribe()).await;
+        self.notify(&position.chunk_column(), WorldChange::EntitySpawned {
+            eid,
+            uuid,
+            ty,
+            position,
+            pitch,
+            yaw,
+            head_yaw,
+            data: 0,
+            velocity,
+            metadata: (),
+        }).await;
+        eid
+    }
+
+    pub async fn observe_entity<R>(&self, eid: Eid, observer: impl FnOnce(&AnyEntity) -> R) -> Option<R> {
+        self.entities.observe_entity(eid, observer).await
+    }
+
+    pub async fn observe_entities<R>(&self, chunk: ChunkColumnPosition, observer: impl FnMut(&AnyEntity) -> Option<R>) -> Vec<R> {
+        self.entities.observe_entities(chunk, observer).await
+    }
+
+    pub async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> (R, EntityChanges)) -> Option<R> {
+        // TODO change events
+        match self.entities.mutate_entity(eid, mutator).await {
+            Some((r, changes)) => {
+                // TODO: make only one lookup and group into a single message with optional fields
+                let position = self.entities.observe_entity(eid, |e| e.as_entity().position.clone()).await?;
+                if changes.position_changed() {
+                    self.notify(&position.chunk_column(), WorldChange::EntityPosition {
+                        eid,
+                        position: position.clone(),
+                    }).await;
+                }
+                if changes.velocity_changed() {
+                    let velocity = self.entities.observe_entity(eid, |e| e.as_entity().velocity.clone()).await?;
+                    self.notify(&position.chunk_column(), WorldChange::EntityVelocity {
+                        eid,
+                        velocity,
+                    }).await;
+                }
+                if changes.pitch_changed() {
+                    let (pitch, yaw, head_yaw) = self.entities.observe_entity(eid, |e| (e.as_entity().pitch, e.as_entity().yaw, e.as_other::<LivingEntity>().map(|e| e.head_yaw).unwrap_or(0.0))).await?;
+                    self.notify(&position.chunk_column(), WorldChange::EntityPitch {
+                        eid,
+                        pitch,
+                        yaw,
+                        head_yaw,
+                    }).await;
+                }
+                if changes.metadata_changed() {
+                    todo!()
+                }
+                Some(r)
+            },
+            None => None,
+        }
+    }
+
     async fn notify(&self, position: &ChunkColumnPosition, change: WorldChange) {
         let loading_manager = self.loading_manager.read().await;
         let mut senders = self.change_senders.write().await;
@@ -86,7 +166,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_world_notifications() {
-        let world = World::new();
+        let world = World::new(broadcast_channel(100).1);
 
         let mut receiver1 = world.add_loader(1).await;
         let mut receiver2 = world.add_loader(2).await;
@@ -94,7 +174,7 @@ mod tests {
         world.update_loaded_chunks(2, vec![ChunkColumnPosition{cx: 1, cz: 1}].into_iter().collect()).await;
 
         world.set_block(BlockPosition{x: 1, y: 1, z: 1}, BlockWithState::Air).await;
-        assert!(matches!(receiver1.try_recv(), Ok(WorldChange::BlockChange(BlockPosition{x: 1, y: 1, z: 1}, BlockWithState::Air))));
+        assert!(matches!(receiver1.try_recv(), Ok(WorldChange::Block(BlockPosition{x: 1, y: 1, z: 1}, BlockWithState::Air))));
         assert!(matches!(receiver2.try_recv(), Err(TryRecvError::Empty)));
     }
 }
