@@ -45,7 +45,6 @@ impl PlayerHandler {
 
     async fn on_move(&mut self) {
         let new_center_chunk = self.position.chunk();
-
         // Tell the client which chunk he is in
         if new_center_chunk == self.center_chunk { return };
         self.send_packet(PlayClientbound::SetCenterChunk { chunk_x: VarInt(new_center_chunk.cx), chunk_z: VarInt(new_center_chunk.cz) }).await;
@@ -58,8 +57,8 @@ impl PlayerHandler {
         let mut loaded_chunks_after = HashSet::new();
         for cx in (new_center_chunk.cx - self.render_distance)..=(new_center_chunk.cx + self.render_distance) {
             for cz in (new_center_chunk.cz - self.render_distance)..=(new_center_chunk.cz + self.render_distance) {
-                let dist = (((cx - new_center_chunk.cx).pow(2) + (cz - new_center_chunk.cz).pow(2)) as f32).sqrt();
-                if dist > self.render_distance as f32 { continue };
+                let dist = (cx - new_center_chunk.cx).abs() + (cz - new_center_chunk.cz).abs();
+                if dist > self.render_distance  { continue };
                 loaded_chunks_after.insert(ChunkColumnPosition { cx, cz });
             }
         }
@@ -68,10 +67,10 @@ impl PlayerHandler {
         if loaded_chunks_after == self.loaded_chunks { return };
         let mut newly_loaded_chunks: Vec<_> = loaded_chunks_after.difference(&self.loaded_chunks).cloned().collect();
         let unloaded_chunks: Vec<_> = self.loaded_chunks.difference(&loaded_chunks_after).cloned().collect();
-        for skipped in newly_loaded_chunks.iter().skip(50) {
+        for skipped in newly_loaded_chunks.iter().skip(5) {
             loaded_chunks_after.remove(skipped);
         }
-        newly_loaded_chunks.truncate(50);
+        newly_loaded_chunks.truncate(5);
 
         // Tell the world about the changes
         self.world.update_loaded_chunks(self.info.uuid, loaded_chunks_after.clone()).await;
@@ -80,6 +79,8 @@ impl PlayerHandler {
         let mut heightmaps = HashMap::new();
         heightmaps.insert(String::from("MOTION_BLOCKING"), NbtTag::LongArray(vec![0; 37]));
         let heightmaps = NbtTag::Compound(heightmaps);
+        let start_time = std::time::Instant::now();
+        let mut i = 0;
         for newly_loaded_chunk in newly_loaded_chunks {
             let mut column = Vec::new();
             for cy in -4..20 {
@@ -109,8 +110,14 @@ impl PlayerHandler {
                     block_light: Array::default(),
                 }
             };
+            i += 1;
+            let elapsed: Duration = start_time.elapsed();
+            info!("Chunk {} Elapsed: {:?}", i, elapsed);
+            
             self.send_packet(chunk_data).await;
+            info!("sent");
         }
+
 
         // Tell the client to unload chunks
         for unloaded_chunk in unloaded_chunks {

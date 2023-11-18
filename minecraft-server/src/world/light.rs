@@ -1,4 +1,4 @@
-use std::{collections::{BinaryHeap, VecDeque}, ops::AddAssign};
+use std::{collections::BinaryHeap, ops::AddAssign};
 
 use minecraft_protocol::ids::blocks::Block;
 
@@ -6,7 +6,7 @@ use crate::prelude::*;
 use super::*;
 
 #[derive(Debug, Clone)]
-struct SectionLightData(Vec<u8>);
+struct SectionLightData(Vec<u8>); // TODO(optimization): Use simd 
 
 impl SectionLightData {
     pub fn new() -> SectionLightData {

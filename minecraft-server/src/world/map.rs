@@ -698,5 +698,18 @@ mod tests {
 
     }
 
+    #[test]
+    fn benchmark_get_block() {
+
+        let start_time = std::time::Instant::now();
+        for _ in 0..441 {
+            let mut column = ChunkColumn::flat();
+        }
+      
+        let elapsed: Duration = start_time.elapsed();
+        println!("All Elapsed: {:?}", elapsed);
+        println!("Elapsed: {:?}", elapsed / 441);
+    }
+
     
 }

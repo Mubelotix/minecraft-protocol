@@ -366,7 +366,6 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
         return Err(());
     };
     debug!("ChunkBatchAcknoledgement received");
-
     Ok((PlayerInfo {
         addr: logged_in_player_info.addr,
         username: logged_in_player_info.username,
