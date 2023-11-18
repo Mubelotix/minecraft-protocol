@@ -457,16 +457,29 @@ impl WorldMap {
         inner_get_block(self, position).await.unwrap_or(BlockWithState::Air)
     }
 
-    pub async fn get_network_chunk(&self, position: ChunkPosition) -> Option<NetworkChunk> {
-        let chunk_column_position = position.chunk_column();
-        let shard = chunk_column_position.shard(self.shard_count);
-        let cy_in_vec: usize = position.cy.saturating_add(4).try_into().ok()?;
-
+    pub async fn get_network_chunk_column_data<'a>(&self, position: ChunkColumnPosition) -> Option<Vec<u8>> {
+        let shard = position.shard(self.shard_count);
         let shard = self.shards[shard].read().await;
-        let chunk_column = shard.get(&chunk_column_position)?;
-        let chunk = chunk_column.chunks.get(cy_in_vec)?;
+        let chunk_column = shard.get(&position)?;
 
-        Some(chunk.as_network_chunk().clone())
+        let serialized = NetworkChunk::into_data(chunk_column.chunks.iter().map(|c| c.data.clone()).collect()).unwrap();
+        let (skylight_array_data, skylight_mask, empty_skylight_mask) = chunk_column.light.get_packet();
+
+        let chunk_data = PlayClientbound::ChunkData { value: NetworkChunkColumnData {
+            chunk_x: position.cx,
+            chunk_z: position.cz,
+            heightmaps: chunk_column.heightmap.to_tag(),
+            data: Array::from(serialized.clone()),
+            block_entities: Array::default(),
+            sky_light_mask: skylight_mask,
+            block_light_mask: Array::default(),
+            empty_sky_light_mask: empty_skylight_mask,
+            empty_block_light_mask: Array::default(),
+            sky_light: skylight_array_data,
+            block_light: Array::default(),
+        }};
+        let serialized = chunk_data.serialize_minecraft_packet().ok()?;
+        Some(serialized)
     }
     
     pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {

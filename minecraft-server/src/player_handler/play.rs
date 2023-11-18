@@ -1,5 +1,3 @@
-use minecraft_protocol::components::chunk;
-
 use super::*;
 
 struct PlayerHandler {
@@ -76,45 +74,14 @@ impl PlayerHandler {
         self.world.update_loaded_chunks(self.info.uuid, loaded_chunks_after.clone()).await;
 
         // Send the chunks to the client
-        let mut heightmaps = HashMap::new();
-        heightmaps.insert(String::from("MOTION_BLOCKING"), NbtTag::LongArray(vec![0; 37]));
-        let heightmaps = NbtTag::Compound(heightmaps);
-        let start_time = std::time::Instant::now();
-        let mut i = 0;
         for newly_loaded_chunk in newly_loaded_chunks {
-            let mut column = Vec::new();
-            for cy in -4..20 {
-                let chunk = self.world.get_network_chunk(newly_loaded_chunk.chunk(cy)).await.unwrap_or_else(|| {
-                    error!("Chunk not loaded: {newly_loaded_chunk:?}");
-                    NetworkChunk { // TODO hard error
-                        block_count: 0,
-                        blocks: PalettedData::Single { value: 0 },
-                        biomes: PalettedData::Single { value: 4 },
-                    }
-                });
-                column.push(chunk);
-            }
-            let serialized: Vec<u8> = NetworkChunk::into_data(column).unwrap();
-            let chunk_data = PlayClientbound::ChunkData {
-                value: NetworkChunkColumnData {
-                    chunk_x: newly_loaded_chunk.cx,
-                    chunk_z: newly_loaded_chunk.cz,
-                    heightmaps: heightmaps.clone(),
-                    data: Array::from(serialized.clone()),
-                    block_entities: Array::default(),
-                    sky_light_mask: Array::default(),
-                    block_light_mask: Array::default(),
-                    empty_sky_light_mask: Array::default(),
-                    empty_block_light_mask: Array::default(),
-                    sky_light: Array::default(),
-                    block_light: Array::default(),
-                }
-            };
-            i += 1;
-            let elapsed: Duration = start_time.elapsed();
-            info!("Chunk {} Elapsed: {:?}", i, elapsed);
             
-            self.send_packet(chunk_data).await;
+            let chunk_column_data = self.world.get_network_chunk_column_data(newly_loaded_chunk.clone()).await.unwrap_or_else(|| {
+                error!("Chunk not loaded: {newly_loaded_chunk:?}");
+                panic!("Chunk not loaded: {newly_loaded_chunk:?}");
+            });
+        self.send_packet_raw(chunk_column_data).await;
+            
             info!("sent");
         }
 
