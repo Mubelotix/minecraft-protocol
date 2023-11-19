@@ -103,7 +103,7 @@ impl std::ops::AddAssign<EntityChanges> for EntityChanges {
 }
 
 pub struct WorldObserver {
-    receiver: MpscReceiver<EntityChanges>,
+    receiver: MpscReceiver<WorldChange>,
     eid: Eid,
     manager: &'static WorldObserverManager,
 }
@@ -123,7 +123,7 @@ impl Drop for WorldObserver {
 }
 
 struct WorldObserverTracker {
-    sender: MpscSender<EntityChanges>,
+    sender: MpscSender<WorldChange>,
     ticks: bool,
     blocks: HashSet<ChunkColumnPosition>,
     entities: HashSet<ChunkColumnPosition>,
@@ -196,28 +196,29 @@ struct NearbyBlockSubscription {
     radius: u8,
 }
 
+// TODO: allow different observers for same entity
 pub struct WorldObserverManager {
     trackers: RwLock<HashMap<Eid, WorldObserverTracker>>,
     ticks: RwLock<HashSet<Eid>>,
-    blocks: RwLock<HashMap<ChunkColumnPosition, HashSet<Eid>>>,
-    entities: RwLock<HashMap<ChunkColumnPosition, HashSet<Eid>>>,
-    nearby_blocks: RwLock<HashMap<ChunkColumnPosition, HashMap<Eid, NearbyBlockSubscription>>>,
-    specific_entities: RwLock<HashMap<Eid, HashSet<Eid>>>,
+    blocks: RwLock<HashMap<ChunkColumnPosition, HashMap<Eid, MpscSender<WorldChange>>>>,
+    entities: RwLock<HashMap<ChunkColumnPosition, HashMap<Eid, MpscSender<WorldChange>>>>,
+    nearby_blocks: RwLock<HashMap<ChunkColumnPosition, HashMap<Eid, (NearbyBlockSubscription, MpscSender<WorldChange>)>>>,
+    specific_entities: RwLock<HashMap<Eid, HashMap<Eid, MpscSender<WorldChange>>>>,
 }
 
 impl WorldObserverManager {
-    async fn add_subscriber(&self, eid: Eid, observer_builder: WorldObserverBuilder, sender: MpscSender<EntityChanges>) {
+    async fn add_subscriber(&self, eid: Eid, observer_builder: WorldObserverBuilder, sender: MpscSender<WorldChange>) {
         let mut entities = self.trackers.write().await;
         if !observer_builder.blocks.is_empty() {
             let mut blocks = self.blocks.write().await;
             for column in &observer_builder.blocks {
-                blocks.entry(column.clone()).or_default().insert(eid);
+                blocks.entry(column.clone()).or_default().insert(eid, sender.clone());
             }
         }
         if !observer_builder.entities.is_empty() {
             let mut entities = self.blocks.write().await;
             for column in &observer_builder.entities {
-                entities.entry(column.clone()).or_default().insert(eid);
+                entities.entry(column.clone()).or_default().insert(eid, sender.clone());
             }
         }
         let mut observer_nearby_blocks = HashSet::new();
@@ -236,7 +237,7 @@ impl WorldObserverManager {
                 }.chunk_column();
                 for cx in min_column.cx..=max_column.cx {
                     for cz in min_column.cz..=max_column.cz {
-                        nearby_blocks.entry(ChunkColumnPosition {cx: cx, cz: cz}).or_default().insert(eid, nearby_block.clone());
+                        nearby_blocks.entry(ChunkColumnPosition {cx: cx, cz: cz}).or_default().insert(eid, (nearby_block.clone(), sender.clone()));
                         observer_nearby_blocks.insert(ChunkColumnPosition {cx: cx, cz: cz});
                     }
                 }
@@ -245,7 +246,7 @@ impl WorldObserverManager {
         if !observer_builder.specific_entities.is_empty() {
             let mut specific_entities = self.specific_entities.write().await;
             for entity in &observer_builder.specific_entities {
-                specific_entities.entry(entity.clone()).or_default().insert(eid);
+                specific_entities.entry(entity.clone()).or_default().insert(eid, sender.clone());
             }
         }
         entities.insert(eid, WorldObserverTracker {
@@ -258,7 +259,15 @@ impl WorldObserverManager {
         });
     }
 
-    
+    pub async fn notify_block_change(&self, position: BlockPosition, block: BlockWithState) {
+        let column = position.chunk_column();
+        let blocks = self.blocks.read().await;
+        if let Some(subscribers) = blocks.get(&column) {
+            for (_, sender) in subscribers {
+                let _ = sender.try_send(WorldChange::Block(position.clone(), block.clone()));
+            }
+        }
+    }
 
     pub async fn remove_subscriber(&self, eid: Eid) {
         let mut entities = self.trackers.write().await;
