@@ -2,6 +2,7 @@ use crate::prelude::*;
 
 #[derive(Debug, Clone)]
 pub enum WorldChange {
+    Tick,
     Block(BlockPosition, BlockWithState),
     EntitySpawned {
         eid: Eid,
@@ -275,6 +276,16 @@ impl WorldObserverManager {
         if let Some(subscribers) = blocks.get(&column) {
             for (_, sender) in subscribers {
                 let _ = sender.try_send(WorldChange::Block(position.clone(), block.clone()));
+            }
+        }
+    }
+
+    pub async fn notify_tick(&self) {
+        let ticks = self.ticks.read().await;
+        for eid in ticks.iter() {
+            let trackers = self.trackers.read().await;
+            if let Some(tracker) = trackers.get(eid) {
+                let _ = tracker.sender.try_send(WorldChange::Tick);
             }
         }
     }
