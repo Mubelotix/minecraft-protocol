@@ -52,21 +52,40 @@ impl Entities {
     }
 
     /// Mutate an entity through a closure
-    pub(super) async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> (R, EntityChanges)) -> Option<(R, EntityChanges)> {
+    pub(super) async fn mutate_entity<R>(
+        &self,
+        eid: Eid,
+        mutator: impl FnOnce(&mut AnyEntity) -> (R, EntityChanges),
+        observer_manager: &'static WorldObserverManager
+    ) -> Option<(R, EntityChanges)> {
         let mut entities = self.entities.write().await;
 
         if let Some(entity) = entities.get_mut(&eid) {
             let prev_position = entity.as_entity().position.clone();
-            let r = mutator(entity);
-            if prev_position != entity.as_entity().position {
-                let old_chunk = prev_position.chunk_column();
-                let new_chunk = entity.as_entity().position.chunk_column();
-                drop(entities);
+            let (r, changes) = mutator(entity);
+            let old_chunk = prev_position.chunk_column();
+            let new_chunk = entity.as_entity().position.chunk_column();
+            let e = entity.as_entity();
+            if changes.position_changed() {
+                observer_manager.notify_entity_moved(eid, prev_position, e.position.clone()).await;
+            }
+            if changes.velocity_changed() {
+                observer_manager.notify_entity_velocity(eid, e.position.clone(), e.velocity.clone()).await;
+            }
+            if changes.pitch_changed() {
+                observer_manager.notify_entity_pitch(eid, e.position.clone(), e.pitch, e.yaw, entity.as_other::<LivingEntity>().map(|e| e.head_yaw).unwrap_or(0.0)).await;
+            }
+            if changes.metadata_changed() {
+                // TODO: Support metadata changes
+                // observer_manager.notify_metadata_change(eid, e.position.clone(), e.metadata.clone()).await;
+            }
+            drop(entities);
+            if old_chunk != new_chunk {
                 let mut chunks = self.chunks.write().await;
                 chunks.entry(old_chunk).and_modify(|set| { set.remove(&eid); }); // TODO: ensure it gets removed
                 chunks.entry(new_chunk).or_insert(HashSet::new()).insert(eid);
             }
-            Some(r)
+            Some((r, changes))
         } else {
             None
         }
@@ -100,7 +119,7 @@ impl Entities {
     }
 
     /// Remove an entity
-    pub(super) async fn remove_entity(&self, eid: Eid) -> Option<AnyEntity> {
+    pub(super) async fn remove_entity(&self, eid: Eid, observer_manager: &'static WorldObserverManager) -> Option<AnyEntity> {
         let entity = self.entities.write().await.remove(&eid);
         let mut chunks = self.chunks.write().await;
         chunks.values_mut().for_each(|set| { set.remove(&eid); });
@@ -108,6 +127,9 @@ impl Entities {
         drop(chunks);
         self.uuids.write().await.retain(|_,v| *v != eid);
         self.entity_tasks.write().await.remove(&eid);
+        if let Some(entity) = &entity {
+            observer_manager.notify_entity_dispawned(eid, entity.as_entity().position.clone()).await;
+        }
         entity
     }
 }

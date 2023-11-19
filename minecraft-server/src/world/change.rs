@@ -1,5 +1,3 @@
-use futures::channel::mpsc::Sender;
-
 use crate::prelude::*;
 
 #[derive(Debug, Clone)]
@@ -208,6 +206,17 @@ pub struct WorldObserverManager {
 }
 
 impl WorldObserverManager {
+    pub fn new() -> WorldObserverManager {
+        WorldObserverManager {
+            trackers: RwLock::new(HashMap::new()),
+            ticks: RwLock::new(HashSet::new()),
+            blocks: RwLock::new(HashMap::new()),
+            entities: RwLock::new(HashMap::new()),
+            nearby_blocks: RwLock::new(HashMap::new()),
+            specific_entities: RwLock::new(HashMap::new()),
+        }
+    }
+
     async fn add_subscriber(&self, eid: Eid, observer_builder: WorldObserverBuilder, sender: MpscSender<WorldChange>) {
         let mut entities = self.trackers.write().await;
         if !observer_builder.blocks.is_empty() {

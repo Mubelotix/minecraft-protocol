@@ -21,6 +21,7 @@ pub struct World {
     loading_manager: RwLock<WorldLoadingManager>,
     change_senders: RwLock<HashMap<UUID, MpscSender<WorldChange>>>, // TODO: Add a way to select events you want to subscribe to
     receiver: BroadcastReceiver<ServerMessage>,
+    world_observer_manager: WorldObserverManager,
 }
 
 impl World {
@@ -31,6 +32,7 @@ impl World {
             loading_manager: RwLock::new(WorldLoadingManager::default()),
             change_senders: RwLock::new(HashMap::new()),
             receiver,
+            world_observer_manager: WorldObserverManager::new(),
         }
     }
 
@@ -111,10 +113,10 @@ impl World {
     }
 
     // TODO: add version that doesn't notify modified entity
-    pub async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> (R, EntityChanges)) -> Option<R> {
+    pub async fn mutate_entity<R>(&'static self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> (R, EntityChanges)) -> Option<R> {
         // TODO: change events
         let previous_position = self.entities.observe_entity(eid, |e| e.as_entity().position.clone()).await?;
-        match self.entities.mutate_entity(eid, mutator).await {
+        match self.entities.mutate_entity(eid, mutator, &self.world_observer_manager).await {
             Some((r, changes)) => {
                 // TODO: make only one lookup and group into a single message with optional fields
                 let position = self.entities.observe_entity(eid, |e| e.as_entity().position.clone()).await?;
