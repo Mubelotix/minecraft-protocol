@@ -43,7 +43,7 @@ impl World {
         self.map.get_network_chunk_column_data(position).await
     }
 
-    pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
+    pub async fn set_block(&'static self, position: BlockPosition, block: BlockWithState) {
         self.map.set_block(position.clone(), block.clone()).await;
         self.notify(&position.chunk_column(), WorldChange::Block(position, block)).await;
     }
@@ -168,7 +168,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_world_notifications() {
-        let world = World::new(broadcast_channel(100).1);
+        let world = Box::leak(Box::new(World::new(broadcast_channel(100).1)));
 
         let mut receiver1 = world.add_loader(1).await;
         let mut receiver2 = world.add_loader(2).await;

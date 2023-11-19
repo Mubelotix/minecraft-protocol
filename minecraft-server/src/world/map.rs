@@ -1,7 +1,7 @@
 use std::{collections::HashMap, cmp::Ordering, vec};
 use minecraft_protocol::{components::chunk::PalettedData, ids::blocks::Block};
 use tokio::sync::RwLock;
-use crate::prelude::*;
+use crate::{prelude::*, world::light::LightManager};
 use super::light::Light;
 
 
@@ -11,20 +11,7 @@ pub struct WorldMap {
     /// The shards are locked independently.
     /// This allows high concurrency.
     shard_count: usize,
-    light_manager: LightManager,
     shards: Vec<RwLock<HashMap<ChunkColumnPosition, ChunkColumn>>>,
-}
-
-struct LightManager {
-    locked_chunks: HashSet<ChunkColumnPosition>,
-}
-
-impl LightManager {
-    pub fn new() -> Self {
-        Self {
-            locked_chunks: HashSet::new(),
-        }
-    }
 }
 
 #[derive(Clone)]
@@ -457,7 +444,6 @@ impl WorldMap {
         WorldMap { 
             shard_count,
             shards,
-            light_manager: LightManager::new(), 
         }
     }
 
@@ -500,8 +486,8 @@ impl WorldMap {
         Some(serialized)
     }
     
-    pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
-        async fn inner_set_block(s: &WorldMap, position: BlockPosition, block: BlockWithState) -> Option<()> {
+    pub async fn set_block(&'static self, position: BlockPosition, block: BlockWithState) {
+        async fn inner_set_block(s: &'static WorldMap, position: BlockPosition, block: BlockWithState) -> Option<()> {
             let chunk_position = position.chunk();
             let position_in_chunk_column = position.in_chunk_column();
             let chunk_column_position = chunk_position.chunk_column();
@@ -513,7 +499,8 @@ impl WorldMap {
             Some(())
         }
 
-        inner_set_block(self, position, block).await;
+        inner_set_block(self, position.clone(), block.clone()).await;
+        LightManager::set_block(self, position, block);
     }
 
     pub async fn get_skylight(&self, position: BlockPosition) -> u8 {
@@ -686,16 +673,16 @@ mod tests {
 
     #[tokio::test]
     async fn test_world_map() {
-        let map = WorldMap::new(1);
+        let world_map = Box::leak(Box::new(WorldMap::new(1)));
         for cx in -3..=3 {
             for cz in -3..=3 {
-                map.load(ChunkColumnPosition { cx, cz }).await;
+                world_map.load(ChunkColumnPosition { cx, cz }).await;
             }
         }
         
         // Test single block
-        map.set_block(BlockPosition { x: -40, y: -40, z: -40 }, BlockWithState::RedstoneBlock).await;
-        let block = map.get_block(BlockPosition { x: -40, y: -40, z: -40 }).await;
+        world_map.set_block(BlockPosition { x: -40, y: -40, z: -40 }, BlockWithState::RedstoneBlock).await;
+        let block = world_map.get_block(BlockPosition { x: -40, y: -40, z: -40 }).await;
         assert_eq!(block.block_state_id().unwrap(), BlockWithState::RedstoneBlock.block_state_id().unwrap());
 
         // Set blocks
@@ -703,7 +690,7 @@ mod tests {
         for x in (-40..40).step_by(9) {
             for y in (-40..200).step_by(15) {
                 for z in (-40..40).step_by(9) {
-                    map.set_block(BlockPosition { x, y, z }, BlockWithState::from_state_id(id).unwrap()).await;
+                    world_map.set_block(BlockPosition { x, y, z }, BlockWithState::from_state_id(id).unwrap()).await;
                     id += 1;
                 }
             }
@@ -714,7 +701,7 @@ mod tests {
         for x in (-40..40).step_by(9) {
             for y in (-40..200).step_by(15) {
                 for z in (-40..40).step_by(9) {
-                    let got = map.get_block(BlockPosition { x, y, z }).await.block_state_id().unwrap();
+                    let got = world_map.get_block(BlockPosition { x, y, z }).await.block_state_id().unwrap();
                     assert_eq!(id, got);
                     id += 1;
                 }

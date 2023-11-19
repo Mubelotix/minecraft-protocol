@@ -1,4 +1,4 @@
-use std::ops::AddAssign;
+use std::{ops::AddAssign, collections::BinaryHeap};
 
 use crate::prelude::*;
 use super::*;
@@ -242,6 +242,13 @@ impl From<BlockPositionInChunkColumn> for LightPositionInChunkColumn {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct LightPosition {
+    pub x: i32,
+    pub y: usize,
+    pub z: i32,
+}
+
 impl From<LightPosition> for LightPositionInChunkColumn {
     fn from(val: LightPosition) -> Self {
         LightPositionInChunkColumn {
@@ -252,11 +259,14 @@ impl From<LightPosition> for LightPositionInChunkColumn {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct LightPosition {
-    pub x: i32,
-    pub y: usize,
-    pub z: i32,
+impl From<BlockPosition> for LightPosition {
+    fn from(val: BlockPosition) -> Self {
+        Self {
+            x: val.x,
+            y: (val.y + 64 + 16) as usize,
+            z: val.z,
+        }
+    }
 }
 
 impl LightPosition {
@@ -319,6 +329,31 @@ impl std::cmp::Ord for LightPosition {
         self.y.cmp(&other.y)
     }
 }
+
+pub struct LightManager {
+    world_map: &'static WorldMap,
+}
+
+impl LightManager {
+    pub fn set_block(world_map: &'static WorldMap, position: BlockPosition, block: BlockWithState) {
+        let mut to_explore = BinaryHeap::new();
+        let position = LightPosition::from(position);
+        to_explore.extend(position.get_neighbors(24));
+        while let Some(postion) = to_explore.pop() {
+            
+        }
+        
+        // Clear locked chunks
+    }
+
+
+    pub fn init_chunk_column_light(&mut self, chunk_column_position: ChunkColumnPosition) {
+        unimplemented!();
+
+        // Clear locked chubks
+    }
+}
+
 
 impl ChunkColumn {
     /*fn propagate_sky_light_inside(&mut self) -> Result<EdgesLightToPropagate, ()> {
