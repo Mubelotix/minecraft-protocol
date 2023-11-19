@@ -271,7 +271,7 @@ impl WorldObserverManager {
     }
 
     #[inline]
-    async fn notify_entity_change(&self, position: Position, from: Option<Position>, eid: Eid, change: WorldChange) {
+    async fn notify_entity_change(&self, eid: Eid, position: Position, from: Option<Position>, change: WorldChange) {
         let specific_entities = self.specific_entities.read().await;
 
         // Notify for specific entities
@@ -308,6 +308,65 @@ impl WorldObserverManager {
                 }
             }
         }
+    }
+
+    pub async fn notify_entity_spawned(&self, eid: Eid, uuid: UUID, ty: NetworkEntity, position: Position, pitch: f32, yaw: f32, head_yaw: f32, data: u32, velocity: Translation, metadata: ()) {
+        let change = WorldChange::EntitySpawned {
+            eid,
+            uuid,
+            ty,
+            position: position.clone(),
+            pitch,
+            yaw,
+            head_yaw,
+            data,
+            velocity,
+            metadata,
+        };
+        self.notify_entity_change(eid, position, None, change).await;
+    }
+
+    pub async fn notify_entity_dispawned(&self, eid: Eid, position: Position) {
+        let change = WorldChange::EntityDispawned {
+            eid,
+        };
+        self.notify_entity_change(eid, position, None, change).await;
+        self.specific_entities.write().await.remove(&eid);
+    }
+
+    pub async fn notify_metadata_change(&self, eid: Eid, position: Position, metadata: ()) {
+        let change = WorldChange::EntityMetadata {
+            eid,
+            metadata,
+        };
+        self.notify_entity_change(eid, position, None, change).await;
+    }
+
+    pub async fn notify_entity_moved(&self, eid: Eid, from: Position, to: Position) {
+        let change = WorldChange::EntityPosition {
+            eid,
+            from: from.clone(),
+            to: to.clone(),
+        };
+        self.notify_entity_change(eid, to, Some(from), change).await;
+    }
+
+    pub async fn notify_entity_velocity(&self, eid: Eid, position: Position, velocity: Translation) {
+        let change = WorldChange::EntityVelocity {
+            eid,
+            velocity,
+        };
+        self.notify_entity_change(eid, position, None, change).await;
+    }
+
+    pub async fn notify_entity_pitch(&self, eid: Eid, position: Position, pitch: f32, yaw: f32, head_yaw: f32) {
+        let change = WorldChange::EntityPitch {
+            eid,
+            pitch,
+            yaw,
+            head_yaw,
+        };
+        self.notify_entity_change(eid, position, None, change).await;
     }
 
     pub async fn remove_subscriber(&self, eid: Eid) {
