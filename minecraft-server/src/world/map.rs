@@ -341,7 +341,7 @@ impl ChunkColumn {
         }
         current_height
     }
-
+    
     pub(super) fn get_highest_block(&self) -> u32 {
         self.heightmap.max_height.unwrap_or(0)
     }
@@ -448,7 +448,7 @@ impl WorldMap {
     pub async fn get_block(&self, position: BlockPosition) -> BlockWithState {
         async fn inner_get_block(s: &WorldMap, position: BlockPosition) -> Option<BlockWithState> {
             let chunk_position = position.chunk();
-            let position_in_chunk_column = position.in_chunk_column();
+            let position_in_chunk_column: BlockPositionInChunkColumn = position.in_chunk_column();
             let chunk_column_position = chunk_position.chunk_column();
             let shard = chunk_column_position.shard(s.shard_count);
         
@@ -485,7 +485,7 @@ impl WorldMap {
     }
     
     pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
-        async fn inner_get_block(s: &WorldMap, position: BlockPosition, block: BlockWithState) -> Option<(EdgesLightToPropagate, ChunkColumnPosition)> {
+        async fn inner_set_block(s: &WorldMap, position: BlockPosition, block: BlockWithState) -> Option<(EdgesLightToPropagate, ChunkColumnPosition)> {
             let chunk_position = position.chunk();
             let position_in_chunk_column = position.in_chunk_column();
             let chunk_column_position = chunk_position.chunk_column();
@@ -495,36 +495,42 @@ impl WorldMap {
             let chunk_column = shard.get_mut(&chunk_column_position)?;
             chunk_column.set_block(position_in_chunk_column.clone(), block);
             chunk_column.update_light_as_block_changed_at(position_in_chunk_column).ok().map(|to_propagate| (to_propagate, chunk_column_position))
-
         }
-        let to_propagate = inner_get_block(self, position, block).await;
+
+        let to_propagate = inner_set_block(self, position, block).await;
         if let Some(to_propagate) = to_propagate {
             let (to_propagate, from) = to_propagate;
             let to_popagate = to_propagate.chunk_positions_to_propagate(from);
             for (chunk_column_position, to_propagate) in to_popagate {
-                self.update_light_from_edge(self, chunk_column_position, to_propagate).await;
+                self.update_light_from_edge(chunk_column_position, to_propagate).await;
             }
         }
     }
 
     pub async fn get_skylight(&self, position: BlockPosition) -> u8 {
-        let chunk_position = position.chunk();
-        let position_in_chunk_column = position.in_chunk_column();
-        let chunk_column_position = chunk_position.chunk_column();
-        let shard = chunk_column_position.shard(self.shard_count);
-
-        let shard = self.shards[shard].read().await;
-        let chunk_column = shard.get(&chunk_column_position).unwrap();
-        chunk_column.light.get_skylight_level(position_in_chunk_column.into())
+        async fn inner_get_skylight(s: &WorldMap, position: BlockPosition) -> Option<u8> {
+            let chunk_position = position.chunk();
+            let chunk_column_position = chunk_position.chunk_column();
+            let shard = chunk_column_position.shard(s.shard_count);
+        
+            let shard = s.shards[shard].read().await;
+            let chunk_column = shard.get(&chunk_column_position)?;
+            let level = chunk_column.get_skylight(position.in_chunk_column());
+            Some(level)
+        }
+        inner_get_skylight(self, position).await.unwrap_or(0)
     }
 
-    async fn update_light_from_edge(&self, s: &WorldMap, chunk_column_position: ChunkColumnPosition, to_propagate: BinaryHeap<(LightPositionInChunkColumn, u8)>) {
-        let shard = chunk_column_position.shard(self.shard_count);
-
-        let mut shard = s.shards[shard].write().await;
-        let chunk_column = shard.get_mut(&chunk_column_position);
+    async fn update_light_from_edge(&self, chunk_column_position: ChunkColumnPosition, to_propagate: BinaryHeap<(LightPositionInChunkColumn, u8)>) {
+        async fn inner_get_skylight(s: &WorldMap, chunk_column_position: ChunkColumnPosition, to_propagate: BinaryHeap<(LightPositionInChunkColumn, u8)>) -> Option<()> {
+            let shard = chunk_column_position.shard(s.shard_count);
         
-
+            let mut shard = s.shards[shard].write().await;
+            let chunk_column = shard.get_mut(&chunk_column_position)?;
+            chunk_column.update_from_edge(to_propagate).ok()?;
+            Some(())
+        }        
+        inner_get_skylight(self, chunk_column_position, to_propagate).await;
     }
 
     pub async fn load(&self, position: ChunkColumnPosition) {
@@ -743,9 +749,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_sky_light_flat_chunk() {
-        let world = WorldMap::new(10);
+        let world = WorldMap::new(100);
         world.load(ChunkColumnPosition { cx: 0, cz: 0 }).await;
-
 
         // Check that the sky light is equal to the light level above the grass and on the top of the world.
         for x in 0..16 {
@@ -768,15 +773,24 @@ mod tests {
         assert_ne!(world.get_skylight(BlockPosition { x: 0, y: -50, z: 1}).await, 14);
         world.set_block(BlockPosition { x: 0, y: -50, z: 1 }, BlockWithState::Air).await;
         assert_eq!(world.get_skylight(BlockPosition { x: 0, y: -50, z: 1}).await, 14);
+
+        // test on chunk border
+        world.load(ChunkColumnPosition { cx: 1, cz: 0 }).await;
+        world.load(ChunkColumnPosition { cx: 0, cz: 1 }).await;
+        world.load(ChunkColumnPosition { cx: 1, cz: 1 }).await;
+        world.load(ChunkColumnPosition { cx: -1, cz: -1 }).await;
+
+        assert_ne!(world.get_skylight(BlockPosition { x: 0, y: -50, z: -1}).await, 14);
+        world.set_block(BlockPosition { x: 0, y: -50, z: -1 }, BlockWithState::Air).await;
+        assert_eq!(world.get_skylight(BlockPosition { x: 0, y: -50, z: -1}).await, 14);
     }
 
 
     #[test]
     fn benchmark_get_block() {
-
         let start_time = std::time::Instant::now();
         for _ in 0..441 {
-            let mut column = ChunkColumn::flat();
+            let _column = ChunkColumn::flat();
         }
       
         let elapsed: Duration = start_time.elapsed();

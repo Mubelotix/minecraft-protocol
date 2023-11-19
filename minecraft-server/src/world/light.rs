@@ -5,6 +5,8 @@ use minecraft_protocol::ids::blocks::Block;
 use crate::prelude::*;
 use super::*;
 
+const MAX_LIGHT_LEVEL: u8 = 15;
+
 #[derive(Debug, Clone)]
 struct SectionLightData(Vec<u8>); // TODO(optimization): Use simd 
 
@@ -38,7 +40,7 @@ impl SectionLightData {
 
     /// Set the light level at the given position.
     pub fn set(&mut self, postion: BlockPositionInChunk, level: u8) -> Result<(), ()> {
-        if level > 15 {
+        if level > MAX_LIGHT_LEVEL {
             return Err(());
         }
 
@@ -61,11 +63,11 @@ impl SectionLightData {
     
     /// Set the light level at the given layer to the given level.
     pub(super) fn set_layer(&mut self, layer: u8 , level: u8) -> Result<(), ()> {
-        if level > 15 {
+        if level > MAX_LIGHT_LEVEL {
             return Err(());
         }
         
-        if layer > 15 {
+        if layer > MAX_LIGHT_LEVEL {
             return Err(());
         }
 
@@ -93,24 +95,31 @@ impl EdgesLightToPropagate {
         }
     }
 
+    /// Push the given position and level to the correct edge.
+    /// If the position is not on an edge, nothing is done.
+    /// The position coordinate will be modified to be on the adjacent chunk
     pub fn push(&mut self, position: LightPositionInChunkColumn, level: u8) {
+        let mut position = position;
         let index = match position {
-            LightPositionInChunkColumn { bx: 0, y: _, bz: _ } => 0,
-            LightPositionInChunkColumn { bx: _, y: _, bz: 0 } => 1,
-            LightPositionInChunkColumn { bx: 15, y: _, bz: _ } => 2,
-            LightPositionInChunkColumn { bx: _, y: _, bz: 15 } => 3,
+            LightPositionInChunkColumn { bx: 0, y: _, bz: _ } => {
+                position.bx = 15;
+                0
+            },
+            LightPositionInChunkColumn { bx: _, y: _, bz: 0 } => {
+                position.bz = 15;
+                1
+            }
+            LightPositionInChunkColumn { bx: 15, y: _, bz: _ } => {
+                position.bx = 0;
+                2
+            }
+            LightPositionInChunkColumn { bx: _, y: _, bz: 15 } => {
+                position.bz = 0;
+                3
+            }
             _ => return,
         };
         self.edges[index].push((position, level));
-    }
-
-    pub fn pop(&mut self) -> Option<(LightPositionInChunkColumn, u8)> {
-        for edge in self.edges.iter_mut() {
-            if let Some((position, level)) = edge.pop() {
-                return Some((position, level));
-            }
-        }
-        None
     }
 
     pub fn expand(&mut self, edges: EdgesLightToPropagate) {
@@ -118,7 +127,8 @@ impl EdgesLightToPropagate {
             self.edges[i].extend(edge.clone());
         }
     }
-
+    
+    /// Get the ChunkColumnPositions of chunks that need to be propagated
     pub fn chunk_positions_to_propagate(&self, from: ChunkColumnPosition) -> Vec<(ChunkColumnPosition, BinaryHeap<(LightPositionInChunkColumn, u8)>)> {
         let mut result = Vec::new();
         if !self.edges[0].is_empty() {
@@ -148,7 +158,6 @@ struct LightSystem {
     pub light_mask: u64,
     /// The mask of sections that don't have sky light data.
     pub empty_light_mask: u64,
-    edge_light_to_propagate: EdgesLightToPropagate,
 }
 
 impl LightSystem {
@@ -205,22 +214,22 @@ impl LightSystem {
                 for y in 0..16 {
                     for i in 0..16 {
                         edges.push(LightPositionInChunkColumn { bx: i, y: section * 16 + y, bz: 0 }, level);
-                        edges.push(LightPositionInChunkColumn { bx: i, y: section * 16 + y, bz: 15 }, level);
+                        edges.push(LightPositionInChunkColumn { bx: i, y: section * 16 + y, bz: MAX_LIGHT_LEVEL }, level);
                         edges.push(LightPositionInChunkColumn { bx: 0, y: section * 16 + y, bz: i }, level);
-                        edges.push(LightPositionInChunkColumn { bx: 15, y: section * 16 + y, bz: i }, level);
+                        edges.push(LightPositionInChunkColumn { bx: MAX_LIGHT_LEVEL, y: section * 16 + y, bz: i }, level);
                     }
                 }
             } else {
                 // Set the part of the section
                 let first_offset = if section == first_section { first_secion_offset } else { 0 };
-                let last_offset = if section == last_section { last_section_offset } else { 15 };
+                let last_offset = if section == last_section { last_section_offset } else { MAX_LIGHT_LEVEL as usize };
                 for y in first_offset..=last_offset {
                     self.light_arrays[section].set_layer(y as u8, level)?;
                     for i in 0..16 {
                         edges.push(LightPositionInChunkColumn { bx: i, y: section * 16 + y, bz: 0 }, level);
-                        edges.push(LightPositionInChunkColumn { bx: i, y: section * 16 + y, bz: 15 }, level);
+                        edges.push(LightPositionInChunkColumn { bx: i, y: section * 16 + y, bz: MAX_LIGHT_LEVEL }, level);
                         edges.push(LightPositionInChunkColumn { bx: 0, y: section * 16 + y, bz: i }, level);
-                        edges.push(LightPositionInChunkColumn { bx: 15, y: section * 16 + y, bz: i }, level);
+                        edges.push(LightPositionInChunkColumn { bx: MAX_LIGHT_LEVEL, y: section * 16 + y, bz: i }, level);
                     }
                 }
             }
@@ -272,11 +281,10 @@ impl Light {
         // TODO: Make this configurable with the world.
         Self {
             sky_light: LightSystem {
-                level: 15,
+                level: MAX_LIGHT_LEVEL,
                 light_arrays: vec![SectionLightData::new(); 24+2],
                 light_mask: 0,
                 empty_light_mask: !0,
-                edge_light_to_propagate: EdgesLightToPropagate::new(),
             },
         }
     }
@@ -481,6 +489,17 @@ impl ChunkColumn {
         to_propagate.expand(self.explore_sky_light_from_heap(&mut to_explore).map_err(|_| error!("Error while updating light"))?);
         Ok(to_propagate)
     }
+
+    pub(super) fn update_from_edge(&mut self, to_propagate: BinaryHeap<(LightPositionInChunkColumn, u8)>) -> Result<(), ()> {
+        for (position, level) in to_propagate {
+            let block = Block::from(self.get_block(position.clone().into()));            
+            if block.is_transparent() {
+                self.light.sky_light.set_level(position.clone(), level.saturating_sub(block.light_absorption()))?;
+                self.update_light_as_block_changed_at(position.into())?;
+            }
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -491,8 +510,8 @@ mod tests {
     fn test_section_light_data() {
         let mut data = SectionLightData::new();
 
-        data.set(BlockPositionInChunk { bx: 0, by: 0, bz: 0 }, 15).unwrap();
-        assert_eq!(data.get(BlockPositionInChunk { bx: 0, by: 0, bz: 0 }).unwrap(), 15);
+        data.set(BlockPositionInChunk { bx: 0, by: 0, bz: 0 }, MAX_LIGHT_LEVEL).unwrap();
+        assert_eq!(data.get(BlockPositionInChunk { bx: 0, by: 0, bz: 0 }).unwrap(), MAX_LIGHT_LEVEL);
 
         data.set(BlockPositionInChunk { bx: 0, by: 0, bz: 0 }, 0).unwrap();
         assert_eq!(data.get(BlockPositionInChunk { bx: 0, by: 0, bz: 0 }).unwrap(), 0);
@@ -500,8 +519,8 @@ mod tests {
         data.set(BlockPositionInChunk { bx: 0, by: 0, bz: 1 }, 1).unwrap();
         assert_eq!(data.get(BlockPositionInChunk { bx: 0, by: 0, bz: 1 }).unwrap(), 1);
 
-        data.set(BlockPositionInChunk { bx: 0, by: 1, bz: 1 }, 15).unwrap();
-        assert_eq!(data.get(BlockPositionInChunk { bx: 0, by: 1, bz: 1 }).unwrap(), 15);
+        data.set(BlockPositionInChunk { bx: 0, by: 1, bz: 1 }, MAX_LIGHT_LEVEL).unwrap();
+        assert_eq!(data.get(BlockPositionInChunk { bx: 0, by: 1, bz: 1 }).unwrap(), MAX_LIGHT_LEVEL);
 
         data.set(BlockPositionInChunk { bx: 1, by: 1, bz: 1 }, 1).unwrap();
         assert_eq!(data.get(BlockPositionInChunk { bx: 1, by: 1, bz: 1 }).unwrap(), 1);
@@ -512,21 +531,21 @@ mod tests {
         // Manual layer
         for z in 0..16 {
             for x in 0..16 {
-                data.set(BlockPositionInChunk { bx: x, by: 0, bz: z }, 15).unwrap();
+                data.set(BlockPositionInChunk { bx: x, by: 0, bz: z }, MAX_LIGHT_LEVEL).unwrap();
             }
         }
 
         for z in 0..16 {
             for x in 0..16 {
-                assert_eq!(data.get(BlockPositionInChunk { bx: x, by: 0, bz: z }).unwrap(), 15, "x: {}, z: {}", x, z);
+                assert_eq!(data.get(BlockPositionInChunk { bx: x, by: 0, bz: z }).unwrap(), MAX_LIGHT_LEVEL, "x: {}, z: {}", x, z);
             }
         }
 
         // Test layer
-        data.set_layer(1, 15).unwrap();
+        data.set_layer(1, MAX_LIGHT_LEVEL).unwrap();
         for x in 0..16 {
             for z in 0..16 {
-                assert_eq!(data.get(BlockPositionInChunk { bx: x, by: 1, bz: z }).unwrap(), 15, "x: {}, z: {}", x, z);
+                assert_eq!(data.get(BlockPositionInChunk { bx: x, by: 1, bz: z }).unwrap(), MAX_LIGHT_LEVEL, "x: {}, z: {}", x, z);
             }
         }
     }
@@ -534,19 +553,18 @@ mod tests {
     #[test]
     fn test_set_region() {
         let mut sky_light = LightSystem {
-            level: 15,
+            level: MAX_LIGHT_LEVEL,
             light_arrays: vec![SectionLightData::new(); 16+2],
             light_mask: 0,
             empty_light_mask: !0,
-            edge_light_to_propagate: EdgesLightToPropagate::new(),
         };
 
-        sky_light.set_region(1, 33, 15).unwrap();
+        sky_light.set_region(1, 33, MAX_LIGHT_LEVEL).unwrap();
         
         // Test in
-        assert_eq!(sky_light.light_arrays[0].get(BlockPositionInChunk { bx: 0, by: 1, bz: 7 }).unwrap(), 15);
-        assert_eq!(sky_light.light_arrays[1].get(BlockPositionInChunk { bx: 1, by: 15, bz: 8 }).unwrap(), 15);
-        assert_eq!(sky_light.light_arrays[2].get(BlockPositionInChunk { bx: 3, by: 0, bz: 0 }).unwrap(), 15);
+        assert_eq!(sky_light.light_arrays[0].get(BlockPositionInChunk { bx: 0, by: 1, bz: 7 }).unwrap(), MAX_LIGHT_LEVEL);
+        assert_eq!(sky_light.light_arrays[1].get(BlockPositionInChunk { bx: 1, by: MAX_LIGHT_LEVEL, bz: 8 }).unwrap(), MAX_LIGHT_LEVEL);
+        assert_eq!(sky_light.light_arrays[2].get(BlockPositionInChunk { bx: 3, by: 0, bz: 0 }).unwrap(), MAX_LIGHT_LEVEL);
 
         // Test out
         assert_eq!(sky_light.light_arrays[0].get(BlockPositionInChunk { bx: 4, by: 0, bz: 2 }).unwrap(), 0);
