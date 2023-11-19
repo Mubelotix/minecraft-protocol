@@ -102,7 +102,27 @@ impl std::ops::AddAssign<EntityChanges> for EntityChanges {
     }
 }
 
-struct WorldObserver {
+pub struct WorldObserver {
+    receiver: MpscReceiver<EntityChanges>,
+    eid: Eid,
+    manager: &'static WorldObserverManager,
+}
+
+impl WorldObserver {
+    
+}
+
+impl Drop for WorldObserver {
+    fn drop(&mut self) {
+        let manager = self.manager;
+        let eid = self.eid;
+        tokio::spawn(async move {
+            manager.remove_subscriber(eid).await;
+        });
+    }
+}
+
+struct WorldObserverTracker {
     sender: MpscSender<EntityChanges>,
     ticks: bool,
     blocks: HashSet<ChunkColumnPosition>,
@@ -112,7 +132,7 @@ struct WorldObserver {
 }
 
 #[must_use = "The observer must be added to the manager to be used"]
-pub struct WorldSubscriberBuilder {
+pub struct WorldObserverBuilder {
     ticks: bool,
     blocks: Vec<ChunkColumnPosition>,
     entities: Vec<ChunkColumnPosition>,
@@ -120,9 +140,9 @@ pub struct WorldSubscriberBuilder {
     specific_entities: Vec<Eid>,
 }
 
-impl WorldSubscriberBuilder {
-    pub fn new() -> WorldSubscriberBuilder {
-        WorldSubscriberBuilder {
+impl WorldObserverBuilder {
+    pub fn new() -> WorldObserverBuilder {
+        WorldObserverBuilder {
             ticks: false,
             blocks: Vec::new(),
             nearby_blocks: Vec::new(),
@@ -131,22 +151,22 @@ impl WorldSubscriberBuilder {
         }
     }
 
-    pub fn with_ticks(mut self) -> WorldSubscriberBuilder {
+    pub fn with_ticks(mut self) -> WorldObserverBuilder {
         self.ticks = true;
         self
     }
 
-    pub fn with_blocks_in_chunk(mut self, position: ChunkColumnPosition) -> WorldSubscriberBuilder {
+    pub fn with_blocks_in_chunk(mut self, position: ChunkColumnPosition) -> WorldObserverBuilder {
         self.blocks.push(position);
         self
     }
 
-    pub fn with_entities_in_chunk(mut self, position: ChunkColumnPosition) -> WorldSubscriberBuilder {
+    pub fn with_entities_in_chunk(mut self, position: ChunkColumnPosition) -> WorldObserverBuilder {
         self.entities.push(position);
         self
     }
 
-    pub fn with_nearby_blocks(mut self, position: BlockPosition, radius: u8) -> WorldSubscriberBuilder {
+    pub fn with_nearby_blocks(mut self, position: BlockPosition, radius: u8) -> WorldObserverBuilder {
         self.nearby_blocks.push(NearbyBlockSubscription {
             position,
             radius,
@@ -154,15 +174,19 @@ impl WorldSubscriberBuilder {
         self
     }
 
-    pub fn with_entity(mut self, eid: Eid) -> WorldSubscriberBuilder {
+    pub fn with_entity(mut self, eid: Eid) -> WorldObserverBuilder {
         self.specific_entities.push(eid);
         self
     }
 
-    pub async fn finish(self, eid: Eid, observer_manager: &WorldObserverManager) -> MpscReceiver<EntityChanges> {
+    pub async fn finish(self, eid: Eid, observer_manager: &'static WorldObserverManager) -> WorldObserver {
         let (sender, receiver) = mpsc_channel(30);
         observer_manager.add_subscriber(eid, self, sender).await;
-        receiver
+        WorldObserver {
+            receiver,
+            eid,
+            manager: observer_manager,
+        }
     }
 }
 
@@ -173,7 +197,7 @@ struct NearbyBlockSubscription {
 }
 
 pub struct WorldObserverManager {
-    observers: RwLock<HashMap<Eid, WorldObserver>>,
+    trackers: RwLock<HashMap<Eid, WorldObserverTracker>>,
     ticks: RwLock<HashSet<Eid>>,
     blocks: RwLock<HashMap<ChunkColumnPosition, HashSet<Eid>>>,
     entities: RwLock<HashMap<ChunkColumnPosition, HashSet<Eid>>>,
@@ -182,8 +206,8 @@ pub struct WorldObserverManager {
 }
 
 impl WorldObserverManager {
-    async fn add_subscriber(&self, eid: Eid, observer_builder: WorldSubscriberBuilder, sender: MpscSender<EntityChanges>) {
-        let mut entities = self.observers.write().await;
+    async fn add_subscriber(&self, eid: Eid, observer_builder: WorldObserverBuilder, sender: MpscSender<EntityChanges>) {
+        let mut entities = self.trackers.write().await;
         if !observer_builder.blocks.is_empty() {
             let mut blocks = self.blocks.write().await;
             for column in &observer_builder.blocks {
@@ -224,7 +248,7 @@ impl WorldObserverManager {
                 specific_entities.entry(entity.clone()).or_default().insert(eid);
             }
         }
-        entities.insert(eid, WorldObserver {
+        entities.insert(eid, WorldObserverTracker {
             sender,
             ticks: observer_builder.ticks,
             blocks: observer_builder.blocks.into_iter().collect(),
@@ -234,8 +258,10 @@ impl WorldObserverManager {
         });
     }
 
+    
+
     pub async fn remove_subscriber(&self, eid: Eid) {
-        let mut entities = self.observers.write().await;
+        let mut entities = self.trackers.write().await;
         let Some(observer) = entities.remove(&eid) else {return};
         if observer.ticks {
             self.ticks.write().await.remove(&eid);
