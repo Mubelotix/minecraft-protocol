@@ -1,6 +1,6 @@
 use std::{collections::HashMap, cmp::Ordering, vec};
 use minecraft_protocol::{components::chunk::PalettedData, ids::blocks::Block};
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, RwLockWriteGuard};
 use crate::{prelude::*, world::light::LightManager};
 use super::light::Light;
 
@@ -461,6 +461,10 @@ impl WorldMap {
         inner_get_block(self, position).await.unwrap_or(BlockWithState::Air)
     }
 
+    pub(super) async fn write_shard(&self, shard: usize) -> RwLockWriteGuard<HashMap<ChunkColumnPosition, ChunkColumn>> {
+        self.shards[shard].write().await
+    }
+
     pub async fn get_network_chunk_column_data(&self, position: ChunkColumnPosition) -> Option<Vec<u8>> {
         let shard = position.shard(self.shard_count);
         let shard = self.shards[shard].read().await;
@@ -565,6 +569,10 @@ impl WorldMap {
         //let mut shard = self.shards[shard].write().await;
         //shard.remove(&position);
         // TODO: write to disk
+    }
+
+    pub fn get_shard_count(&self) -> usize {
+        self.shard_count
     }
 }
 
