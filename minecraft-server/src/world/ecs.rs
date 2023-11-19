@@ -37,11 +37,12 @@ impl Entities {
     /// Observe entities in a chunk through a closure
     /// That closure will be applied to each entity, and the results will be returned in a vector
     pub(super) async fn observe_entities<R>(&self, chunk: ChunkColumnPosition, mut observer: impl FnMut(&AnyEntity) -> Option<R>) -> Vec<R> {
-        let entities = self.chunks.read().await;
-        let Some(eids) = entities.get(&chunk) else {return Vec::new()};
+        let entities = self.entities.read().await;
+        let chunks = self.chunks.read().await;
+        let Some(eids) = chunks.get(&chunk) else {return Vec::new()};
         let mut results = Vec::with_capacity(eids.len());
         for eid in eids {
-            if let Some(entity) = self.entities.read().await.get(eid) {
+            if let Some(entity) = entities.get(eid) {
                 if let Some(r) = observer(entity) {
                     results.push(r);
                 }

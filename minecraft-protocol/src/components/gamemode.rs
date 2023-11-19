@@ -2,7 +2,7 @@ use crate::*;
 
 #[derive(PartialEq)]
 #[minecraft_enum(u8)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Gamemode {
     Survival,
     Creative,

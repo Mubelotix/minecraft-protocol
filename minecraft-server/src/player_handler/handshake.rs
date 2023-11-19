@@ -1,17 +1,17 @@
 use super::*;
 
 pub struct PlayerInfo {
-    pub(super) addr: SocketAddr,
-    pub(super) username: String,
-    pub(super) uuid: u128,
-    pub(super) locale: String,
-    pub(super) render_distance: usize,
-    pub(super) chat_mode: ChatMode,
-    pub(super) chat_colors: bool,
-    pub(super) displayed_skin_parts: u8,
-    pub(super) main_hand: MainHand,
-    pub(super) enable_text_filtering: bool,
-    pub(super) allow_server_listing: bool,
+    pub addr: SocketAddr,
+    pub username: String,
+    pub uuid: u128,
+    pub locale: String,
+    pub render_distance: usize,
+    pub chat_mode: ChatMode,
+    pub chat_colors: bool,
+    pub displayed_skin_parts: u8,
+    pub main_hand: MainHand,
+    pub enable_text_filtering: bool,
+    pub allow_server_listing: bool,
 }
 
 pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPlayerInfo, world: &'static World) -> Result<(PlayerInfo, MpscReceiver<WorldChange>), ()> {
