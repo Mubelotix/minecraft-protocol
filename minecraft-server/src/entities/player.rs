@@ -3,7 +3,7 @@ use super::*;
 #[MinecraftEntity(
     ancestors { LivingEntity, Entity },
     defines {
-        Entity.init(self, server_msg_rcvr: BroadcastReceiver<ServerMessage>);
+        Entity.init(self);
     }
 )]
 pub struct Player {
@@ -36,7 +36,6 @@ impl Player {
         world: &'static World,
         stream: TcpStream,
         player_info: PlayerInfo,
-        server_msg_rcvr: BroadcastReceiver<ServerMessage>,
         change_receiver: MpscReceiver<WorldChange>
     ) -> Eid {
         let (packet_sender, packet_receiver) = mpsc_channel(1000);
@@ -80,7 +79,7 @@ impl Player {
         
         let eid = world.spawn_entity::<Player>(AnyEntity::Player(player)).await;
         let handler = Handler::assume(eid, world);
-        handler.clone().insert_task("player", tokio::spawn(handle_player(handler, uuid, stream, packet_receiver, server_msg_rcvr, change_receiver))).await;
+        handler.clone().insert_task("player", tokio::spawn(handle_player(handler, uuid, stream, packet_receiver, change_receiver))).await;
 
         eid
     }
@@ -185,10 +184,9 @@ impl Handler<Player> {
         packet_sender.send(packet).await.unwrap();
     }
 
-    async fn on_server_message(self, message: ServerMessage) {
-        use ServerMessage::*;
-        match message {
-            Tick(tick_id) => {
+    async fn on_world_change(self, change: WorldChange) {
+        match change {
+            WorldChange::Tick(tick_id) => {
                 if tick_id % (20*10) == 0 {
                     self.send_packet(PlayClientbound::KeepAlive { keep_alive_id: tick_id as u64 }).await;
                 }
@@ -198,11 +196,6 @@ impl Handler<Player> {
                 }).await;
                 self.send_packet(PlayClientbound::BundleDelimiter).await;
             }
-        }
-    }
-
-    async fn on_world_change(self, change: WorldChange) {
-        match change {
             WorldChange::Block(position, block) => {
                 self.send_packet(PlayClientbound::BlockUpdate {
                     location: position.into(),
@@ -367,8 +360,8 @@ impl Handler<Player> {
     }
 }
 
-async fn handle_player(h: Handler<Player>, uuid: UUID, stream: TcpStream, packet_receiver: MpscReceiver<Vec<u8>>, server_msg_rcvr: BroadcastReceiver<ServerMessage>, change_receiver: MpscReceiver<WorldChange>) {
-    let r = handle_player_inner(h.clone(), stream, packet_receiver, server_msg_rcvr, change_receiver).await;
+async fn handle_player(h: Handler<Player>, uuid: UUID, stream: TcpStream, packet_receiver: MpscReceiver<Vec<u8>>, change_receiver: MpscReceiver<WorldChange>) {
+    let r = handle_player_inner(h.clone(), stream, packet_receiver, change_receiver).await;
     match r {
         Ok(()) => info!("Player handler shut down gracefully"),
         Err(()) => error!("Player handler crashed")
@@ -376,25 +369,22 @@ async fn handle_player(h: Handler<Player>, uuid: UUID, stream: TcpStream, packet
     h.world.remove_loader(uuid).await;
 }
 
-async fn handle_player_inner(h: Handler<Player>, stream: TcpStream, mut packet_receiver: MpscReceiver<Vec<u8>>, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>, mut change_receiver: MpscReceiver<WorldChange>) -> Result<(), ()> {
+async fn handle_player_inner(h: Handler<Player>, stream: TcpStream, mut packet_receiver: MpscReceiver<Vec<u8>>, mut change_receiver: MpscReceiver<WorldChange>) -> Result<(), ()> {
     let (mut reader_stream, mut writer_stream) = stream.into_split();
     
     let mut receive_packet_fut = Box::pin(receive_packet_split(&mut reader_stream).fuse());
     let mut receive_clientbound_fut = Box::pin(packet_receiver.recv().fuse());
-    let mut receive_server_message_fut = Box::pin(server_msg_rcvr.recv().fuse());
     let mut receive_change_fut = Box::pin(change_receiver.recv().fuse());
     loop {
         // Select the first event that happens
         enum Event {
             PacketServerbound(Result<Vec<u8>, ()>),
             PacketClientbound(Option<Vec<u8>>),
-            Message(Result<ServerMessage, BroadcastRecvError>),
             WorldChange(Option<WorldChange>),
         }
         let event = futures::select! {
             packet_serverbound = receive_packet_fut => Event::PacketServerbound(packet_serverbound),
             packet_clientbound = receive_clientbound_fut => Event::PacketClientbound(packet_clientbound),
-            message = receive_server_message_fut => Event::Message(message),
             change = receive_change_fut => Event::WorldChange(change),
         };
         match event {
@@ -411,22 +401,12 @@ async fn handle_player_inner(h: Handler<Player>, stream: TcpStream, mut packet_r
 
                 send_packet_raw_split(&mut writer_stream, packet.as_slice()).await;
             },
-            Event::Message(Ok(message)) => {
-                drop(receive_server_message_fut);
-                receive_server_message_fut = Box::pin(server_msg_rcvr.recv().fuse());
-
-                h.clone().on_server_message(message).await;
-            },
             Event::WorldChange(Some(change)) => {
                 drop(receive_change_fut);
                 receive_change_fut = Box::pin(change_receiver.recv().fuse());
 
                 h.clone().on_world_change(change).await;
             },
-            Event::Message(Err(recv_error)) => {
-                error!("Failed to receive message: {recv_error:?}");
-                return Err(());
-            }
             Event::PacketClientbound(None) => {
                 error!("Failed to receive clientbound packet");
                 return Err(());
@@ -444,7 +424,7 @@ async fn handle_player_inner(h: Handler<Player>, stream: TcpStream, mut packet_r
 }
 
 impl Handler<Player> {
-    pub async fn init(self, server_msg_rcvr: BroadcastReceiver<ServerMessage>) {
+    pub async fn init(self) {
         //self.insert_task("newton", tokio::spawn(newton_task(self.clone(), server_msg_rcvr))).await;
     }
 }

@@ -2,7 +2,7 @@ use crate::CollisionShape;
 
 use super::*;
 
-pub async fn newton_task<T: EntityDescendant>(h: Handler<T>, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>) where AnyEntity: TryAsEntityRef<T> {
+pub async fn newton_task<T: EntityDescendant>(h: Handler<T>) where AnyEntity: TryAsEntityRef<T> {
     let Some(network_entity) = h.observe_any(|any_entity| any_entity.to_network()).await else { return; };
     
     let (width, height) = match network_entity {
@@ -14,11 +14,9 @@ pub async fn newton_task<T: EntityDescendant>(h: Handler<T>, mut server_msg_rcvr
     };
 
     loop {
-        let Ok(msg) = server_msg_rcvr.recv().await else {continue};
-
-        if !matches!(&msg, &ServerMessage::Tick(_)) {
-            continue;
-        }
+        //if !matches!(&msg, &ServerMessage::Tick(_)) {
+        //    continue;
+        //}
 
         // Get data from entity
         let Some((mut position, mut velocity)) = h.observe_any(|any_entity| {

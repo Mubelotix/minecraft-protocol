@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 #[derive(Debug, Clone)]
 pub enum WorldChange {
-    Tick,
+    Tick(usize),
     Block(BlockPosition, BlockWithState),
     EntitySpawned {
         eid: Eid,
@@ -280,12 +280,12 @@ impl WorldObserverManager {
         }
     }
 
-    pub async fn notify_tick(&self) {
+    pub async fn notify_tick(&self, tick_id: usize) {
         let ticks = self.ticks.read().await;
         for eid in ticks.iter() {
             let trackers = self.trackers.read().await;
             if let Some(tracker) = trackers.get(eid) {
-                let _ = tracker.sender.try_send(WorldChange::Tick);
+                let _ = tracker.sender.try_send(WorldChange::Tick(tick_id));
             }
         }
     }
@@ -419,5 +419,15 @@ impl WorldObserverManager {
                 specific_entity_subscriptions.get_mut(&entity).map(|set| set.remove(&eid));
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_ticks() {
+
     }
 }

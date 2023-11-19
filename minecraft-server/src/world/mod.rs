@@ -19,19 +19,17 @@ pub struct World {
     entities: Entities,
 
     loading_manager: RwLock<WorldLoadingManager>,
-    change_senders: RwLock<HashMap<UUID, MpscSender<WorldChange>>>, // TODO: Add a way to select events you want to subscribe to
-    receiver: BroadcastReceiver<ServerMessage>,
+    change_senders: RwLock<HashMap<UUID, MpscSender<WorldChange>>>,
     world_observer_manager: WorldObserverManager,
 }
 
 impl World {
-    pub fn new(receiver: BroadcastReceiver<ServerMessage>) -> World {
+    pub fn new() -> World {
         World {
             map: WorldMap::new(4),
             entities: Entities::new(),
             loading_manager: RwLock::new(WorldLoadingManager::default()),
             change_senders: RwLock::new(HashMap::new()),
-            receiver,
             world_observer_manager: WorldObserverManager::new(),
         }
     }
@@ -79,6 +77,10 @@ impl World {
         }
     }
 
+    pub async fn tick(&self, tick_id: usize) {
+        self.world_observer_manager.notify_tick(tick_id).await;
+    }
+
     pub async fn spawn_entity<E>(&'static self, entity: AnyEntity) -> Eid
         where AnyEntity: TryAsEntityRef<E>, Handler<E>: EntityExt
     {
@@ -88,7 +90,7 @@ impl World {
         let pitch = entity.as_entity().pitch;
         let yaw = entity.as_entity().yaw;
         let head_yaw = entity.as_other::<LivingEntity>().map(|e| e.head_yaw).unwrap_or(0.0);
-        let (eid, uuid) = self.entities.spawn_entity::<E>(entity, self, self.receiver.resubscribe()).await;
+        let (eid, uuid) = self.entities.spawn_entity::<E>(entity, self).await;
         self.notify(&position.chunk_column(), WorldChange::EntitySpawned {
             eid,
             uuid,
@@ -171,7 +173,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_world_notifications() {
-        let world = World::new(broadcast_channel(100).1);
+        let world = World::new();
 
         let mut receiver1 = world.add_loader(1).await;
         let mut receiver2 = world.add_loader(2).await;

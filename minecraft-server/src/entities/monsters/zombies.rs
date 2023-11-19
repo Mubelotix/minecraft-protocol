@@ -8,7 +8,7 @@ use super::*;
     ancestors { Monster, PathfinderMob, Mob, LivingEntity, Entity },
     descendants { ZombieVillager, Husk, Drowned, ZombifiedPiglin },
     defines {
-        Entity.init(self, server_msg_rcvr: BroadcastReceiver<ServerMessage>);
+        Entity.init(self);
     }
 )]
 pub struct Zombie {
@@ -19,23 +19,23 @@ pub struct Zombie {
 }
 
 impl Handler<Zombie> {
-    pub async fn init(self, server_msg_rcvr: BroadcastReceiver<ServerMessage>) {
-        self.insert_task("newton", tokio::spawn(newton_task(self.clone(), server_msg_rcvr.resubscribe()))).await;
-        self.insert_task("zombie-ai", tokio::spawn(zombie_ai_task(self.clone(), server_msg_rcvr))).await;
+    pub async fn init(self) {
+        self.insert_task("newton", tokio::spawn(newton_task(self.clone()))).await;
+        self.insert_task("zombie-ai", tokio::spawn(zombie_ai_task(self.clone()))).await;
     }
 }
 
-pub async fn sleep_ticks(server_msg_rcvr: &mut BroadcastReceiver<ServerMessage>, t: usize) {
-    let mut i = 0;
-    while i < t {
-        let Ok(msg) = server_msg_rcvr.recv().await else {continue};
-        if matches!(&msg, &ServerMessage::Tick(_)) { i += 1; }
-    }
-}
+//pub async fn sleep_ticks(server_msg_rcvr: &mut BroadcastReceiver<ServerMessage>, t: usize) {
+//    let mut i = 0;
+//    while i < t {
+//        let Ok(msg) = server_msg_rcvr.recv().await else {continue};
+//        if matches!(&msg, &ServerMessage::Tick(_)) { i += 1; }
+//    }
+//}
 
-pub async fn zombie_ai_task<T: EntityDescendant + ZombieDescendant>(h: Handler<T>, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>) where AnyEntity: TryAsEntityRef<T> {
+pub async fn zombie_ai_task<T: EntityDescendant + ZombieDescendant>(h: Handler<T>) where AnyEntity: TryAsEntityRef<T> {
     loop {
-        sleep_ticks(&mut server_msg_rcvr, 1).await;
+        //sleep_ticks(&mut server_msg_rcvr, 1).await;
 
         let mut self_position = h.observe(|e| e.get_entity().position.clone()).await.unwrap();
         let chunk = self_position.chunk_column();
@@ -46,7 +46,7 @@ pub async fn zombie_ai_task<T: EntityDescendant + ZombieDescendant>(h: Handler<T
             })
         }).await;
 
-        let Some((target_position, network_entity)) = player_positions.get(0) else { sleep_ticks(&mut server_msg_rcvr, 100).await; continue };
+        let Some((target_position, network_entity)) = player_positions.get(0) else { /*sleep_ticks(&mut server_msg_rcvr, 100).await;*/ continue };
         let target_object = CollisionShape {
             x1: target_position.x - network_entity.width() as f64 / 2.0,
             y1: target_position.y,
@@ -75,7 +75,7 @@ pub async fn zombie_ai_task<T: EntityDescendant + ZombieDescendant>(h: Handler<T
                 None => break,
             };
 
-            sleep_ticks(&mut server_msg_rcvr, 1).await; // TODO: do while
+            //sleep_ticks(&mut server_msg_rcvr, 1).await; // TODO: do while
         }
         
     }

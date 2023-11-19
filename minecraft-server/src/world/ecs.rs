@@ -91,7 +91,7 @@ impl Entities {
         }
     }
 
-    pub(super) async fn spawn_entity<E>(&self, entity: AnyEntity, world: &'static World, receiver: BroadcastReceiver<ServerMessage>) -> (Eid, UUID)
+    pub(super) async fn spawn_entity<E>(&self, entity: AnyEntity, world: &'static World) -> (Eid, UUID)
         where AnyEntity: TryAsEntityRef<E>, Handler<E>: EntityExt
     {
         let eid = self.eid_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
@@ -106,7 +106,7 @@ impl Entities {
         drop(chunks);
         drop(uuids);
         let h = Handler::<E>::assume(eid, world);
-        h.init(receiver).await;
+        h.init().await;
         (eid, uuid)
     }
 

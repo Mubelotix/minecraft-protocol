@@ -3,7 +3,6 @@ use super::*;
 pub async fn handle_connection(
     mut stream: TcpStream,
     addr: SocketAddr,
-    server_msg_rcvr: BroadcastReceiver<ServerMessage>,
     world: &'static World,
 ) -> Result<(), ()> {
     // Receive handshake
@@ -14,7 +13,7 @@ pub async fn handle_connection(
             let player_info = login(&mut stream, addr).await?;
             let (player_info, change_receiver) = handshake(&mut stream, player_info, world).await?;
             let uuid = player_info.uuid;
-            let eid = Player::spawn_player(world, stream, player_info, server_msg_rcvr, change_receiver).await;
+            let eid = Player::spawn_player(world, stream, player_info, change_receiver).await;
             Ok(())
         },
         ConnectionState::Status => {
