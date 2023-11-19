@@ -26,7 +26,8 @@ pub enum WorldChange {
     },
     EntityPosition {
         eid: Eid,
-        position: Position,
+        from: Position,
+        to: Position,
     },
     EntityVelocity {
         eid: Eid,
@@ -265,6 +266,46 @@ impl WorldObserverManager {
         if let Some(subscribers) = blocks.get(&column) {
             for (_, sender) in subscribers {
                 let _ = sender.try_send(WorldChange::Block(position.clone(), block.clone()));
+            }
+        }
+    }
+
+    #[inline]
+    async fn notify_entity_change(&self, position: Position, from: Option<Position>, eid: Eid, change: WorldChange) {
+        let specific_entities = self.specific_entities.read().await;
+
+        // Notify for specific entities
+        let specific_entities_subscribers = specific_entities.get(&eid);
+        if let Some(subscribers) = specific_entities_subscribers {
+            for (_, sender) in subscribers {
+                let _ = sender.try_send(change.clone());
+            }
+        }
+
+        // Notify for current column those who were not already notified
+        let entities = self.entities.read().await;
+        let current_column = entities.get(&position.chunk_column());
+        if let Some(subscribers) = current_column {
+            for (subscriber, sender) in subscribers {
+                if specific_entities_subscribers.map(|c| c.contains_key(subscriber)).unwrap_or(true) {
+                    let _ = sender.try_send(change.clone());
+                }
+            }
+        }
+
+        // Notify for previous column those who were not already notified
+        if let Some(from) = from {
+            if from.chunk_column() != position.chunk_column() {
+                let previous_column = entities.get(&from.chunk_column());
+                if let Some(subscribers) = previous_column {
+                    for (subscriber, sender) in subscribers {
+                        if current_column.map(|c| c.contains_key(subscriber)).unwrap_or(true) &&
+                            specific_entities_subscribers.map(|c| c.contains_key(subscriber)).unwrap_or(true)
+                        {
+                            let _ = sender.try_send(change.clone());
+                        }
+                    }
+                }
             }
         }
     }

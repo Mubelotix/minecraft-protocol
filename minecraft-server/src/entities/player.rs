@@ -232,15 +232,15 @@ impl Handler<Player> {
                 self.send_packet(PlayClientbound::RemoveEntities { entity_ids: Array::from(vec![VarInt(eid as i32)]) }).await;
             },
             WorldChange::EntityMetadata { eid, metadata } => todo!(),
-            WorldChange::EntityPosition { eid, position } => {
-                let Some(prev_position) = self.mutate(|player| ((player.entity_prev_positions.insert(eid, position.clone())), EntityChanges::other())).await else {return};
+            WorldChange::EntityPosition { eid, from, to } => {
+                let Some(prev_position) = self.mutate(|player| ((player.entity_prev_positions.insert(eid, to.clone())), EntityChanges::other())).await else {return};
                 match prev_position {
                     Some(prev_position) => {
                         self.send_packet(PlayClientbound::UpdateEntityPosition {
                             entity_id: VarInt(eid as i32),
-                            delta_x: (position.x * 4096.0 - prev_position.x * 4096.0) as i16,
-                            delta_y: (position.y * 4096.0 - prev_position.y * 4096.0) as i16,
-                            delta_z: (position.z * 4096.0 - prev_position.z * 4096.0) as i16,
+                            delta_x: (to.x * 4096.0 - prev_position.x * 4096.0) as i16,
+                            delta_y: (to.y * 4096.0 - prev_position.y * 4096.0) as i16,
+                            delta_z: (to.z * 4096.0 - prev_position.z * 4096.0) as i16,
                             on_ground: true, // TODO add on_ground in entity position
                         }).await;
                     }
@@ -260,9 +260,9 @@ impl Handler<Player> {
                             id: VarInt(eid as i32),
                             uuid,
                             entity_type: ty,
-                            x: position.x,
-                            y: position.y,
-                            z: position.z,
+                            x: to.x,
+                            y: to.y,
+                            z: to.z,
                             pitch: (pitch * (256.0 / 360.0)) as u8,
                             yaw: (yaw * (256.0 / 360.0)) as u8,
                             head_yaw: (head_yaw * (256.0 / 360.0)) as u8,

@@ -113,6 +113,7 @@ impl World {
     // TODO: add version that doesn't notify modified entity
     pub async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> (R, EntityChanges)) -> Option<R> {
         // TODO: change events
+        let previous_position = self.entities.observe_entity(eid, |e| e.as_entity().position.clone()).await?;
         match self.entities.mutate_entity(eid, mutator).await {
             Some((r, changes)) => {
                 // TODO: make only one lookup and group into a single message with optional fields
@@ -120,7 +121,8 @@ impl World {
                 if changes.position_changed() {
                     self.notify(&position.chunk_column(), WorldChange::EntityPosition {
                         eid,
-                        position: position.clone(),
+                        from: previous_position,
+                        to: position.clone(),
                     }).await;
                 }
                 if changes.velocity_changed() {
