@@ -11,7 +11,6 @@ log = "0.4.20"
 tokio = { version = "1.33.0", features = ["full"] }
 futures = "0.3.29"
 minecraft-protocol = { path="../minecraft-protocol" }
-minecraft-entities = { path="../minecraft-entities" }
 minecraft-positions = { path="../minecraft-positions" }
-tags-macros = { path = "../tags-macros"}
+minecraft-entities-derive = { path="../minecraft-entities-derive" }
 rand = "0.8.4"

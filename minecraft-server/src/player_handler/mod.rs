@@ -8,8 +8,6 @@ mod login;
 pub use login::*;
 mod network;
 pub use network::*;
-mod play;
-pub use play::*;
 mod status;
 pub use status::*;
 

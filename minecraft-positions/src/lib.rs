@@ -107,6 +107,13 @@ impl Position {
             cz: (self.z.floor() as i32).div_euclid(16),
         }
     }
+
+    pub fn chunk_column(&self) -> ChunkColumnPosition {
+        ChunkColumnPosition {
+            cx: (self.x.floor() as i32).div_euclid(16),
+            cz: (self.z.floor() as i32).div_euclid(16),
+        }
+    }
 }
 
 impl std::ops::Add<Position> for Position {
