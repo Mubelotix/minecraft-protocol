@@ -120,6 +120,10 @@ impl<T> Handler<T> where AnyEntity: TryAsEntityRef<T> {
     pub async fn mutate_any<R>(&self, mutator: impl FnOnce(&mut AnyEntity) -> (R, EntityChanges)) -> Option<R> {
         self.world.mutate_entity(self.eid, mutator).await
     }
+
+    pub fn new_world_observer(&self) -> WorldObserverBuilder {
+        self.world.new_world_observer(self.eid)
+    }
 }
 
 pub enum AnyEntity {

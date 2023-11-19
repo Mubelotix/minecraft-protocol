@@ -105,16 +105,18 @@ impl std::ops::AddAssign<EntityChanges> for EntityChanges {
 pub struct WorldObserver {
     receiver: MpscReceiver<WorldChange>,
     eid: Eid,
-    manager: &'static WorldObserverManager,
+    observer_manager: &'static WorldObserverManager,
 }
 
 impl WorldObserver {
-    
+    pub async fn recv(&mut self) -> Option<WorldChange> {
+        self.receiver.recv().await
+    }
 }
 
 impl Drop for WorldObserver {
     fn drop(&mut self) {
-        let manager = self.manager;
+        let manager = self.observer_manager;
         let eid = self.eid;
         tokio::spawn(async move {
             manager.remove_subscriber(eid).await;
@@ -133,6 +135,8 @@ struct WorldObserverTracker {
 
 #[must_use = "The observer must be added to the manager to be used"]
 pub struct WorldObserverBuilder {
+    eid: Eid,
+    observer_manager: &'static WorldObserverManager,
     ticks: bool,
     blocks: Vec<ChunkColumnPosition>,
     entities: Vec<ChunkColumnPosition>,
@@ -141,8 +145,10 @@ pub struct WorldObserverBuilder {
 }
 
 impl WorldObserverBuilder {
-    pub fn new() -> WorldObserverBuilder {
+    pub fn new(eid: Eid, observer_manager: &'static WorldObserverManager) -> WorldObserverBuilder {
         WorldObserverBuilder {
+            eid,
+            observer_manager,
             ticks: false,
             blocks: Vec::new(),
             nearby_blocks: Vec::new(),
@@ -179,13 +185,15 @@ impl WorldObserverBuilder {
         self
     }
 
-    pub async fn finish(self, eid: Eid, observer_manager: &'static WorldObserverManager) -> WorldObserver {
+    pub async fn finish(self, ) -> WorldObserver {
         let (sender, receiver) = mpsc_channel(30);
+        let eid = self.eid;
+        let observer_manager = self.observer_manager;
         observer_manager.add_subscriber(eid, self, sender).await;
         WorldObserver {
             receiver,
             eid,
-            manager: observer_manager,
+            observer_manager,
         }
     }
 }

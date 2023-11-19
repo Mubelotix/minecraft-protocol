@@ -44,6 +44,7 @@ impl World {
 
     pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
         self.map.set_block(position.clone(), block.clone()).await;
+        self.world_observer_manager.notify_block_change(position.clone(), block.clone()).await;
         self.notify(&position.chunk_column(), WorldChange::Block(position, block)).await;
     }
 
@@ -75,6 +76,10 @@ impl World {
         for just_unloaded_chunk in just_unloaded_chunks {
             self.map.unload(just_unloaded_chunk.clone()).await;
         }
+    }
+
+    pub fn new_world_observer(&'static self, eid: Eid) -> WorldObserverBuilder {
+        WorldObserverBuilder::new(eid, &self.world_observer_manager)
     }
 
     pub async fn tick(&self, tick_id: usize) {
