@@ -1,6 +1,4 @@
-use std::{collections::BinaryHeap, ops::AddAssign};
-
-use minecraft_protocol::ids::blocks::Block;
+use std::ops::AddAssign;
 
 use crate::prelude::*;
 use super::*;
@@ -84,71 +82,6 @@ impl SectionLightData {
 }
 
 #[derive(Debug, Clone)]
-pub struct EdgesLightToPropagate {
-    pub edges: [BinaryHeap<(LightPositionInChunkColumn, u8)>; 4],
-}
-
-impl EdgesLightToPropagate {
-    pub fn new() -> Self {
-        Self {
-            edges: [BinaryHeap::new(), BinaryHeap::new(), BinaryHeap::new(), BinaryHeap::new()],
-        }
-    }
-
-    /// Push the given position and level to the correct edge.
-    /// If the position is not on an edge, nothing is done.
-    /// The position coordinate will be modified to be on the adjacent chunk
-    pub fn push(&mut self, position: LightPositionInChunkColumn, level: u8) {
-        let mut position = position;
-        let index = match position {
-            LightPositionInChunkColumn { bx: 0, y: _, bz: _ } => {
-                position.bx = 15;
-                0
-            },
-            LightPositionInChunkColumn { bx: _, y: _, bz: 0 } => {
-                position.bz = 15;
-                1
-            }
-            LightPositionInChunkColumn { bx: 15, y: _, bz: _ } => {
-                position.bx = 0;
-                2
-            }
-            LightPositionInChunkColumn { bx: _, y: _, bz: 15 } => {
-                position.bz = 0;
-                3
-            }
-            _ => return,
-        };
-        self.edges[index].push((position, level));
-    }
-
-    pub fn expand(&mut self, edges: EdgesLightToPropagate) {
-        for (i, edge) in edges.edges.iter().enumerate() {
-            self.edges[i].extend(edge.clone());
-        }
-    }
-    
-    /// Get the ChunkColumnPositions of chunks that need to be propagated
-    pub fn chunk_positions_to_propagate(&self, from: ChunkColumnPosition) -> Vec<(ChunkColumnPosition, BinaryHeap<(LightPositionInChunkColumn, u8)>)> {
-        let mut result = Vec::new();
-        if !self.edges[0].is_empty() {
-            result.push((from.clone() + ChunkColumnPosition { cx: -1, cz: 0 }, self.edges[0].clone()));
-        }
-        if !self.edges[1].is_empty() {
-            result.push((from.clone() + ChunkColumnPosition { cx: 0, cz: -1 }, self.edges[1].clone()));
-        }
-        if !self.edges[2].is_empty() {
-            result.push((from.clone() + ChunkColumnPosition { cx: 1, cz: 0 }, self.edges[2].clone()));
-        }
-        if !self.edges[3].is_empty() {
-            result.push((from.clone() + ChunkColumnPosition { cx: 0, cz: 1 }, self.edges[3].clone()));
-        }
-
-        result
-    }
-}
-
-#[derive(Debug, Clone)]
 struct LightSystem {
     /// The level of the sky light, 15 is the maximum.
     pub level: u8,
@@ -193,7 +126,7 @@ impl LightSystem {
     }
 
     /// Set the sky light in the given section.
-    pub fn set_region(&mut self, from_y: usize, to_y: usize, level: u8) -> Result<EdgesLightToPropagate, ()> {
+    pub fn set_region(&mut self, from_y: usize, to_y: usize, level: u8) -> Result<(), ()> {
         if level > self.level {
             return Err(());
         }
@@ -205,32 +138,17 @@ impl LightSystem {
         let last_section = to_y.div_euclid(16);
         let last_section_offset = to_y.rem_euclid(16);
 
-        let mut edges = EdgesLightToPropagate::new();
 
         for section in first_section..=last_section {
             if section != first_section && section != last_section {
                 // Set the whole section
                 self.light_arrays[section].set_with(level);
-                for y in 0..16 {
-                    for i in 0..16 {
-                        edges.push(LightPositionInChunkColumn { bx: i, y: section * 16 + y, bz: 0 }, level);
-                        edges.push(LightPositionInChunkColumn { bx: i, y: section * 16 + y, bz: MAX_LIGHT_LEVEL }, level);
-                        edges.push(LightPositionInChunkColumn { bx: 0, y: section * 16 + y, bz: i }, level);
-                        edges.push(LightPositionInChunkColumn { bx: MAX_LIGHT_LEVEL, y: section * 16 + y, bz: i }, level);
-                    }
-                }
             } else {
                 // Set the part of the section
                 let first_offset = if section == first_section { first_secion_offset } else { 0 };
                 let last_offset = if section == last_section { last_section_offset } else { MAX_LIGHT_LEVEL as usize };
                 for y in first_offset..=last_offset {
                     self.light_arrays[section].set_layer(y as u8, level)?;
-                    for i in 0..16 {
-                        edges.push(LightPositionInChunkColumn { bx: i, y: section * 16 + y, bz: 0 }, level);
-                        edges.push(LightPositionInChunkColumn { bx: i, y: section * 16 + y, bz: MAX_LIGHT_LEVEL }, level);
-                        edges.push(LightPositionInChunkColumn { bx: 0, y: section * 16 + y, bz: i }, level);
-                        edges.push(LightPositionInChunkColumn { bx: MAX_LIGHT_LEVEL, y: section * 16 + y, bz: i }, level);
-                    }
                 }
             }
 
@@ -245,7 +163,7 @@ impl LightSystem {
             }
         }
 
-        Ok(edges)
+        Ok(())
     }
 
     pub(super) fn get_level(&self, position: LightPositionInChunkColumn) -> Result<u8, ()> {
@@ -253,7 +171,7 @@ impl LightSystem {
         self.light_arrays[section.max(0)].get(position.in_chunk())
     }
 
-    pub(super) fn set_level(&mut self, position: LightPositionInChunkColumn, level: u8) -> Result<EdgesLightToPropagate, ()> {
+    pub(super) fn set_level(&mut self, position: LightPositionInChunkColumn, level: u8) -> Result<(), ()> {
         let section = position.y.div_euclid(16);
         // Update the mask
         let mask = 1 << section;
@@ -266,9 +184,7 @@ impl LightSystem {
             self.light_mask &= !mask;
         }
         self.light_arrays[section.max(0)].set(position.in_chunk(), level)?;
-        let mut edges = EdgesLightToPropagate::new();
-        edges.push(position, level);
-        Ok(edges)
+        Ok(())
     }
 }
 
@@ -313,83 +229,99 @@ impl LightPositionInChunkColumn {
             bz: self.bz,
         }
     }
+}
+
+
+impl From<BlockPositionInChunkColumn> for LightPositionInChunkColumn {
+    fn from(val: BlockPositionInChunkColumn) -> Self {
+        Self {
+            bx: val.bx,
+            y: (val.y + 64 + 16) as usize, // TODO: Use the world config
+            bz: val.bz,
+        }
+    }
+}
+
+impl From<LightPosition> for LightPositionInChunkColumn {
+    fn from(val: LightPosition) -> Self {
+        LightPositionInChunkColumn {
+            bx: val.x.rem_euclid(16) as u8,
+            y: val.y,
+            bz: val.z.rem_euclid(16) as u8,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct LightPosition {
+    pub x: i32,
+    pub y: usize,
+    pub z: i32,
+}
+
+impl LightPosition {
+    pub fn in_chunk(&self) -> BlockPositionInChunk {
+        BlockPositionInChunk {
+            bx: self.x.rem_euclid(16) as u8,
+            by: self.y.rem_euclid(16) as u8,
+            bz: self.z.rem_euclid(16) as u8,
+        }
+    }
 
     pub fn get_neighbors(&self, n_chunk: usize) -> Vec<Self> {
         let mut neighbors = Vec::new();
         if self.y < ((n_chunk - 1) * 16) + 1 { // No block can be higher so no block can affect the light level 
-            neighbors.push(LightPositionInChunkColumn { bx: self.bx, y: self.y + 1, bz: self.bz });
+            neighbors.push(LightPosition { x: self.x, y: self.y + 1, z: self.z });
         }
-        if self.bx > 0 {
-            neighbors.push(LightPositionInChunkColumn { bx: self.bx - 1, y: self.y, bz: self.bz });
-        }
-        if self.bx < 15 {
-            neighbors.push(LightPositionInChunkColumn { bx: self.bx + 1, y: self.y, bz: self.bz });
-        }
-        if self.bz > 0 {
-            neighbors.push(LightPositionInChunkColumn { bx: self.bx, y: self.y, bz: self.bz - 1 });
-        }
-        if self.bz < 15 {
-            neighbors.push(LightPositionInChunkColumn { bx: self.bx, y: self.y, bz: self.bz + 1 });
-        }
+        neighbors.push(LightPosition { x: self.x - 1, y: self.y, z: self.z });
+        neighbors.push(LightPosition { x: self.x + 1, y: self.y, z: self.z });
+        neighbors.push(LightPosition { x: self.x, y: self.y, z: self.z - 1 });
+        neighbors.push(LightPosition { x: self.x, y: self.y, z: self.z + 1 });
         if self.y > 0 {
-            neighbors.push(LightPositionInChunkColumn { bx: self.bx, y: self.y - 1, bz: self.bz });
+            neighbors.push(LightPosition { x: self.x, y: self.y - 1, z: self.z });
         }
         neighbors
     }
 }
 
-impl PartialEq for LightPositionInChunkColumn {
+impl PartialEq for LightPosition {
     fn eq(&self, other: &Self) -> bool {
         self.y == other.y
     }
 }
 
-impl From<LightPositionInChunkColumn> for BlockPositionInChunkColumn {
-    fn from(val: LightPositionInChunkColumn) -> Self {
+impl From<LightPosition> for BlockPositionInChunkColumn {
+    fn from(val: LightPosition) -> Self {
         BlockPositionInChunkColumn {
-            bx: val.bx,
+            bx: val.x.rem_euclid(16) as u8,
             y: val.y as i32 - 64 - 16, // TODO: Use the world config
-            bz: val.bz,
+            bz: val.x.rem_euclid(16) as u8,
         }
     }
 }
 
-impl From<BlockPositionInChunkColumn> for LightPositionInChunkColumn {
-    fn from(val: BlockPositionInChunkColumn) -> Self {
-        LightPositionInChunkColumn {
-            bx: val.bx,
-            y: (val.y + 64 + 16) as usize, //-TODO: Use the world config
-            bz: val.bz,
-        }
-    }   
-}
-
-impl AddAssign<usize> for LightPositionInChunkColumn {
+impl AddAssign<usize> for LightPosition {
     fn add_assign(&mut self, rhs: usize) {
         self.y += rhs;
     }
 }
 
-impl std::cmp::Eq for LightPositionInChunkColumn {}
+impl std::cmp::Eq for LightPosition {}
 
-impl std::cmp::PartialOrd for LightPositionInChunkColumn {
+impl std::cmp::PartialOrd for LightPosition {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.y.cmp(&other.y))
     }
 }
 
-impl std::cmp::Ord for LightPositionInChunkColumn {
+impl std::cmp::Ord for LightPosition {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.y.cmp(&other.y)
     }
 }
 
 impl ChunkColumn {
-    pub(super) fn init_light(&mut self) -> Result<EdgesLightToPropagate, ()> {
-        self.propagate_sky_light_inside()
-    }
-
-    fn propagate_sky_light_inside(&mut self) -> Result<EdgesLightToPropagate, ()> {
+    /*fn propagate_sky_light_inside(&mut self) -> Result<EdgesLightToPropagate, ()> {
         let mut to_propagate = EdgesLightToPropagate::new();
         // Set all highest blocks to the highest block
         let highest_blocks = self.get_highest_block();
@@ -412,9 +344,9 @@ impl ChunkColumn {
 
         to_propagate.expand(self.explore_sky_light_from_heap(&mut to_explore).map_err(|_| error!("Error while updating light"))?);
         Ok(to_propagate)
-    }
+    }*/
 
-    fn explore_sky_light_from_heap(&mut self, to_explore: &mut BinaryHeap<LightPositionInChunkColumn>) -> Result<EdgesLightToPropagate, ()> {
+    /*fn explore_sky_light_from_heap(&mut self, to_explore: &mut BinaryHeap<LightPositionInChunkColumn>) -> Result<EdgesLightToPropagate, ()> {
         // We get the neighbors and determine the light source from them
         // The neighbor with the highest light level is the light source
         // So we explore from it
@@ -488,18 +420,7 @@ impl ChunkColumn {
         } 
         to_propagate.expand(self.explore_sky_light_from_heap(&mut to_explore).map_err(|_| error!("Error while updating light"))?);
         Ok(to_propagate)
-    }
-
-    pub(super) fn update_from_edge(&mut self, to_propagate: BinaryHeap<(LightPositionInChunkColumn, u8)>) -> Result<(), ()> {
-        for (position, level) in to_propagate {
-            let block = Block::from(self.get_block(position.clone().into()));            
-            if block.is_transparent() {
-                self.light.sky_light.set_level(position.clone(), level.saturating_sub(block.light_absorption()))?;
-                self.update_light_as_block_changed_at(position.into())?;
-            }
-        }
-        Ok(())
-    }
+    }*/
 }
 
 #[cfg(test)]

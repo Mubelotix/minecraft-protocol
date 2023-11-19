@@ -115,10 +115,10 @@ impl Handler<Player> {
             if loaded_chunks_after == player.loaded_chunks { return (None, EntityChanges::nothing()) };
             let mut newly_loaded_chunks: Vec<_> = loaded_chunks_after.difference(&player.loaded_chunks).cloned().collect();
             let unloaded_chunks: Vec<_> = player.loaded_chunks.difference(&loaded_chunks_after).cloned().collect();
-            for skipped in newly_loaded_chunks.iter().skip(50) {
+            for skipped in newly_loaded_chunks.iter().skip(2) {
                 loaded_chunks_after.remove(skipped);
             }
-            newly_loaded_chunks.truncate(50);
+            newly_loaded_chunks.truncate(2);
             let uuid = player.info.uuid;
             player.loaded_chunks = loaded_chunks_after.clone();
             (Some((loaded_chunks_after, newly_loaded_chunks, unloaded_chunks, uuid)), EntityChanges::other())
@@ -128,39 +128,17 @@ impl Handler<Player> {
         self.world.update_loaded_chunks(uuid, loaded_chunks_after).await;
 
         // Send the chunks to the client
-        let mut heightmaps = HashMap::new();
-        heightmaps.insert(String::from("MOTION_BLOCKING"), NbtTag::LongArray(vec![0; 37]));
-        let heightmaps = NbtTag::Compound(heightmaps);
+        let mut chunks = Vec::new();
         for newly_loaded_chunk in newly_loaded_chunks {
-            let mut column = Vec::new();
-            for cy in -4..20 {
-                let chunk = self.world.get_network_chunk(newly_loaded_chunk.chunk(cy)).await.unwrap_or_else(|| {
-                    error!("Chunk not loaded: {newly_loaded_chunk:?}");
-                    NetworkChunk { // TODO hard error
-                        block_count: 0,
-                        blocks: PalettedData::Single { value: 0 },
-                        biomes: PalettedData::Single { value: 4 },
-                    }
-                });
-                column.push(chunk);
-            }
-            let serialized: Vec<u8> = NetworkChunk::into_data(column).unwrap();
-            let chunk_data = PlayClientbound::ChunkData {
-                value: ChunkData {
-                    chunk_x: newly_loaded_chunk.cx,
-                    chunk_z: newly_loaded_chunk.cz,
-                    heightmaps: heightmaps.clone(),
-                    data: Array::from(serialized.clone()),
-                    block_entities: Array::default(),
-                    sky_light_mask: Array::default(),
-                    block_light_mask: Array::default(),
-                    empty_sky_light_mask: Array::default(),
-                    empty_block_light_mask: Array::default(),
-                    sky_light: Array::default(),
-                    block_light: Array::default(),
-                }
-            };
-            self.send_packet(chunk_data).await;
+            let chunk = self.world.get_network_chunk_column_data(newly_loaded_chunk.clone()).await.unwrap_or_else(|| {
+                error!("Chunk not loaded: {newly_loaded_chunk:?}");
+                panic!("Chunk not loaded: {newly_loaded_chunk:?}");
+            });
+            chunks.push(chunk);
+        }
+        
+        for chunk in chunks {
+            self.send_raw_packet(chunk).await;
         }
 
         // Tell the client to unload chunks
@@ -174,6 +152,18 @@ impl Handler<Player> {
 
     async fn send_packet<'a>(&self, packet: PlayClientbound<'a>) {
         let packet = packet.serialize_minecraft_packet().unwrap();
+        let packets_sent = self.mutate(|player| {
+            player.packets_sent += 1;
+            (player.packets_sent, EntityChanges::other())
+        }).await.unwrap_or(0);
+        if packets_sent > 500 {
+            warn!("Many packets sent ({packets_sent})");
+        }
+        let Some(packet_sender) = self.observe(|player| player.packet_sender.clone()).await else {return};
+        packet_sender.send(packet).await.unwrap();
+    }
+
+    async fn send_raw_packet(&self, packet: Vec<u8>) {
         let packets_sent = self.mutate(|player| {
             player.packets_sent += 1;
             (player.packets_sent, EntityChanges::other())

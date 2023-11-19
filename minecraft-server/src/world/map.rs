@@ -1,8 +1,9 @@
-use std::{collections::{HashMap, BinaryHeap}, cmp::Ordering, vec};
+use std::{collections::HashMap, cmp::Ordering, vec};
 use minecraft_protocol::{components::chunk::PalettedData, ids::blocks::Block};
 use tokio::sync::RwLock;
-use crate::{prelude::*, world::light::EdgesLightToPropagate};
-use super::light::{Light, LightPositionInChunkColumn};
+use crate::prelude::*;
+use super::light::Light;
+
 
 pub struct WorldMap {
     /// The map is divided in shards.
@@ -10,7 +11,20 @@ pub struct WorldMap {
     /// The shards are locked independently.
     /// This allows high concurrency.
     shard_count: usize,
+    light_manager: LightManager,
     shards: Vec<RwLock<HashMap<ChunkColumnPosition, ChunkColumn>>>,
+}
+
+struct LightManager {
+    locked_chunks: HashSet<ChunkColumnPosition>,
+}
+
+impl LightManager {
+    pub fn new() -> Self {
+        Self {
+            locked_chunks: HashSet::new(),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -329,7 +343,6 @@ impl ChunkColumn {
         let mut current_height = current_height - 1;
         // Downward propagation
         for chunk in self.chunks.iter().rev().skip(n_chunk_to_skip) {
-            //println!("index: {:?}", (current_height % 16) as u8 + 1);
             for by in (0..((((current_height) % 16) + 1) as u8)).rev() {
                 let block: BlockWithState = chunk.get_block(BlockPositionInChunk { bx: position.bx, by, bz: position.bz });
                 // SAFETY: fom_id will get a valid block necessarily 
@@ -357,7 +370,6 @@ impl ChunkColumn {
             light: Light::new(),
         };
         column.init_chunk_heightmap();
-        let _ = column.init_light().map_err(|_| error!("Failed to init light in chunk column"));
         column
     }
 
@@ -442,7 +454,11 @@ impl WorldMap {
         for _ in 0..shard_count {
             shards.push(RwLock::new(HashMap::new()));
         }
-        WorldMap { shard_count, shards }
+        WorldMap { 
+            shard_count,
+            shards,
+            light_manager: LightManager::new(), 
+        }
     }
 
     pub async fn get_block(&self, position: BlockPosition) -> BlockWithState {
@@ -485,7 +501,7 @@ impl WorldMap {
     }
     
     pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
-        async fn inner_set_block(s: &WorldMap, position: BlockPosition, block: BlockWithState) -> Option<(EdgesLightToPropagate, ChunkColumnPosition)> {
+        async fn inner_set_block(s: &WorldMap, position: BlockPosition, block: BlockWithState) -> Option<()> {
             let chunk_position = position.chunk();
             let position_in_chunk_column = position.in_chunk_column();
             let chunk_column_position = chunk_position.chunk_column();
@@ -494,17 +510,10 @@ impl WorldMap {
             let mut shard = s.shards[shard].write().await;
             let chunk_column = shard.get_mut(&chunk_column_position)?;
             chunk_column.set_block(position_in_chunk_column.clone(), block);
-            chunk_column.update_light_as_block_changed_at(position_in_chunk_column).ok().map(|to_propagate| (to_propagate, chunk_column_position))
+            Some(())
         }
 
-        let to_propagate = inner_set_block(self, position, block).await;
-        if let Some(to_propagate) = to_propagate {
-            let (to_propagate, from) = to_propagate;
-            let to_popagate = to_propagate.chunk_positions_to_propagate(from);
-            for (chunk_column_position, to_propagate) in to_popagate {
-                self.update_light_from_edge(chunk_column_position, to_propagate).await;
-            }
-        }
+        inner_set_block(self, position, block).await;
     }
 
     pub async fn get_skylight(&self, position: BlockPosition) -> u8 {
@@ -521,7 +530,7 @@ impl WorldMap {
         inner_get_skylight(self, position).await.unwrap_or(0)
     }
 
-    async fn update_light_from_edge(&self, chunk_column_position: ChunkColumnPosition, to_propagate: BinaryHeap<(LightPositionInChunkColumn, u8)>) {
+    /*async fn update_light_from_edge(&self, chunk_column_position: ChunkColumnPosition, to_propagate: BinaryHeap<(LightPositionInChunkColumn, u8)>) {
         async fn inner_get_skylight(s: &WorldMap, chunk_column_position: ChunkColumnPosition, to_propagate: BinaryHeap<(LightPositionInChunkColumn, u8)>) -> Option<()> {
             let shard = chunk_column_position.shard(s.shard_count);
         
@@ -531,26 +540,7 @@ impl WorldMap {
             Some(())
         }        
         inner_get_skylight(self, chunk_column_position, to_propagate).await;
-    }
-
-    pub async fn try_move(&self, object: &CollisionShape, movement: &Translation) -> Translation {
-        // TODO(perf): Optimize Map.try_move by preventing block double-checking
-        // Also lock the map only once
-        let movement_fragments = movement.clone().fragment(object);
-        let mut validated = Translation{ x: 0.0, y: 0.0, z: 0.0 };
-        for fragment in movement_fragments {
-            let validating = validated.clone() + fragment;
-            let translated_object = object.clone() + &validating;
-            for block in translated_object.containing_blocks() {
-                let block = self.get_block(block).await;
-                if block.block_id() != 0 {
-                    return validated;
-                }
-            }
-            validated = validating;
-        }
-        movement.clone() // Would be more logic if it returned validated, but this way we avoid precision errors
-    }
+    }*/
 
     pub async fn try_move(&self, object: &CollisionShape, movement: &Translation) -> Translation {
         // TODO(perf): Optimize Map.try_move by preventing block double-checking
@@ -784,45 +774,6 @@ mod tests {
         assert_eq!(flat_column.heightmap.get(&BlockPositionInChunkColumn { bx: 0, y: 0, bz: 0 }), 67);
 
     }
-
-    #[tokio::test]
-    async fn test_sky_light_flat_chunk() {
-        let world = WorldMap::new(100);
-        world.load(ChunkColumnPosition { cx: 0, cz: 0 }).await;
-
-        // Check that the sky light is equal to the light level above the grass and on the top of the world.
-        for x in 0..16 {
-            for z in 0..16 {
-                assert_eq!(world.get_skylight(BlockPosition { x, y: -60, z}).await, 0);
-                assert_eq!(world.get_skylight(BlockPosition { x, y: -49, z}).await, 0);
-                assert_eq!(world.get_skylight(BlockPosition { x, y: 120, z}).await, 15);
-            }
-        }
-        
-        // Break the grass block and check that the sky light is correct.
-        assert_ne!(world.get_skylight(BlockPosition { x: 0, y: -49, z: 0}).await, 15);
-        world.set_block(BlockPosition { x: 0, y: -49, z: 0 }, BlockWithState::Air).await;
-        assert_eq!(world.get_skylight(BlockPosition { x: 0, y: -49, z: 0}).await, 15);
-
-        assert_ne!(world.get_skylight(BlockPosition { x: 0, y: -50, z: 0}).await, 15);
-        world.set_block(BlockPosition { x: 0, y: -50, z: 0 }, BlockWithState::Air).await;
-        assert_eq!(world.get_skylight(BlockPosition { x: 0, y: -50, z: 0}).await, 15);
-
-        assert_ne!(world.get_skylight(BlockPosition { x: 0, y: -50, z: 1}).await, 14);
-        world.set_block(BlockPosition { x: 0, y: -50, z: 1 }, BlockWithState::Air).await;
-        assert_eq!(world.get_skylight(BlockPosition { x: 0, y: -50, z: 1}).await, 14);
-
-        // test on chunk border
-        world.load(ChunkColumnPosition { cx: 1, cz: 0 }).await;
-        world.load(ChunkColumnPosition { cx: 0, cz: 1 }).await;
-        world.load(ChunkColumnPosition { cx: 1, cz: 1 }).await;
-        world.load(ChunkColumnPosition { cx: -1, cz: -1 }).await;
-
-        assert_ne!(world.get_skylight(BlockPosition { x: 0, y: -50, z: -1}).await, 14);
-        world.set_block(BlockPosition { x: 0, y: -50, z: -1 }, BlockWithState::Air).await;
-        assert_eq!(world.get_skylight(BlockPosition { x: 0, y: -50, z: -1}).await, 14);
-    }
-
 
     #[test]
     fn benchmark_get_block() {
