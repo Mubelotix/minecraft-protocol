@@ -1,5 +1,6 @@
 use crate::prelude::*;
 
+/// Describes an event for something happening the world.
 #[derive(Debug, Clone)]
 pub enum WorldChange {
     Tick(usize),
@@ -41,6 +42,7 @@ pub enum WorldChange {
     },
 }
 
+/// Describes what has been modified in an entity by a mutator closure.
 pub struct EntityChanges(u8);
 
 impl EntityChanges {
@@ -92,17 +94,22 @@ impl EntityChanges {
 impl std::ops::Add<EntityChanges> for EntityChanges {
     type Output = EntityChanges;
 
+    #[allow(clippy::suspicious_arithmetic_impl)]
     fn add(self, rhs: EntityChanges) -> EntityChanges {
         EntityChanges(self.0 | rhs.0)
     }
 }
 
 impl std::ops::AddAssign<EntityChanges> for EntityChanges {
+    #[allow(clippy::suspicious_arithmetic_impl)]
     fn add_assign(&mut self, rhs: EntityChanges) {
         self.0 |= rhs.0;
     }
 }
 
+/// An observer for changes in the world.
+/// It listens for changes.
+/// It will not listen for all changes, but only the kind of changes it subscribed to.
 pub struct WorldObserver {
     receiver: MpscReceiver<WorldChange>,
     eid: Eid,
@@ -118,6 +125,7 @@ impl WorldObserver {
         self.receiver.try_recv()
     }
 
+    /// Enables receiving ticks.
     pub async fn enable_ticks(&self) {
         let mut trackers = self.observer_manager.trackers.write().await;
         let Some(tracker) = trackers.get_mut(&self.eid) else { return };
@@ -127,6 +135,7 @@ impl WorldObserver {
         }
     }
 
+    /// Disables receiving ticks.
     pub async fn disable_ticks(&self) {
         let mut trackers = self.observer_manager.trackers.write().await;
         let Some(tracker) = trackers.get_mut(&self.eid) else { return };
@@ -137,26 +146,8 @@ impl WorldObserver {
     }
 }
 
-impl Drop for WorldObserver {
-    fn drop(&mut self) {
-        let manager = self.observer_manager;
-        let eid = self.eid;
-        tokio::spawn(async move {
-            manager.remove_subscriber(eid).await;
-        });
-    }
-}
-
-struct WorldObserverTracker {
-    sender: MpscSender<WorldChange>,
-    ticks: bool,
-    blocks: HashSet<ChunkColumnPosition>,
-    entities: HashSet<ChunkColumnPosition>,
-    nearby_blocks: HashSet<ChunkColumnPosition>,
-    specific_entities: HashSet<Eid>,
-}
-
-#[must_use = "The observer must be added to the manager to be used"]
+/// A builder for [WorldObserver].
+#[must_use = "The observer builder must be built to be used"]
 pub struct WorldObserverBuilder {
     eid: Eid,
     observer_manager: &'static WorldObserverManager,
@@ -219,6 +210,17 @@ impl WorldObserverBuilder {
             observer_manager,
         }
     }
+}
+
+/// Used by [WorldObserverManager] to keep track of what an observer is subscribed to.
+/// Will be used to clear subscriptions when the observer is removed.
+struct WorldObserverTracker {
+    sender: MpscSender<WorldChange>,
+    ticks: bool,
+    blocks: HashSet<ChunkColumnPosition>,
+    entities: HashSet<ChunkColumnPosition>,
+    nearby_blocks: HashSet<ChunkColumnPosition>,
+    specific_entities: HashSet<Eid>,
 }
 
 #[derive(Debug, Clone)]
