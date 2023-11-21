@@ -123,7 +123,7 @@ impl Handler<Player> {
         }).await.flatten() else { return };
 
         // Tell the world about the changes
-        self.world.update_loaded_columns(self.eid, &loaded_columns).await;
+        self.world.update_loaded_columns(self.eid, loaded_columns).await;
 
         // Unload chunks
         for unloaded_column in unloaded_columns {
@@ -137,8 +137,6 @@ impl Handler<Player> {
         for newly_loaded_column in newly_loaded_columns {
             if self.world.is_column_loaded(&newly_loaded_column).await {
                 self.send_chunk(newly_loaded_column).await;
-            } else {
-                self.world.queue_loading(newly_loaded_column).await;
             }
         }
     }

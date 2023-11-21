@@ -323,8 +323,7 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
         for cz in -3..=3 {
             let column_pos = ChunkColumnPosition { cx, cz };
             if !world.is_column_loaded(&column_pos).await {
-                world.queue_loading(column_pos).await;
-                remaining_to_load += 1;
+                remaining_to_load += 1; // FIXME: what happens when chunks are loaded before that block but after we listen for them?
             }
         }
     }

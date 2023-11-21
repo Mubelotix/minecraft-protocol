@@ -445,8 +445,30 @@ impl WorldObserverManager {
         self.notify_entity_change(eid, position, None, change).await;
     }
 
-    pub async fn update_loaded_columns(&self, eid: Eid, loaded_chunks: &HashSet<ChunkColumnPosition>) {
-        // TODO
+    pub async fn update_loaded_columns(&self, eid: Eid, loaded_chunks: HashSet<ChunkColumnPosition>) {
+        let mut entities = self.trackers.write().await;
+        let Some(observer) = entities.get_mut(&eid) else {return};
+        let unloaded_chunks = observer.blocks.difference(&loaded_chunks);
+        let newly_loaded_chunks = loaded_chunks.difference(&observer.blocks);
+
+        let mut blocks = self.blocks.write().await;
+        let mut entities = self.entities.write().await;
+        for column in unloaded_chunks {
+            blocks.get_mut(column).map(|map| map.remove(&eid));
+            entities.get_mut(column).map(|map| map.remove(&eid));
+        }
+        for column in newly_loaded_chunks {
+            blocks.entry(column.clone()).or_default().insert(eid, observer.sender.clone());
+            entities.entry(column.clone()).or_default().insert(eid, observer.sender.clone());
+        }
+        observer.blocks = loaded_chunks.clone();
+    }
+
+    pub async fn get_all_needed_columns(&self) -> HashSet<ChunkColumnPosition> {
+        let blocks = self.blocks.read().await;
+        let mut all_needed_chunks = HashSet::new();
+        all_needed_chunks.extend(blocks.keys().cloned());
+        all_needed_chunks
     }
 
     pub async fn remove_subscriber(&self, eid: Eid) {

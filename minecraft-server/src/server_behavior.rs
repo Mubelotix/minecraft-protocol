@@ -9,9 +9,7 @@ pub struct ServerBehavior {
 impl ServerBehavior {
     pub async fn init() -> ServerBehavior {
         let listener = TcpListener::bind("127.0.0.1:25567").await.expect("Failed to listen");
-        let (world, receiver) = World::new();
-        let world = Box::leak(Box::new(world));
-        world.init(receiver);
+        let world = World::new();
 
         // Send ticks to player handlers
         let world2: &World = world;
