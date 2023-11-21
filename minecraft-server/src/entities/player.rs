@@ -209,10 +209,11 @@ impl Handler<Player> {
                 }).await;
             },
             WorldChange::ColumnLoaded(column_pos) => {
-                let should_send = self.observe(|p| !p.loaded_columns.contains(&column_pos)).await;
+                let should_send = self.observe(|p| p.loaded_columns.contains(&column_pos)).await;
                 if should_send.unwrap_or_default() {
                     self.send_chunk(column_pos).await;
                 } else {
+                    warn!("whoops");
                     // TODO: Update world observer so that it knows what chunks we want
                 }
             }
