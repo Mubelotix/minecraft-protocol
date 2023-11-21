@@ -306,6 +306,7 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
     send_packet(stream, chunk_data).await;
     debug!("ChunkBatchStart sent");
 
+    // Listen for block changes in loaded range
     let eid = world.reserve_eid().await;
     let mut world_observer_builder = world.new_world_observer(eid.into());
     for cx in -3..=3 {
@@ -314,12 +315,32 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
             world_observer_builder = world_observer_builder.with_entities_in_chunk(ChunkColumnPosition { cx, cz });
         }
     }
-    let world_observer = world_observer_builder.build().await;
+    let mut world_observer = world_observer_builder.build().await;
 
+    // Request loading of chunks in range
+    let mut remaining_to_load = 0;
+    for cx in -3..=3 {
+        for cz in -3..=3 {
+            let column_pos = ChunkColumnPosition { cx, cz };
+            if !world.is_column_loaded(&column_pos).await {
+                world.queue_loading(column_pos).await;
+                remaining_to_load += 1;
+            }
+        }
+    }
+
+    // Wait for chunks to load
+    while remaining_to_load > 0 {
+        if let Some(WorldChange::ColumnLoaded(_)) = world_observer.recv().await {
+            remaining_to_load -= 1;
+            debug!("Chunk loaded, remaining: {remaining_to_load}");
+        }
+    }
+
+    // Send chunks
     let mut heightmaps = HashMap::new();
     heightmaps.insert(String::from("MOTION_BLOCKING"), NbtTag::LongArray(vec![0; 37]));
     let heightmaps = NbtTag::Compound(heightmaps);
-    
     for cx in -3..=3 {
         for cz in -3..=3 {
             let mut column = Vec::new();

@@ -209,7 +209,7 @@ impl WorldObserverBuilder {
     }
 
     pub async fn build(self) -> WorldObserver {
-        let (sender, receiver) = mpsc_channel(30);
+        let (sender, receiver) = mpsc_channel(200); // TODO: Review this value
         let eid = self.eid;
         let observer_manager = self.observer_manager;
         observer_manager.add_subscriber(eid, self, sender).await;
@@ -320,7 +320,9 @@ impl WorldObserverManager {
         if let Some(subscribers) = blocks.get(&column_pos) {
             let event = WorldChange::ColumnLoaded(column_pos.clone());
             for sender in subscribers.values() {
-                let _ = sender.try_send(event.clone());
+                if let Err(e) = sender.try_send(event.clone()) {
+                    warn!("Failed to notify loaded column: {}", e)
+                }
             }
         }
     }

@@ -17,15 +17,28 @@ pub struct World {
     entities: Entities,
 
     world_observer_manager: WorldObserverManager,
+    loading_task_sender: MpscSender<ChunkColumnPosition>
 }
 
 impl World {
-    pub fn new() -> World {
-        World {
+    pub fn new() -> (World, MpscReceiver<ChunkColumnPosition>) {
+        let (loading_task_sender, loading_task_receiver) = mpsc_channel(200);
+
+        (World {
             map: WorldMap::new(4),
             entities: Entities::new(),
             world_observer_manager: WorldObserverManager::new(),
-        }
+            loading_task_sender,
+        }, loading_task_receiver)
+    }
+
+    pub fn init(&'static self, mut loading_task_receiver: MpscReceiver<ChunkColumnPosition>) {
+        tokio::spawn(async move {
+            while let Some(position) = loading_task_receiver.recv().await {
+                self.map.load(position.clone()).await;
+                self.world_observer_manager.notify_column_loaded(position).await;
+            }
+        });
     }
 
     pub async fn get_block(&self, position: BlockPosition) -> Option<BlockWithState> {
@@ -34,6 +47,13 @@ impl World {
 
     pub async fn is_column_loaded(&self, position: &ChunkColumnPosition) -> bool {
         self.map.is_column_loaded(position).await
+    }
+
+    pub async fn queue_loading(&'static self, position: ChunkColumnPosition) {
+        // TODO: propagate errors
+        if let Err(e) = self.loading_task_sender.send(position).await {
+            error!("Failed to queue loading task: {}", e);
+        }
     }
 
     pub async fn get_network_chunk(&self, position: ChunkPosition) -> Option<NetworkChunk> {
@@ -131,7 +151,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_world_notifications() {
-        let world = Box::leak(Box::new(World::new()));
+        let (world, receiver) = World::new();
+        let world = Box::leak(Box::new(world));
+        world.init(receiver);
 
         let mut receiver1 = WorldObserverBuilder::new(1, &world.world_observer_manager).with_blocks_in_chunk(ChunkColumnPosition{cx: 0, cz: 0}).build().await;
         let mut receiver2 = WorldObserverBuilder::new(1, &world.world_observer_manager).with_blocks_in_chunk(ChunkColumnPosition{cx: 1, cz: 1}).build().await;
