@@ -115,6 +115,24 @@ impl WorldObserver {
     pub fn try_recv(&mut self) -> Result<WorldChange, tokio::sync::mpsc::error::TryRecvError> {
         self.receiver.try_recv()
     }
+
+    pub async fn enable_ticks(&self) {
+        let mut trackers = self.observer_manager.trackers.write().await;
+        let Some(tracker) = trackers.get_mut(&self.eid) else { return };
+        if !tracker.ticks {
+            tracker.ticks = true;
+            self.observer_manager.ticks.write().await.insert(self.eid);
+        }
+    }
+
+    pub async fn disable_ticks(&self) {
+        let mut trackers = self.observer_manager.trackers.write().await;
+        let Some(tracker) = trackers.get_mut(&self.eid) else { return };
+        if tracker.ticks {
+            tracker.ticks = false;
+            self.observer_manager.ticks.write().await.remove(&self.eid);
+        }
+    }
 }
 
 impl Drop for WorldObserver {

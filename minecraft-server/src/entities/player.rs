@@ -40,7 +40,6 @@ impl Player {
         world_observer: WorldObserver
     ) -> Eid {
         let (packet_sender, packet_receiver) = mpsc_channel(1000);
-        let uuid = player_info.uuid;
 
         let mut player = Player {
             living_entity: LivingEntity::default(),
@@ -260,7 +259,7 @@ impl Handler<Player> {
                             pitch: (pitch * (256.0 / 360.0)) as u8,
                             yaw: (yaw * (256.0 / 360.0)) as u8,
                             head_yaw: (head_yaw * (256.0 / 360.0)) as u8,
-                            data: VarInt(0 as i32), // TODO set data on entities
+                            data: VarInt(0), // TODO set data on entities
                             velocity_x: (velocity.x * 8000.0) as i16,
                             velocity_y: (velocity.y * 8000.0) as i16,
                             velocity_z: (velocity.z * 8000.0) as i16,
@@ -287,7 +286,7 @@ impl Handler<Player> {
         }
     }
 
-    async fn on_packet<'a>(mut self, packet: PlayServerbound<'a>) {
+    async fn on_packet(self, packet: PlayServerbound<'_>) {
         use PlayServerbound::*;
         match packet {
             SetPlayerPosition { x, y, z, on_ground } => {
@@ -342,7 +341,7 @@ impl Handler<Player> {
                     self.world.spawn_entity::<Zombie>(AnyEntity::Zombie(zombie)).await;
                 } else if message == "stress" {
                     tokio::spawn(async move {
-                        for i in 0..1000 {
+                        for _ in 0..1000 {
                             let mut zombie = Zombie::default();
                             let Some(mut position) = self.observe(|player| player.get_entity().position.clone()).await else {return};
                             position.y += 20.0;
@@ -371,6 +370,7 @@ async fn handle_player(h: Handler<Player>, stream: TcpStream, packet_receiver: M
 
 async fn handle_player_inner(h: Handler<Player>, stream: TcpStream, mut packet_receiver: MpscReceiver<Vec<u8>>, mut world_observer: WorldObserver) -> Result<(), ()> {
     let (mut reader_stream, mut writer_stream) = stream.into_split();
+    world_observer.enable_ticks().await;
     
     let mut receive_packet_fut = Box::pin(receive_packet_split(&mut reader_stream).fuse());
     let mut receive_clientbound_fut = Box::pin(packet_receiver.recv().fuse());
