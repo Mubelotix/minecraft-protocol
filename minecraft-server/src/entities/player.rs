@@ -202,6 +202,57 @@ impl Handler<Player> {
                     block_state: block,
                 }).await;
             },
+            WorldChange::ColumnLoaded(column_pos) => {
+                let should_send = self.observe(|p| !p.loaded_chunks.contains(&column_pos)).await;
+                if should_send.unwrap_or_default() {
+                    // Send the chunks to the client
+                    let mut heightmaps = HashMap::new();
+                    heightmaps.insert(String::from("MOTION_BLOCKING"), NbtTag::LongArray(vec![0; 37]));
+                    let heightmaps = NbtTag::Compound(heightmaps);
+                    let mut column = Vec::new();
+                    for cy in -4..20 {
+                        let chunk = self.world.get_network_chunk(column_pos.chunk(cy)).await.unwrap_or_else(|| {
+                            error!("Chunk not loaded: {column_pos:?}");
+                            NetworkChunk { // TODO hard error
+                                block_count: 0,
+                                blocks: PalettedData::Single { value: 0 },
+                                biomes: PalettedData::Single { value: 4 },
+                            }
+                        });
+                        column.push(chunk);
+                    }
+                    let serialized: Vec<u8> = NetworkChunk::into_data(column).unwrap();
+                    let chunk_data = PlayClientbound::ChunkData {
+                        value: ChunkData {
+                            chunk_x: column_pos.cx,
+                            chunk_z: column_pos.cz,
+                            heightmaps: heightmaps.clone(),
+                            data: Array::from(serialized.clone()),
+                            block_entities: Array::default(),
+                            sky_light_mask: Array::default(),
+                            block_light_mask: Array::default(),
+                            empty_sky_light_mask: Array::default(),
+                            empty_block_light_mask: Array::default(),
+                            sky_light: Array::default(),
+                            block_light: Array::default(),
+                        }
+                    };
+                    self.send_packet(chunk_data).await;
+                } else {
+                    // TODO: Update world observer so that it knows what chunks we want
+                }
+            }
+            WorldChange::ColumnUnloaded(column_pos) => {
+                let should_send = self.observe(|p| p.loaded_chunks.contains(&column_pos)).await;
+                if should_send.unwrap_or_default() {
+                    self.send_packet(PlayClientbound::UnloadChunk {
+                        chunk_x: column_pos.cx,
+                        chunk_z: column_pos.cz,
+                    }).await;
+                } else {
+                    // TODO: Update world observer so that it knows what chunks we want
+                }
+            }
             WorldChange::EntitySpawned { eid, uuid, ty, position, pitch, yaw, head_yaw, data, velocity } => {
                 self.mutate(|player| {player.entity_prev_positions.insert(eid, position.clone()); ((), EntityChanges::other())}).await;
                 self.send_packet(PlayClientbound::SpawnEntity {

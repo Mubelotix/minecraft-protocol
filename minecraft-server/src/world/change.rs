@@ -4,6 +4,8 @@ use crate::prelude::*;
 pub enum WorldChange {
     Tick(usize),
     Block(BlockPosition, BlockWithState),
+    ColumnLoaded(ChunkColumnPosition),
+    ColumnUnloaded(ChunkColumnPosition),
     EntitySpawned {
         eid: Eid,
         uuid: UUID,
@@ -305,8 +307,30 @@ impl WorldObserverManager {
         let column = position.chunk_column();
         let blocks = self.blocks.read().await;
         if let Some(subscribers) = blocks.get(&column) {
+            let event = WorldChange::Block(position.clone(), block.clone());
             for sender in subscribers.values() {
-                let _ = sender.try_send(WorldChange::Block(position.clone(), block.clone()));
+                let _ = sender.try_send(event.clone());
+            }
+        }
+    }
+
+    pub async fn notify_column_loaded(&self, column_pos: ChunkColumnPosition) {
+        // TODO: Notify nearby block listeners of loaded/unloaded chunks
+        let blocks = self.blocks.read().await;
+        if let Some(subscribers) = blocks.get(&column_pos) {
+            let event = WorldChange::ColumnLoaded(column_pos.clone());
+            for sender in subscribers.values() {
+                let _ = sender.try_send(event.clone());
+            }
+        }
+    }
+
+    pub async fn notify_column_unloaded(&self, column_pos: ChunkColumnPosition) {
+        let blocks = self.blocks.read().await;
+        if let Some(subscribers) = blocks.get(&column_pos) {
+            let event = WorldChange::ColumnUnloaded(column_pos.clone());
+            for sender in subscribers.values() {
+                let _ = sender.try_send(event.clone());
             }
         }
     }
