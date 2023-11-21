@@ -261,8 +261,8 @@ impl WorldObserverManager {
                 }.chunk_column();
                 for cx in min_column.cx..=max_column.cx {
                     for cz in min_column.cz..=max_column.cz {
-                        nearby_blocks.entry(ChunkColumnPosition {cx: cx, cz: cz}).or_default().insert(eid, (nearby_block.clone(), sender.clone()));
-                        observer_nearby_blocks.insert(ChunkColumnPosition {cx: cx, cz: cz});
+                        nearby_blocks.entry(ChunkColumnPosition {cx, cz}).or_default().insert(eid, (nearby_block.clone(), sender.clone()));
+                        observer_nearby_blocks.insert(ChunkColumnPosition {cx, cz});
                     }
                 }
             }
@@ -270,7 +270,7 @@ impl WorldObserverManager {
         if !observer_builder.specific_entities.is_empty() {
             let mut specific_entities = self.specific_entities.write().await;
             for entity in &observer_builder.specific_entities {
-                specific_entities.entry(entity.clone()).or_default().insert(eid, sender.clone());
+                specific_entities.entry(*entity).or_default().insert(eid, sender.clone());
             }
         }
         entities.insert(eid, WorldObserverTracker {
@@ -287,7 +287,7 @@ impl WorldObserverManager {
         let column = position.chunk_column();
         let blocks = self.blocks.read().await;
         if let Some(subscribers) = blocks.get(&column) {
-            for (_, sender) in subscribers {
+            for sender in subscribers.values() {
                 let _ = sender.try_send(WorldChange::Block(position.clone(), block.clone()));
             }
         }
@@ -310,7 +310,7 @@ impl WorldObserverManager {
         // Notify for specific entities
         let specific_entities_subscribers = specific_entities.get(&eid);
         if let Some(subscribers) = specific_entities_subscribers {
-            for (_, sender) in subscribers {
+            for sender in subscribers.values() {
                 let _ = sender.try_send(change.clone());
             }
         }
