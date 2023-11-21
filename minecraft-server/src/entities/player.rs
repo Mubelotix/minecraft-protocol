@@ -110,64 +110,34 @@ impl Handler<Player> {
         }
 
         // Select chunks to load (max 50) and unload
-        let Some((loaded_chunks_after, newly_loaded_chunks, unloaded_chunks, uuid)) = self.mutate(|player| {
+        let Some((loaded_columns, newly_loaded_columns, unloaded_columns)) = self.mutate(|player| {
             if loaded_chunks_after == player.loaded_chunks { return (None, EntityChanges::nothing()) };
-            let mut newly_loaded_chunks: Vec<_> = loaded_chunks_after.difference(&player.loaded_chunks).cloned().collect();
-            let unloaded_chunks: Vec<_> = player.loaded_chunks.difference(&loaded_chunks_after).cloned().collect();
-            for skipped in newly_loaded_chunks.iter().skip(50) {
+            let mut newly_loaded_columns: Vec<_> = loaded_chunks_after.difference(&player.loaded_chunks).cloned().collect();
+            let unloaded_columns: Vec<_> = player.loaded_chunks.difference(&loaded_chunks_after).cloned().collect();
+            for skipped in newly_loaded_columns.iter().skip(50) {
                 loaded_chunks_after.remove(skipped);
             }
-            newly_loaded_chunks.truncate(50);
-            let uuid = player.info.uuid;
+            newly_loaded_columns.truncate(50);
             player.loaded_chunks = loaded_chunks_after.clone();
-            (Some((loaded_chunks_after, newly_loaded_chunks, unloaded_chunks, uuid)), EntityChanges::other())
+            (Some((loaded_chunks_after, newly_loaded_columns, unloaded_columns)), EntityChanges::other())
         }).await.flatten() else { return };
 
         // Tell the world about the changes
-        // TODO extremely urgent self.world.update_loaded_chunks(uuid, loaded_chunks_after).await;
+        self.world.update_loaded_columns(self.eid, &loaded_columns).await;
 
-        // Send the chunks to the client
-        let mut heightmaps = HashMap::new();
-        heightmaps.insert(String::from("MOTION_BLOCKING"), NbtTag::LongArray(vec![0; 37]));
-        let heightmaps = NbtTag::Compound(heightmaps);
-        for newly_loaded_chunk in newly_loaded_chunks {
-            let mut column = Vec::new();
-            for cy in -4..20 {
-                let chunk = self.world.get_network_chunk(newly_loaded_chunk.chunk(cy)).await.unwrap_or_else(|| {
-                    error!("Chunk not loaded: {newly_loaded_chunk:?}");
-                    NetworkChunk { // TODO hard error
-                        block_count: 0,
-                        blocks: PalettedData::Single { value: 0 },
-                        biomes: PalettedData::Single { value: 4 },
-                    }
-                });
-                column.push(chunk);
-            }
-            let serialized: Vec<u8> = NetworkChunk::into_data(column).unwrap();
-            let chunk_data = PlayClientbound::ChunkData {
-                value: ChunkData {
-                    chunk_x: newly_loaded_chunk.cx,
-                    chunk_z: newly_loaded_chunk.cz,
-                    heightmaps: heightmaps.clone(),
-                    data: Array::from(serialized.clone()),
-                    block_entities: Array::default(),
-                    sky_light_mask: Array::default(),
-                    block_light_mask: Array::default(),
-                    empty_sky_light_mask: Array::default(),
-                    empty_block_light_mask: Array::default(),
-                    sky_light: Array::default(),
-                    block_light: Array::default(),
-                }
-            };
-            self.send_packet(chunk_data).await;
+        // Unload chunks
+        for unloaded_column in unloaded_columns {
+            self.send_packet(PlayClientbound::UnloadChunk {
+                chunk_x: unloaded_column.cx,
+                chunk_z: unloaded_column.cz,
+            }).await;
         }
 
-        // Tell the client to unload chunks
-        for unloaded_chunk in unloaded_chunks {
-            self.send_packet(PlayClientbound::UnloadChunk {
-                chunk_x: unloaded_chunk.cx,
-                chunk_z: unloaded_chunk.cz,
-            }).await;
+        // Send chunks we immediately have
+        for newly_loaded_column in newly_loaded_columns {
+            if self.world.is_column_loaded(&newly_loaded_column).await {
+                self.send_chunk(newly_loaded_column).await;
+            }
         }
     }
 
@@ -182,6 +152,42 @@ impl Handler<Player> {
         }
         let Some(packet_sender) = self.observe(|player| player.packet_sender.clone()).await else {return};
         packet_sender.send(packet).await.unwrap();
+    }
+
+    async fn send_chunk(&self, column_pos: ChunkColumnPosition) {
+        // Send the chunks to the client
+        let mut heightmaps = HashMap::new();
+        heightmaps.insert(String::from("MOTION_BLOCKING"), NbtTag::LongArray(vec![0; 37]));
+        let heightmaps = NbtTag::Compound(heightmaps);
+        let mut column = Vec::new();
+        for cy in -4..20 {
+            let chunk = self.world.get_network_chunk(column_pos.chunk(cy)).await.unwrap_or_else(|| {
+                error!("Chunk not loaded: {column_pos:?}");
+                NetworkChunk { // TODO hard error
+                    block_count: 0,
+                    blocks: PalettedData::Single { value: 0 },
+                    biomes: PalettedData::Single { value: 4 },
+                }
+            });
+            column.push(chunk);
+        }
+        let serialized: Vec<u8> = NetworkChunk::into_data(column).unwrap();
+        let chunk_data = PlayClientbound::ChunkData {
+            value: ChunkData {
+                chunk_x: column_pos.cx,
+                chunk_z: column_pos.cz,
+                heightmaps: heightmaps.clone(),
+                data: Array::from(serialized.clone()),
+                block_entities: Array::default(),
+                sky_light_mask: Array::default(),
+                block_light_mask: Array::default(),
+                empty_sky_light_mask: Array::default(),
+                empty_block_light_mask: Array::default(),
+                sky_light: Array::default(),
+                block_light: Array::default(),
+            }
+        };
+        self.send_packet(chunk_data).await;
     }
 
     async fn on_world_change(self, change: WorldChange) {
@@ -205,39 +211,7 @@ impl Handler<Player> {
             WorldChange::ColumnLoaded(column_pos) => {
                 let should_send = self.observe(|p| !p.loaded_chunks.contains(&column_pos)).await;
                 if should_send.unwrap_or_default() {
-                    // Send the chunks to the client
-                    let mut heightmaps = HashMap::new();
-                    heightmaps.insert(String::from("MOTION_BLOCKING"), NbtTag::LongArray(vec![0; 37]));
-                    let heightmaps = NbtTag::Compound(heightmaps);
-                    let mut column = Vec::new();
-                    for cy in -4..20 {
-                        let chunk = self.world.get_network_chunk(column_pos.chunk(cy)).await.unwrap_or_else(|| {
-                            error!("Chunk not loaded: {column_pos:?}");
-                            NetworkChunk { // TODO hard error
-                                block_count: 0,
-                                blocks: PalettedData::Single { value: 0 },
-                                biomes: PalettedData::Single { value: 4 },
-                            }
-                        });
-                        column.push(chunk);
-                    }
-                    let serialized: Vec<u8> = NetworkChunk::into_data(column).unwrap();
-                    let chunk_data = PlayClientbound::ChunkData {
-                        value: ChunkData {
-                            chunk_x: column_pos.cx,
-                            chunk_z: column_pos.cz,
-                            heightmaps: heightmaps.clone(),
-                            data: Array::from(serialized.clone()),
-                            block_entities: Array::default(),
-                            sky_light_mask: Array::default(),
-                            block_light_mask: Array::default(),
-                            empty_sky_light_mask: Array::default(),
-                            empty_block_light_mask: Array::default(),
-                            sky_light: Array::default(),
-                            block_light: Array::default(),
-                        }
-                    };
-                    self.send_packet(chunk_data).await;
+                    self.send_chunk(column_pos).await;
                 } else {
                     // TODO: Update world observer so that it knows what chunks we want
                 }

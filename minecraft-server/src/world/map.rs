@@ -288,6 +288,12 @@ impl WorldMap {
         movement.clone() // Would be more logic if it returned validated, but this way we avoid precision errors
     }
 
+    pub async fn is_column_loaded(&self, column_pos: &ChunkColumnPosition) -> bool {
+        let shard = column_pos.shard(self.shard_count);
+        let shard = self.shards[shard].read().await;
+        shard.contains_key(&column_pos)
+    }
+
     pub async fn load(&self, position: ChunkColumnPosition) {
         let chunk = ChunkColumn::flat(); // TODO: load from disk
         let shard = position.shard(self.shard_count);

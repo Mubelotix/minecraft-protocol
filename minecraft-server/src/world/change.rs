@@ -443,6 +443,10 @@ impl WorldObserverManager {
         self.notify_entity_change(eid, position, None, change).await;
     }
 
+    pub async fn update_loaded_columns(&self, eid: Eid, loaded_chunks: &HashSet<ChunkColumnPosition>) {
+        // TODO
+    }
+
     pub async fn remove_subscriber(&self, eid: Eid) {
         let mut entities = self.trackers.write().await;
         let Some(observer) = entities.remove(&eid) else {return};

@@ -32,6 +32,10 @@ impl World {
         Some(self.map.get_block(position).await)
     }
 
+    pub async fn is_column_loaded(&self, position: &ChunkColumnPosition) -> bool {
+        self.map.is_column_loaded(position).await
+    }
+
     pub async fn get_network_chunk(&self, position: ChunkPosition) -> Option<NetworkChunk> {
         self.map.get_network_chunk(position).await
     }
@@ -47,6 +51,10 @@ impl World {
 
     pub fn new_world_observer(&'static self, eid: Eid) -> WorldObserverBuilder {
         WorldObserverBuilder::new(eid, &self.world_observer_manager)
+    }
+
+    pub async fn update_loaded_columns(&self, eid: Eid, loaded_columns: &HashSet<ChunkColumnPosition>) {
+        self.world_observer_manager.update_loaded_columns(eid, loaded_columns).await
     }
 
     pub async fn tick(&self, tick_id: usize) {
