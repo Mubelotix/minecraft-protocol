@@ -14,7 +14,6 @@ pub enum WorldChange {
         head_yaw: f32,
         data: u32,
         velocity: Translation,
-        metadata: (),
     },
     EntityDispawned {
         eid: Eid,
@@ -112,6 +111,10 @@ impl WorldObserver {
     pub async fn recv(&mut self) -> Option<WorldChange> {
         self.receiver.recv().await
     }
+
+    pub fn try_recv(&mut self) -> Result<WorldChange, tokio::sync::mpsc::error::TryRecvError> {
+        self.receiver.try_recv()
+    }
 }
 
 impl Drop for WorldObserver {
@@ -185,7 +188,7 @@ impl WorldObserverBuilder {
         self
     }
 
-    pub async fn finish(self, ) -> WorldObserver {
+    pub async fn build(self) -> WorldObserver {
         let (sender, receiver) = mpsc_channel(30);
         let eid = self.eid;
         let observer_manager = self.observer_manager;
@@ -203,6 +206,8 @@ struct NearbyBlockSubscription {
     position: BlockPosition,
     radius: u8,
 }
+
+// TODO: remove sets and maps when they are empty
 
 // TODO: allow different observers for same entity
 pub struct WorldObserverManager {
@@ -338,7 +343,7 @@ impl WorldObserverManager {
         }
     }
 
-    pub async fn notify_entity_spawned(&self, eid: Eid, uuid: UUID, ty: NetworkEntity, position: Position, pitch: f32, yaw: f32, head_yaw: f32, data: u32, velocity: Translation, metadata: ()) {
+    pub async fn notify_entity_spawned(&self, eid: Eid, uuid: UUID, ty: NetworkEntity, position: Position, pitch: f32, yaw: f32, head_yaw: f32, data: u32, velocity: Translation) {
         let change = WorldChange::EntitySpawned {
             eid,
             uuid,
@@ -349,7 +354,6 @@ impl WorldObserverManager {
             head_yaw,
             data,
             velocity,
-            metadata,
         };
         self.notify_entity_change(eid, position, None, change).await;
     }

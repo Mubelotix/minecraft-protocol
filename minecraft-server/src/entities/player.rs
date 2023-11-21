@@ -34,9 +34,10 @@ pub struct Player {
 impl Player {
     pub async fn spawn_player(
         world: &'static World,
+        eid: ReservedEid,
         stream: TcpStream,
         player_info: PlayerInfo,
-        change_receiver: MpscReceiver<WorldChange>
+        world_observer: WorldObserver
     ) -> Eid {
         let (packet_sender, packet_receiver) = mpsc_channel(1000);
         let uuid = player_info.uuid;
@@ -77,9 +78,9 @@ impl Player {
             }
         }
         
-        let eid = world.spawn_entity::<Player>(AnyEntity::Player(player)).await;
+        let eid = world.spawn_entity_with_reserved_eid::<Player>(eid, AnyEntity::Player(player)).await;
         let handler = Handler::assume(eid, world);
-        handler.clone().insert_task("player", tokio::spawn(handle_player(handler, uuid, stream, packet_receiver, change_receiver))).await;
+        handler.clone().insert_task("player", tokio::spawn(handle_player(handler, stream, packet_receiver, world_observer))).await;
 
         eid
     }
@@ -124,7 +125,7 @@ impl Handler<Player> {
         }).await.flatten() else { return };
 
         // Tell the world about the changes
-        self.world.update_loaded_chunks(uuid, loaded_chunks_after).await;
+        // TODO extremely urgent self.world.update_loaded_chunks(uuid, loaded_chunks_after).await;
 
         // Send the chunks to the client
         let mut heightmaps = HashMap::new();
@@ -202,7 +203,7 @@ impl Handler<Player> {
                     block_state: block,
                 }).await;
             },
-            WorldChange::EntitySpawned { eid, uuid, ty, position, pitch, yaw, head_yaw, data, velocity, metadata } => {
+            WorldChange::EntitySpawned { eid, uuid, ty, position, pitch, yaw, head_yaw, data, velocity } => {
                 self.mutate(|player| {player.entity_prev_positions.insert(eid, position.clone()); ((), EntityChanges::other())}).await;
                 self.send_packet(PlayClientbound::SpawnEntity {
                     id: VarInt(eid as i32),
@@ -360,21 +361,20 @@ impl Handler<Player> {
     }
 }
 
-async fn handle_player(h: Handler<Player>, uuid: UUID, stream: TcpStream, packet_receiver: MpscReceiver<Vec<u8>>, change_receiver: MpscReceiver<WorldChange>) {
-    let r = handle_player_inner(h.clone(), stream, packet_receiver, change_receiver).await;
+async fn handle_player(h: Handler<Player>, stream: TcpStream, packet_receiver: MpscReceiver<Vec<u8>>, world_observer: WorldObserver) {
+    let r = handle_player_inner(h.clone(), stream, packet_receiver, world_observer).await;
     match r {
         Ok(()) => info!("Player handler shut down gracefully"),
         Err(()) => error!("Player handler crashed")
     }
-    h.world.remove_loader(uuid).await;
 }
 
-async fn handle_player_inner(h: Handler<Player>, stream: TcpStream, mut packet_receiver: MpscReceiver<Vec<u8>>, mut change_receiver: MpscReceiver<WorldChange>) -> Result<(), ()> {
+async fn handle_player_inner(h: Handler<Player>, stream: TcpStream, mut packet_receiver: MpscReceiver<Vec<u8>>, mut world_observer: WorldObserver) -> Result<(), ()> {
     let (mut reader_stream, mut writer_stream) = stream.into_split();
     
     let mut receive_packet_fut = Box::pin(receive_packet_split(&mut reader_stream).fuse());
     let mut receive_clientbound_fut = Box::pin(packet_receiver.recv().fuse());
-    let mut receive_change_fut = Box::pin(change_receiver.recv().fuse());
+    let mut receive_change_fut = Box::pin(world_observer.recv().fuse());
     loop {
         // Select the first event that happens
         enum Event {
@@ -403,7 +403,7 @@ async fn handle_player_inner(h: Handler<Player>, stream: TcpStream, mut packet_r
             },
             Event::WorldChange(Some(change)) => {
                 drop(receive_change_fut);
-                receive_change_fut = Box::pin(change_receiver.recv().fuse());
+                receive_change_fut = Box::pin(world_observer.recv().fuse());
 
                 h.clone().on_world_change(change).await;
             },

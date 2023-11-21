@@ -14,7 +14,7 @@ pub struct PlayerInfo {
     pub allow_server_listing: bool,
 }
 
-pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPlayerInfo, world: &'static World) -> Result<(PlayerInfo, MpscReceiver<WorldChange>), ()> {
+pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPlayerInfo, world: &'static World) -> Result<(PlayerInfo, ReservedEid, WorldObserver), ()> {
     // Receive client informations
     let packet = receive_packet(stream).await?;
     debug!("Packet received");
@@ -306,14 +306,15 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
     send_packet(stream, chunk_data).await;
     debug!("ChunkBatchStart sent");
 
-    let change_receiver = world.add_loader(logged_in_player_info.uuid).await;
-    let mut loaded_chunks = HashSet::new();
+    let eid = world.reserve_eid().await;
+    let mut world_observer_builder = world.new_world_observer(eid.into());
     for cx in -3..=3 {
         for cz in -3..=3 {
-            loaded_chunks.insert(ChunkColumnPosition { cx, cz });
+            world_observer_builder = world_observer_builder.with_blocks_in_chunk(ChunkColumnPosition { cx, cz });
+            world_observer_builder = world_observer_builder.with_entities_in_chunk(ChunkColumnPosition { cx, cz });
         }
     }
-    world.update_loaded_chunks(logged_in_player_info.uuid, loaded_chunks).await;
+    let world_observer = world_observer_builder.build().await;
 
     let mut heightmaps = HashMap::new();
     heightmaps.insert(String::from("MOTION_BLOCKING"), NbtTag::LongArray(vec![0; 37]));
@@ -380,5 +381,5 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
         main_hand,
         enable_text_filtering,
         allow_server_listing,
-    }, change_receiver))
+    }, eid, world_observer))
 }

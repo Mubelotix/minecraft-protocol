@@ -6,6 +6,14 @@ use tokio::sync::RwLock;
 pub type EntityTask = Pin<Box<dyn Future<Output = ()> + Send + Sync + 'static>>;
 pub type EntityTaskHandle = tokio::task::JoinHandle<()>;
 
+#[derive(Clone, Copy)]
+pub struct ReservedEid(Eid);
+impl From<ReservedEid> for Eid {
+    fn from(value: ReservedEid) -> Self {
+        value.0
+    }
+}
+
 pub struct Entities {
     eid_counter: std::sync::atomic::AtomicU32,
     uuid_counter: std::sync::atomic::AtomicU64, 
@@ -91,10 +99,15 @@ impl Entities {
         }
     }
 
-    pub(super) async fn spawn_entity<E>(&self, entity: AnyEntity, world: &'static World) -> (Eid, UUID)
+    pub(super) async fn reserve_eid(&self) -> ReservedEid {
+        ReservedEid(self.eid_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst))
+    }
+
+
+    pub(super) async fn spawn_entity<E>(&self, eid: ReservedEid, entity: AnyEntity, world: &'static World) -> (Eid, UUID)
         where AnyEntity: TryAsEntityRef<E>, Handler<E>: EntityExt
     {
-        let eid = self.eid_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        let eid = eid.0;
         let uuid = self.uuid_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u128;
         let mut entities = self.entities.write().await;
         let mut chunks = self.chunks.write().await;
