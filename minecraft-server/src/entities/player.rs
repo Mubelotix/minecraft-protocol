@@ -26,7 +26,7 @@ pub struct Player {
     packet_sender: MpscSender<Vec<u8>>,
     entity_prev_positions: HashMap<Eid, Position>,
     render_distance: i32,
-    loaded_chunks: HashSet<ChunkColumnPosition>,
+    loaded_columns: HashSet<ChunkColumnPosition>,
     center_chunk: ChunkPosition,
     packets_sent: usize,
 }
@@ -63,7 +63,7 @@ impl Player {
     
             center_chunk: ChunkPosition { cx: 0, cy: 11, cz: 0 },
             render_distance: player_info.render_distance.clamp(4, 15) as i32,
-            loaded_chunks: HashSet::new(),
+            loaded_columns: HashSet::new(),
     
             info: player_info,
             packets_sent: 0,
@@ -73,7 +73,7 @@ impl Player {
         
         for cx in -3..=3 {
             for cz in -3..=3 {
-                player.loaded_chunks.insert(ChunkColumnPosition { cx, cz });
+                player.loaded_columns.insert(ChunkColumnPosition { cx, cz });
             }
         }
         
@@ -100,26 +100,26 @@ impl Handler<Player> {
 
         // Find out which chunks should be loaded
         if new_center_chunk.chunk_column() == old_center_chunk.chunk_column() { return };
-        let mut loaded_chunks_after = HashSet::new();
+        let mut loaded_columns_after = HashSet::new();
         for cx in (new_center_chunk.cx - render_distance)..=(new_center_chunk.cx + render_distance) {
             for cz in (new_center_chunk.cz - render_distance)..=(new_center_chunk.cz + render_distance) {
                 let dist = (((cx - new_center_chunk.cx).pow(2) + (cz - new_center_chunk.cz).pow(2)) as f32).sqrt();
                 if dist > render_distance as f32 { continue };
-                loaded_chunks_after.insert(ChunkColumnPosition { cx, cz });
+                loaded_columns_after.insert(ChunkColumnPosition { cx, cz });
             }
         }
 
         // Select chunks to load (max 50) and unload
         let Some((loaded_columns, newly_loaded_columns, unloaded_columns)) = self.mutate(|player| {
-            if loaded_chunks_after == player.loaded_chunks { return (None, EntityChanges::nothing()) };
-            let mut newly_loaded_columns: Vec<_> = loaded_chunks_after.difference(&player.loaded_chunks).cloned().collect();
-            let unloaded_columns: Vec<_> = player.loaded_chunks.difference(&loaded_chunks_after).cloned().collect();
+            if loaded_columns_after == player.loaded_columns { return (None, EntityChanges::nothing()) };
+            let mut newly_loaded_columns: Vec<_> = loaded_columns_after.difference(&player.loaded_columns).cloned().collect();
+            let unloaded_columns: Vec<_> = player.loaded_columns.difference(&loaded_columns_after).cloned().collect();
             for skipped in newly_loaded_columns.iter().skip(50) {
-                loaded_chunks_after.remove(skipped);
+                loaded_columns_after.remove(skipped);
             }
             newly_loaded_columns.truncate(50);
-            player.loaded_chunks = loaded_chunks_after.clone();
-            (Some((loaded_chunks_after, newly_loaded_columns, unloaded_columns)), EntityChanges::other())
+            player.loaded_columns = loaded_columns_after.clone();
+            (Some((loaded_columns_after, newly_loaded_columns, unloaded_columns)), EntityChanges::other())
         }).await.flatten() else { return };
 
         // Tell the world about the changes
@@ -209,7 +209,7 @@ impl Handler<Player> {
                 }).await;
             },
             WorldChange::ColumnLoaded(column_pos) => {
-                let should_send = self.observe(|p| !p.loaded_chunks.contains(&column_pos)).await;
+                let should_send = self.observe(|p| !p.loaded_columns.contains(&column_pos)).await;
                 if should_send.unwrap_or_default() {
                     self.send_chunk(column_pos).await;
                 } else {
@@ -217,7 +217,7 @@ impl Handler<Player> {
                 }
             }
             WorldChange::ColumnUnloaded(column_pos) => {
-                let should_send = self.observe(|p| p.loaded_chunks.contains(&column_pos)).await;
+                let should_send = self.observe(|p| p.loaded_columns.contains(&column_pos)).await;
                 if should_send.unwrap_or_default() {
                     self.send_packet(PlayClientbound::UnloadChunk {
                         chunk_x: column_pos.cx,
