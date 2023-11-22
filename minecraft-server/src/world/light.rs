@@ -1,4 +1,4 @@
-use std::{ops::AddAssign, collections::BinaryHeap};
+use std::{ops::AddAssign, collections::{BinaryHeap, hash_map::Entry}};
 use minecraft_protocol::ids::blocks::Block;
 use tokio::sync::RwLockWriteGuard;
 
@@ -347,9 +347,9 @@ impl LightManager<'_> {
 
 
     async fn ensure_shard(&mut self, shard_id: usize, world_map: &'static WorldMap) {
-        if !self.locked_shards.contains_key(&shard_id) {
+        if let Entry::Vacant(e) = self.locked_shards.entry(shard_id) {
             let shard = world_map.write_shard(shard_id).await;
-            self.locked_shards.insert(shard_id, shard);
+            e.insert(shard);
         }
     }
     
