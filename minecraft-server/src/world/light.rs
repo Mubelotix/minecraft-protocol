@@ -345,7 +345,6 @@ impl LightManager<'_> {
         light_manager.set_block(world_map, block_position, block).await;
     }
 
-
     async fn ensure_shard(&mut self, shard_id: usize, world_map: &'static WorldMap) {
         if let Entry::Vacant(e) = self.locked_shards.entry(shard_id) {
             let shard = world_map.write_shard(shard_id).await;
@@ -363,6 +362,14 @@ impl LightManager<'_> {
         shard.get_mut(&chunk_column_position)
     }
 
+    async fn set_light_level(&mut self, position: LightPosition, level: u8) {
+        unimplemented!();
+    }
+
+    async fn get_light_level(&mut self, position: LightPosition) -> u8 {
+        unimplemented!();
+    }
+    
     pub async fn set_block(&mut self, world_map: &'static WorldMap, block_position: BlockPosition, block: BlockWithState) {
         let mut to_explore = BinaryHeap::new();
         let position = LightPosition::from(block_position.clone());
