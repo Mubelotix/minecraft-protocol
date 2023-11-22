@@ -332,37 +332,45 @@ impl std::cmp::Ord for LightPosition {
     }
 }
 
-pub struct LightManager;
+pub struct LightManager<'a> {
+    locked_shards: HashMap<usize, RwLockWriteGuard<'a, HashMap<ChunkColumnPosition, ChunkColumn>>>
+}
 
-impl LightManager {
-    
-    async fn get_chunk_column<'a>(world_map: &'static WorldMap, block_position: BlockPosition, locked_shards: &'a mut HashMap<usize, RwLockWriteGuard<'a, HashMap<ChunkColumnPosition, ChunkColumn>>>) -> Option<&'a mut ChunkColumn> {
-        let chunk_column_position = block_position.chunk().chunk_column();
-        let shard_id = chunk_column_position.shard(world_map.get_shard_count());
+impl LightManager<'_> {
+    pub async fn update_light(world_map: &'static WorldMap, block_position: BlockPosition, block: BlockWithState) {
+        let mut light_manager = LightManager {
+            locked_shards: HashMap::new(),
+        };
 
-        // Check that shard is already locked
-        if let Some(shard) = locked_shards.get_mut(&shard_id) {
-            // Check that chunk column is already locked
-            shard.get_mut(&chunk_column_position) 
-        } else {
-            // Lock the shard
-            let mut shard = world_map.write_shard(shard_id).await;
-            
-            // Lock the chunk column
-            shard.get_mut(&chunk_column_position)
-        }
+        light_manager.set_block(world_map, block_position, block).await;
     }
 
-    pub async fn set_block(world_map: &'static WorldMap, block_position: BlockPosition, block: BlockWithState) {
-        let mut locked_shards: HashMap<usize, RwLockWriteGuard<HashMap<ChunkColumnPosition, ChunkColumn>>> = HashMap::new();
 
+    async fn ensure_shard(&mut self, shard_id: usize, world_map: &'static WorldMap) {
+        if !self.locked_shards.contains_key(&shard_id) {
+            let shard = world_map.write_shard(shard_id).await;
+            self.locked_shards.insert(shard_id, shard);
+        }
+    }
+    
+    async fn get_chunk_column(&mut self, world_map: &'static WorldMap, block_position: BlockPosition) -> Option<&mut ChunkColumn> {
+        let chunk_column_position = block_position.chunk().chunk_column();
+        let shard_id = chunk_column_position.shard(world_map.get_shard_count());
+    
+        self.ensure_shard(shard_id, world_map).await;
+    
+        let shard = self.locked_shards.get_mut(&shard_id)?;
+        shard.get_mut(&chunk_column_position)
+    }
+
+    pub async fn set_block(&mut self, world_map: &'static WorldMap, block_position: BlockPosition, block: BlockWithState) {
         let mut to_explore = BinaryHeap::new();
         let position = LightPosition::from(block_position.clone());
         to_explore.extend(position.get_neighbors(24));
         while let Some(postion) = to_explore.pop() {
-            let chunk_column_position = LightPositionInChunkColumn::from(postion);
+            let chunk_column_position = LightPositionInChunkColumn::from(postion.clone());
 
-            let column = Self::get_chunk_column(world_map, block_position.clone(), &mut locked_shards).await;
+            let column = self.get_chunk_column(world_map, block_position.clone()).await;
             if let Some(column) = column {
                 let block = Block::from(column.get_block(position.clone().into()));
 
