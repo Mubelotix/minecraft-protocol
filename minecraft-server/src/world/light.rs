@@ -333,30 +333,32 @@ impl std::cmp::Ord for LightPosition {
 }
 
 pub struct LightManager<'a> {
-    locked_shards: HashMap<usize, RwLockWriteGuard<'a, HashMap<ChunkColumnPosition, ChunkColumn>>>
+    locked_shards: HashMap<usize, RwLockWriteGuard<'a, HashMap<ChunkColumnPosition, ChunkColumn>>>,
+    world_map: &'static WorldMap,
 }
 
 impl LightManager<'_> {
     pub async fn update_light(world_map: &'static WorldMap, block_position: BlockPosition, block: BlockWithState) {
         let mut light_manager = LightManager {
             locked_shards: HashMap::new(),
+            world_map,
         };
 
-        light_manager.set_block(world_map, block_position, block).await;
+        light_manager.set_block(block_position, block).await;
     }
 
-    async fn ensure_shard(&mut self, shard_id: usize, world_map: &'static WorldMap) {
+    async fn ensure_shard(&mut self, shard_id: usize) {
         if let Entry::Vacant(e) = self.locked_shards.entry(shard_id) {
-            let shard = world_map.write_shard(shard_id).await;
+            let shard = self.world_map.write_shard(shard_id).await;
             e.insert(shard);
         }
     }
     
-    async fn get_chunk_column(&mut self, world_map: &'static WorldMap, block_position: BlockPosition) -> Option<&mut ChunkColumn> {
+    async fn get_chunk_column(&mut self, block_position: BlockPosition) -> Option<&mut ChunkColumn> {
         let chunk_column_position = block_position.chunk().chunk_column();
-        let shard_id = chunk_column_position.shard(world_map.get_shard_count());
+        let shard_id = chunk_column_position.shard(self.world_map.get_shard_count());
     
-        self.ensure_shard(shard_id, world_map).await;
+        self.ensure_shard(shard_id).await;
     
         let shard = self.locked_shards.get_mut(&shard_id)?;
         shard.get_mut(&chunk_column_position)
@@ -370,14 +372,16 @@ impl LightManager<'_> {
         unimplemented!();
     }
     
-    pub async fn set_block(&mut self, world_map: &'static WorldMap, block_position: BlockPosition, block: BlockWithState) {
+    pub async fn set_block(&mut self, block_position: BlockPosition, block: BlockWithState) {
         let mut to_explore = BinaryHeap::new();
         let position = LightPosition::from(block_position.clone());
         to_explore.extend(position.get_neighbors(24));
+        let mut current_chunk_column = self.get_chunk_column(block_position.clone()).await;
         while let Some(postion) = to_explore.pop() {
             let chunk_column_position = LightPositionInChunkColumn::from(postion.clone());
 
-            let column = self.get_chunk_column(world_map, block_position.clone()).await;
+            let column: Option<ChunkColumn> = None; // Because Delestre said the commited code must compile
+            
             if let Some(column) = column {
                 let block = Block::from(column.get_block(position.clone().into()));
 
