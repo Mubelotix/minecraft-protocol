@@ -504,7 +504,7 @@ impl WorldMap {
         }
 
         inner_set_block(self, position.clone(), block.clone()).await;
-        LightManager::set_block(self, position, block);
+        LightManager::update_light(self, position, block);
     }
 
     pub async fn get_skylight(&self, position: BlockPosition) -> u8 {
