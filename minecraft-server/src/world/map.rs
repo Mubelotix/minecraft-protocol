@@ -274,12 +274,10 @@ impl WorldMap {
     pub async fn try_move(&self, object: &CollisionShape, movement: &Translation) -> Translation {
         // TODO(perf): Optimize Map.try_move by preventing block double-checking
         // Also lock the map only once
-        let movement_fragments = movement.clone().fragment(&object);
         let mut validated = Translation{ x: 0.0, y: 0.0, z: 0.0 };
-        for fragment in movement_fragments {
-            let validating = validated.clone() + fragment;
-            let translated_object = object.clone() + &validating;
-            for block in translated_object.containing_blocks() {
+        for (fragment, containing_blocks) in movement.fragment(&object) {
+            let validating = validated.clone() + fragment; // TODO: instead of summing fragments we could use the inner variable `fragmented`
+            for block in containing_blocks {
                 let block = self.get_block(block).await;
                 if block.block_id() != 0 {
                     return validated;
