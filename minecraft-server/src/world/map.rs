@@ -275,7 +275,7 @@ impl WorldMap {
         // TODO(perf): Optimize Map.try_move by preventing block double-checking
         // Also lock the map only once
         let mut validated = Translation{ x: 0.0, y: 0.0, z: 0.0 };
-        for (fragment, containing_blocks) in movement.fragment(&object) {
+        for (fragment, containing_blocks) in movement.fragment(object) {
             let validating = validated.clone() + fragment; // TODO: instead of summing fragments we could use the inner variable `fragmented`
             for block in containing_blocks {
                 let block = self.get_block(block).await;
