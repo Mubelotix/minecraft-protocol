@@ -294,7 +294,7 @@ impl Handler<Player> {
         }
     }
 
-    async fn on_packet(self, packet: PlayServerbound) {
+    async fn on_packet(self, packet: PlayServerbound<'_>) {
         use PlayServerbound::*;
         match packet {
             SetPlayerPosition { x, y, z, on_ground } => {
