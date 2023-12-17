@@ -5,6 +5,7 @@ use super::*;
     descendants { AbstractArrow..., Boat..., Display, FallingBlock, LlamaSpit, Painting, DragonFireball, Fireball..., FireworkRocket, SmallFireball, Interaction..., ItemEntity, ItemFrame..., LivingEntity... EndCrystal, EvokerFangs, WitherSkull, AreaEffectCloud, FishingHook, EyeOfEnder, ThrownItemProjectile... },
     defines {
         init(self, server_msg_rcvr: BroadcastReceiver<ServerMessage>);
+        tick(self);
     }
 )]
 pub struct Entity {
@@ -29,9 +30,9 @@ pub struct Entity {
 }
 
 impl Handler<Entity> {
-    pub async fn init(self, server_msg_rcvr: BroadcastReceiver<ServerMessage>) {
-        self.insert_task("newton", tokio::spawn(newton_task(self.clone(), server_msg_rcvr))).await;
-    }
+    pub async fn init(self, _server_msg_rcvr: BroadcastReceiver<ServerMessage>) {}
+
+    pub async fn tick(self) {}
 }
 
 impl Default for Entity {

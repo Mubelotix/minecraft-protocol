@@ -80,7 +80,8 @@ impl Player {
         
         let eid = world.spawn_entity::<Player>(AnyEntity::Player(player)).await;
         let handler = Handler::assume(eid, world);
-        handler.clone().insert_task("player", tokio::spawn(handle_player(handler, uuid, stream, packet_receiver, server_msg_rcvr, change_receiver))).await;
+
+        tokio::spawn(handle_player(handler, uuid, stream, packet_receiver, server_msg_rcvr, change_receiver));
 
         eid
     }

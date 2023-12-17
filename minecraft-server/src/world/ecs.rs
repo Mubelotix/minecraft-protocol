@@ -14,7 +14,6 @@ pub struct Entities {
     /// A hashmap of chunk positions to get a list of entities in a chunk
     pub chunks: RwLock<HashMap<ChunkColumnPosition, HashSet<Eid>>>,
     pub uuids: RwLock<HashMap<UUID, Eid>>,
-    pub entity_tasks: RwLock<HashMap<Eid, HashMap<&'static str, EntityTaskHandle>>>,
 }
 
 impl Entities {
@@ -25,7 +24,6 @@ impl Entities {
             entities: RwLock::new(HashMap::new()),
             chunks: RwLock::new(HashMap::new()),
             uuids: RwLock::new(HashMap::new()),
-            entity_tasks: RwLock::new(HashMap::new()),
         }
     }
 
@@ -91,14 +89,6 @@ impl Entities {
         (eid, uuid)
     }
 
-    pub(super) async fn insert_entity_task(&self, eid: Eid, name: &'static str, handle: EntityTaskHandle) {
-        let mut entity_tasks = self.entity_tasks.write().await;
-        let old = entity_tasks.entry(eid).or_insert(HashMap::new()).insert(name, handle);
-        if let Some(old) = old {
-            old.abort();
-        }
-    }
-
     /// Remove an entity
     pub(super) async fn remove_entity(&self, eid: Eid) -> Option<AnyEntity> {
         let entity = self.entities.write().await.remove(&eid);
@@ -107,13 +97,6 @@ impl Entities {
         chunks.retain(|_,v| !v.is_empty());
         drop(chunks);
         self.uuids.write().await.retain(|_,v| *v != eid);
-        self.entity_tasks.write().await.remove(&eid);
         entity
-    }
-}
-
-impl<T> Handler<T> where AnyEntity: TryAsEntityRef<T> {
-    pub async fn insert_task(&self, name: &'static str, handle: EntityTaskHandle) {
-        self.world.entities.insert_entity_task(self.eid, name, handle).await;
     }
 }

@@ -8,7 +8,7 @@ use super::*;
     ancestors { Monster, PathfinderMob, Mob, LivingEntity, Entity },
     descendants { ZombieVillager, Husk, Drowned, ZombifiedPiglin },
     defines {
-        Entity.init(self, server_msg_rcvr: BroadcastReceiver<ServerMessage>);
+        Entity.tick(self);
     }
 )]
 pub struct Zombie {
@@ -19,9 +19,10 @@ pub struct Zombie {
 }
 
 impl Handler<Zombie> {
-    pub async fn init(self, server_msg_rcvr: BroadcastReceiver<ServerMessage>) {
-        self.insert_task("newton", tokio::spawn(newton_task(self.clone(), server_msg_rcvr.resubscribe()))).await;
-        self.insert_task("zombie-ai", tokio::spawn(zombie_ai_task(self.clone(), server_msg_rcvr))).await;
+    pub async fn tick(self) {
+        // TODO: Stop initializing the task at each tick
+        let Some(mut newton_task) = NewtonTask::new(self.clone()).await else { return };
+        newton_task.tick(self).await;
     }
 }
 
