@@ -33,6 +33,8 @@ pub async fn sleep_ticks(server_msg_rcvr: &mut BroadcastReceiver<ServerMessage>,
     }
 }
 
+const ZOOMBIE_SPEED: f64 = 0.2; // Arbitrary value
+
 pub async fn zombie_ai_task<T: EntityDescendant + ZombieDescendant>(h: Handler<T>, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>) where AnyEntity: TryAsEntityRef<T> {
     loop {
         sleep_ticks(&mut server_msg_rcvr, 1).await;
@@ -62,7 +64,7 @@ pub async fn zombie_ai_task<T: EntityDescendant + ZombieDescendant>(h: Handler<T
                 y: target_position.y - self_position.y,
                 z: target_position.z - self_position.z,
             };
-            translation.set_norm(0.23000000417232513);
+            translation.set_norm(ZOOMBIE_SPEED);
     
             let authorized_translation = h.world.try_move(&target_object, &translation).await;
             
