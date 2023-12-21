@@ -1,6 +1,6 @@
 use std::{ops::AddAssign, collections::{BinaryHeap, hash_map::Entry}};
 use minecraft_protocol::ids::blocks::Block;
-use tokio::sync::RwLockWriteGuard;
+use tokio::sync::{RwLockWriteGuard, OwnedRwLockWriteGuard};
 
 use crate::prelude::*;
 use super::*;
@@ -261,6 +261,15 @@ impl From<LightPosition> for LightPositionInChunkColumn {
     }
 }
 
+impl From<LightPosition> for ChunkColumnPosition {
+    fn from(val: LightPosition) -> Self {
+        ChunkColumnPosition {
+            cx: val.x.div_euclid(16),
+            cz: val.z.div_euclid(16),
+        }
+    }
+}
+
 impl From<BlockPosition> for LightPosition {
     fn from(val: BlockPosition) -> Self {
         Self {
@@ -333,8 +342,10 @@ impl std::cmp::Ord for LightPosition {
 }
 
 pub struct LightManager<'a> {
-    locked_shards: HashMap<usize, RwLockWriteGuard<'a, HashMap<ChunkColumnPosition, ChunkColumn>>>,
+    locked_shards: HashMap<usize, RwLockWriteGuard<HashMap<ChunkColumnPosition, ChunkColumn>>>,
     world_map: &'static WorldMap,
+    current_chunk_column: Option<&'a mut ChunkColumn>,
+    current_chunk_column_position: Option<ChunkColumnPosition>,
 }
 
 impl LightManager<'_> {
@@ -342,6 +353,8 @@ impl LightManager<'_> {
         let mut light_manager = LightManager {
             locked_shards: HashMap::new(),
             world_map,
+            current_chunk_column: None,
+            current_chunk_column_position: None,
         };
 
         light_manager.set_block(block_position, block).await;
@@ -354,14 +367,25 @@ impl LightManager<'_> {
         }
     }
     
-    async fn get_chunk_column(&mut self, block_position: BlockPosition) -> Option<&mut ChunkColumn> {
-        let chunk_column_position = block_position.chunk().chunk_column();
+    async fn get_chunk_column(&mut self, chunk_column_position: ChunkColumnPosition) -> Option<&mut ChunkColumn> {
         let shard_id = chunk_column_position.shard(self.world_map.get_shard_count());
     
         self.ensure_shard(shard_id).await;
     
         let shard = self.locked_shards.get_mut(&shard_id)?;
         shard.get_mut(&chunk_column_position)
+    }
+
+    async fn update_chunk_column(&mut self, light_position: LightPosition) {
+        let chunk_column_position = ChunkColumnPosition::from(light_position);
+        let shard_id = chunk_column_position.shard(self.world_map.get_shard_count());
+        if let Some(current_chunk_column_position) = &self.current_chunk_column_position {
+            if current_chunk_column_position != &chunk_column_position {
+                // Load the new chunk column
+                self.ensure_shard(shard_id).await;
+                self.current_chunk_column = self.get_chunk_column(chunk_column_position).await;
+            }
+        }   
     }
 
     async fn set_light_level(&mut self, position: LightPosition, level: u8) {
@@ -376,25 +400,22 @@ impl LightManager<'_> {
         let mut to_explore = BinaryHeap::new();
         let position = LightPosition::from(block_position.clone());
         to_explore.extend(position.get_neighbors(24));
-        let mut current_chunk_column = self.get_chunk_column(block_position.clone()).await;
         while let Some(postion) = to_explore.pop() {
-            let chunk_column_position = LightPositionInChunkColumn::from(postion.clone());
 
-            let column: Option<ChunkColumn> = None; // Because Delestre said the commited code must compile
+            self.update_chunk_column(position.clone()).await;
             
-            if let Some(column) = column {
+            if let Some(column) = &self.current_chunk_column {
                 let block = Block::from(column.get_block(position.clone().into()));
 
                 if block.is_transparent() {
                     let highest_block = column.get_highest_block_at(&block_position.in_chunk_column());
                     let is_inside = highest_block > postion.clone().y as u16 + 1;
-                    let new_level = if is_inside { postion.clone().y as u8 - block.light_absorption() - 1 } else { 15 };
+                    let new_level = if is_inside { postion.clone().y as u8 - block.light_absorption() - 1 } else { MAX_LIGHT_LEVEL };
                     let new_position = LightPositionInChunkColumn::from(postion.clone());
 
                     to_explore.extend(postion.clone().get_neighbors(24));                
                 }          
-            }
-             
+            } 
         }
         
         // Clear locked chunks
