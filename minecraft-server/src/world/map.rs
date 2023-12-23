@@ -307,8 +307,8 @@ pub(super) struct ChunkColumn {
 }
 
 impl ChunkColumn {
-    const MAX_HEIGHT: u16 = 320 + 64; // TODO: adapt to the world height
-    const MIN_Y: i32 = -64;
+    pub const MAX_HEIGHT: u16 = 320 + 64; // TODO: adapt to the world height
+    pub const MIN_Y: i32 = -64;
 
     fn init_chunk_heightmap(&mut self){
         self.heightmap = HeightMap::new(9);
@@ -357,6 +357,7 @@ impl ChunkColumn {
             light: Light::new(),
         };
         column.init_chunk_heightmap();
+        column.init_independant_light();
         column
     }
 
@@ -552,13 +553,14 @@ impl WorldMap {
         movement.clone() // Would be more logic if it returned validated, but this way we avoid precision errors
     }
 
-    pub async fn load(&self, position: ChunkColumnPosition) {
+    pub async fn load(&'static self, position: ChunkColumnPosition) {
         let chunk = ChunkColumn::flat(); // TODO: load from disk
         let shard = position.shard(self.shard_count);
         
         trace!("Loading chunk column at {:?}", position);
         let mut shard = self.shards[shard].write().await;
-        shard.entry(position).or_insert_with(|| chunk);
+        shard.entry(position.clone()).or_insert_with(|| chunk);
+        LightManager::init_chunk_column_light(self, position).await;
     }
 
     pub async fn unload(&self, _position: ChunkColumnPosition) {
@@ -767,7 +769,6 @@ mod tests {
         // Check that the heightmap is correct after setting the highest block to air
         flat_column.set_block(BlockPositionInChunkColumn { bx: 0, y: 10, bz: 0 }, BlockWithState::Air);
         assert_eq!(flat_column.heightmap.get(&BlockPositionInChunkColumn { bx: 0, y: 0, bz: 0 }), 67);
-
     }
 
     #[test]
@@ -782,12 +783,10 @@ mod tests {
         println!("Elapsed: {:?}", elapsed / 441);
     }
 
-    
-
     #[tokio::test]
     async fn test_try_move() {
-        let map = WorldMap::new(1);
-        map.load(ChunkColumnPosition { cx: 0, cz: 0 }).await;
+        let world_map: &mut WorldMap = Box::leak(Box::new(WorldMap::new(1)));
+        world_map.load(ChunkColumnPosition { cx: 0, cz: 0 }).await;
         let bounding_box = CollisionShape {
             x1: 0.0,
             y1: 0.0,
@@ -800,19 +799,29 @@ mod tests {
         // Position on ground and try to go through it
         let positionned_box = bounding_box.clone() + &Translation { x: 0.0, y: -3.0*16.0, z: 0.0 };
         let movement = Translation { x: 0.0, y: -10.0, z: 0.0 };
-        let movement = map.try_move(&positionned_box, &movement).await;
+        let movement = world_map.try_move(&positionned_box, &movement).await;
         assert_eq!(movement, Translation { x: 0.0, y: 0.0, z: 0.0 }); // It doesn't get through
 
         // Place it a little above ground
         let positionned_box = bounding_box.clone() + &Translation { x: 0.0, y: -3.0*16.0 + 1.0, z: 0.0 };
         let movement = Translation { x: 0.0, y: -10.0, z: 0.0 };
-        let movement = map.try_move(&positionned_box, &movement).await;
+        let movement = world_map.try_move(&positionned_box, &movement).await;
         assert_eq!(movement, Translation { x: 0.0, y: -1.0, z: 0.0 }); // It falls down but doesn't get through
 
         // Place it above but not on round coordinates
         let positionned_box = bounding_box.clone() + &Translation { x: 0.0, y: -3.0*16.0 + 1.1, z: 0.2 };
         let movement = Translation { x: 2.0, y: -10.0, z: 0.0 };
-        let movement = map.try_move(&positionned_box, &movement).await;
+        let movement = world_map.try_move(&positionned_box, &movement).await;
         assert_eq!(movement, Translation { x: 0.2200000000000003, y: -1.1000000000000014, z: 0.0 }); // It falls down but doesn't get through
+    }
+
+    #[tokio::test]
+    async fn test_skylight() {
+        let world_map = Box::leak(Box::new(WorldMap::new(1)));
+        world_map.load(ChunkColumnPosition { cx: 0, cz: 0 }).await;
+
+        // Test skylight initialisation for flat map 
+        assert_eq!(world_map.get_skylight(BlockPosition { x: 8, y: 200, z: 8 }).await, 15, "The skylight is not valid for the blocks higher than the highest block");
+    
     }
 }

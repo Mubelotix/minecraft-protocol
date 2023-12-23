@@ -62,7 +62,7 @@ impl World {
         self.change_senders.write().await.remove(&uuid);
     }
 
-    pub async fn update_loaded_chunks(&self, uuid: UUID, loaded_chunks: HashSet<ChunkColumnPosition>) {
+    pub async fn update_loaded_chunks(&'static self, uuid: UUID, loaded_chunks: HashSet<ChunkColumnPosition>) {
         let mut loading_manager = self.loading_manager.write().await;
         let loaded_chunks_before = loading_manager.get_loaded_chunks();
         loading_manager.update_loaded_chunks(uuid, loaded_chunks);

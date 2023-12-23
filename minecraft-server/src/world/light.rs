@@ -358,12 +358,16 @@ pub struct LightManager {
 }
 
 impl LightManager {
-    pub async fn update_light(world_map: &'static WorldMap, block_position: BlockPosition, block: BlockWithState) {
-        let mut light_manager = LightManager {
+    fn new(world_map: &'static WorldMap) -> Self {
+        Self {
             world_map,
             current_shard: None,
             current_shard_id: None,
-        };
+        }
+    }
+
+    pub async fn update_light(world_map: &'static WorldMap, block_position: BlockPosition, block: BlockWithState) {
+        let mut light_manager = Self::new(world_map);
 
         light_manager.set_block(block_position, block).await;
     }
@@ -426,8 +430,7 @@ impl LightManager {
     }
 
 
-    pub fn init_chunk_column_light(&mut self, chunk_column_position: ChunkColumnPosition) {
-        unimplemented!();
+    pub async fn init_chunk_column_light(world_map: &'static WorldMap, chunk_column_position: ChunkColumnPosition) {
 
         // Clear locked chubks
     }
@@ -435,6 +438,29 @@ impl LightManager {
 
 
 impl ChunkColumn {
+    /// Init independant light means it will compute the light for all the chunk without considering the neighbour chunks.
+
+    pub(super) fn init_independant_light(&mut self) {
+        let _ = self.light.sky_light.set_region(self.get_highest_block() as usize + 1, ChunkColumn::MAX_HEIGHT as usize, self.light.sky_light.level);
+
+        for x in 0..16 {
+            for z in 0..16 {
+                for y in self.get_highest_block_at(&BlockPositionInChunkColumn {
+                    bx: x,
+                    y: 0i32,
+                    bz: z
+                })..(self.get_highest_block() as u16) {
+                    let _ = self.light.sky_light.set_level(
+                        LightPositionInChunkColumn {
+                            bx: x,
+                            y: y as usize,
+                            bz: z
+                        }, self.light.sky_light.level);
+                }
+            }
+        }
+    }
+
     /*fn propagate_sky_light_inside(&mut self) -> Result<EdgesLightToPropagate, ()> {
         let mut to_propagate = EdgesLightToPropagate::new();
         // Set all highest blocks to the highest block
