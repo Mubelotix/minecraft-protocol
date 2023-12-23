@@ -25,6 +25,114 @@ pub struct CollisionShape {
     pub z2: f64,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct BlockRange {
+    x: std::ops::Range<i32>,
+    y: std::ops::Range<i32>,
+    z: std::ops::Range<i32>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExcludingBlockRange {
+    range: BlockRange,
+    exclusion: BlockRange,
+}
+
+impl IntoIterator for BlockRange {
+    type Item = BlockPosition;
+    type IntoIter = BlockRangeIntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        BlockRangeIntoIter {
+            x: self.x.start,
+            y: self.y.start,
+            z: self.z.start,
+            range: self,
+        }
+    }
+}
+
+impl IntoIterator for ExcludingBlockRange {
+    type Item = BlockPosition;
+    type IntoIter = ExcludingBlockRangeIntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        ExcludingBlockRangeIntoIter {
+            x: self.range.x.start,
+            y: self.range.y.start,
+            z: self.range.z.start,
+            range: self,
+        }
+    }
+}
+
+pub struct BlockRangeIntoIter {
+    range: BlockRange,
+    x: i32,
+    y: i32,
+    z: i32,
+}
+
+pub struct ExcludingBlockRangeIntoIter {
+    range: ExcludingBlockRange,
+    x: i32,
+    y: i32,
+    z: i32,
+}
+
+impl Iterator for BlockRangeIntoIter {
+    type Item = BlockPosition;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.x >= self.range.x.end {
+            self.x = self.range.x.start;
+            self.y += 1;
+            if self.y >= self.range.y.end {
+                self.y = self.range.y.start;
+                self.z += 1;
+                if self.z >= self.range.z.end {
+                    return None;
+                }
+            }
+        }
+        let r = BlockPosition {
+            x: self.x,
+            y: self.y,
+            z: self.z,
+        };
+        self.x += 1;
+        Some(r)
+    }
+}
+
+impl Iterator for ExcludingBlockRangeIntoIter {
+    type Item = BlockPosition;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.x >= self.range.range.x.end {
+            self.x = self.range.range.x.start;
+            self.y += 1;
+            if self.y >= self.range.range.y.end {
+                self.y = self.range.range.y.start;
+                self.z += 1;
+                if self.z >= self.range.range.z.end {
+                    return None;
+                }
+            }
+        }
+        let r = BlockPosition {
+            x: self.x,
+            y: self.y,
+            z: self.z,
+        };
+        self.x += 1;
+        if self.range.exclusion.x.contains(&r.x) && self.range.exclusion.y.contains(&r.y) && self.range.exclusion.z.contains(&r.z) {
+            return self.next();
+        }
+        Some(r)
+    }
+}
+
 impl CollisionShape {
     const fn points(&self) -> PointIter {
         PointIter {
@@ -34,17 +142,12 @@ impl CollisionShape {
     }
 
     // TODO(perf): Return an iterator yielding blocks instead of a vec of blocks
-    pub fn containing_blocks(&self) -> Vec<BlockPosition> {
-        let mut result = Vec::new();
-        for x in self.x1.floor() as i32..=self.x2.floor() as i32 {
-            for y in self.y1.floor() as i32..=self.y2.floor() as i32 {
-                for z in self.z1.floor() as i32..=self.z2.floor() as i32 {
-                    let block = BlockPosition { x, y, z };
-                    result.push(block);
-                }
-            }
+    pub fn containing_blocks(&self) -> BlockRange {
+        BlockRange {
+            x: (self.x1.floor() as i32)..(self.x2.ceil() as i32),
+            y: (self.y1.floor() as i32)..(self.y2.ceil() as i32),
+            z: (self.z1.floor() as i32)..(self.z2.ceil() as i32),
         }
-        result
     }
 }
 
@@ -172,6 +275,89 @@ pub struct Translation {
     pub z: f64,
 }
 
+pub struct TranslationFragmentIterator<'a> {
+    translation: &'a Translation,
+    position: &'a CollisionShape,
+    fragmented: Translation,
+    previous_block_range: Option<BlockRange>,
+}
+
+impl<'a> Iterator for TranslationFragmentIterator<'a> {
+    type Item = (Translation, ExcludingBlockRange);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.previous_block_range.is_none() {
+            let block_range = self.position.containing_blocks();
+            self.previous_block_range = Some(block_range.clone());
+            return Some((self.fragmented.clone(), ExcludingBlockRange {
+                range: block_range,
+                exclusion: BlockRange {
+                    x: 0..0,
+                    y: 0..0,
+                    z: 0..0,
+                },
+            }));
+        }
+        let mut mini_translation = if self.fragmented.norm() < self.translation.norm() {
+            let x_dist = if self.translation.x > 0.0 {
+                let next_x = (self.position.x2 + self.fragmented.x).floor()+1.0;
+                (next_x - (self.position.x2 + self.fragmented.x)).abs()
+            } else {
+                let next_x = (self.position.x1 + self.fragmented.x).ceil()-1.0;
+                (next_x - (self.position.x1 + self.fragmented.x)).abs()
+            };
+            let y_dist = if self.translation.y > 0.0 {
+                let next_y = (self.position.y2 + self.fragmented.y).floor()+1.0;
+                (next_y - (self.position.y2 + self.fragmented.y)).abs()
+            } else {
+                let next_y = (self.position.y1 + self.fragmented.y).ceil()-1.0;
+                (next_y - (self.position.y1 + self.fragmented.y)).abs()
+            };
+            let z_dist = if self.translation.z > 0.0 {
+                let next_z = (self.position.z2 + self.fragmented.z).floor()+1.0;
+                (next_z - (self.position.z2 + self.fragmented.z)).abs()
+            } else {
+                let next_z = (self.position.z1 + self.fragmented.z).ceil()-1.0;
+                (next_z - (self.position.z1 + self.fragmented.z)).abs()
+            };
+            let x_time = x_dist / self.translation.x.abs();
+            let y_time = y_dist / self.translation.y.abs();
+            let z_time = z_dist / self.translation.z.abs();
+            let time = min(x_time, y_time, z_time);
+            //println!("pos{fragmented:?} dist({x_dist}, {y_dist}, {z_dist}) time({x_time}, {y_time}, {z_time}) time({time})");
+            let mini_translation = self.translation.clone() * time;
+            self.fragmented += &mini_translation;
+            mini_translation
+        } else {
+            return None;
+        };
+        if self.fragmented.norm() >= self.translation.norm() {
+            let final_position = self.position.clone() + self.translation;
+            let previous_fragmented = self.fragmented.clone() - mini_translation;
+            let previous_position = self.position.clone() + previous_fragmented;
+            let difference = Translation {
+                x: final_position.x1 - previous_position.x1,
+                y: final_position.y1 - previous_position.y1,
+                z: final_position.z1 - previous_position.z1,
+            };
+            mini_translation = difference;
+        }
+        let current_position = self.position.clone() + &self.fragmented;
+        let block_range = current_position.containing_blocks();
+        let previous_block_range = self.previous_block_range.take().unwrap_or(BlockRange {
+            x: 0..0,
+            y: 0..0,
+            z: 0..0,
+        });
+        let excluding_block_range = ExcludingBlockRange {
+            range: block_range.clone(),
+            exclusion: previous_block_range,
+        };
+        self.previous_block_range = Some(block_range);
+        Some((mini_translation, excluding_block_range))
+    }
+}
+
 impl Translation {
     /// Cuts the translation just enough so that the shape doesn't collide with the obstacle
     fn prevent_collision(&mut self, object: &CollisionShape, obstacle: &CollisionShape) {
@@ -208,56 +394,13 @@ impl Translation {
         self.x == 0.0 && self.y == 0.0 && self.z == 0.0
     }
 
-    // TODO: turn CollisionShape.fragment into an iterator
-    pub fn fragment(self, position: &CollisionShape) -> Vec<Translation> {
-        let mut result = Vec::new();
-        let mut fragmented = Translation { x: 0.0, y: 0.0, z: 0.0 };
-        //let mut current_position = position.clone();
-        //result.extend(position.containing_blocks().into_iter());
-        while fragmented.norm() < self.norm() {
-            let x_dist = if self.x > 0.0 {
-                let next_x = (position.x2 + fragmented.x).floor()+1.0;
-                (next_x - (position.x2 + fragmented.x)).abs()
-            } else {
-                let next_x = (position.x1 + fragmented.x).ceil()-1.0;
-                (next_x - (position.x1 + fragmented.x)).abs()
-            };
-            let y_dist = if self.y > 0.0 {
-                let next_y = (position.y2 + fragmented.y).floor()+1.0;
-                (next_y - (position.y2 + fragmented.y)).abs()
-            } else {
-                let next_y = (position.y1 + fragmented.y).ceil()-1.0;
-                (next_y - (position.y1 + fragmented.y)).abs()
-            };
-            let z_dist = if self.z > 0.0 {
-                let next_z = (position.z2 + fragmented.z).floor()+1.0;
-                (next_z - (position.z2 + fragmented.z)).abs()
-            } else {
-                let next_z = (position.z1 + fragmented.z).ceil()-1.0;
-                (next_z - (position.z1 + fragmented.z)).abs()
-            };
-            let x_time = x_dist / self.x.abs();
-            let y_time = y_dist / self.y.abs();
-            let z_time = z_dist / self.z.abs();
-            let time = min(x_time, y_time, z_time);
-            //println!("pos{fragmented:?} dist({x_dist}, {y_dist}, {z_dist}) time({x_time}, {y_time}, {z_time}) time({time})");
-            let mini_translation = self.clone() * time;
-            fragmented += &mini_translation;
-            result.push(mini_translation);
+    pub fn fragment<'a>(&'a self, position: &'a CollisionShape) -> TranslationFragmentIterator<'a> {
+        TranslationFragmentIterator {
+            translation: self,
+            position,
+            fragmented: Translation { x: 0.0, y: 0.0, z: 0.0 },
+            previous_block_range: None,
         }
-        // Last one might be too long
-        if let Some(last) = result.pop() {
-            let final_position = position.clone() + self;
-            let previous_fragmented = fragmented.clone() - last;
-            let previous_position = position.clone() + previous_fragmented;
-            let difference = Translation {
-                x: final_position.x1 - previous_position.x1,
-                y: final_position.y1 - previous_position.y1,
-                z: final_position.z1 - previous_position.z1,
-            };
-            result.push(difference);
-        }
-        result
     }    
 }
 
@@ -359,6 +502,31 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_containing_blocks() {
+        let shape = CollisionShape {
+            x1: 0.0,
+            y1: 0.0,
+            z1: 0.0,
+            x2: 1.0,
+            y2: 1.0,
+            z2: 1.0,
+        };
+        assert_eq!(shape.containing_blocks(), BlockRange { x: 0..1, y: 0..1, z: 0..1 });
+        assert_eq!(shape.containing_blocks().into_iter().collect::<Vec<_>>(), vec![BlockPosition {x: 0, y: 0, z: 0}]);
+
+        let shape = CollisionShape {
+            x1: 0.0,
+            y1: 0.0,
+            z1: 0.0,
+            x2: 1.1,
+            y2: 1.0,
+            z2: 1.0,
+        };
+        assert_eq!(shape.containing_blocks(), BlockRange { x: 0..2, y: 0..1, z: 0..1 });
+        assert_eq!(shape.containing_blocks().into_iter().collect::<Vec<_>>(), vec![BlockPosition {x: 0, y: 0, z: 0}, BlockPosition {x: 1, y: 0, z: 0}]);
+    }
+
+    #[test]
     fn test() {
         let shape1 = CollisionShape {
             x1: 0.0,
@@ -431,15 +599,29 @@ mod tests {
 
         let movement = Translation { x: 3.0, y: 0.0, z: 0.0 };
         let fragments = movement.fragment(&shape);
-        assert_eq!(fragments, vec![Translation { x: 1.0, y: 0.0, z: 0.0 }; 3]);
+        assert_eq!(
+            fragments.map(|(t,b)| (t, b.into_iter().collect::<Vec<_>>())).collect::<Vec<_>>(),
+            vec![
+                (Translation { x: 0.0, y: 0.0, z: 0.0 }, vec![BlockPosition { x: 0, y: 0, z: 0 }]),
+                (Translation { x: 1.0, y: 0.0, z: 0.0 }, vec![BlockPosition { x: 1, y: 0, z: 0 }]),
+                (Translation { x: 1.0, y: 0.0, z: 0.0 }, vec![BlockPosition { x: 2, y: 0, z: 0 }]),
+                (Translation { x: 1.0, y: 0.0, z: 0.0 }, vec![BlockPosition { x: 3, y: 0, z: 0 }])
+            ]
+        );
 
         let movement = Translation { x: 2.3, y: 0.0, z: 0.0 };
         let fragments = movement.fragment(&shape);
-        assert_eq!(fragments, vec![Translation { x: 1.0, y: 0.0, z: 0.0 }, Translation { x: 1.0, y: 0.0, z: 0.0 }, Translation { x: 0.2999999999999998, y: 0.0, z: 0.0 }]);
+        assert_eq!(fragments.map(|(t,_)| t).collect::<Vec<Translation>>(), vec![
+            Translation { x: 0.0, y: 0.0, z: 0.0 },
+            Translation { x: 1.0, y: 0.0, z: 0.0 },
+            Translation { x: 1.0, y: 0.0, z: 0.0 },
+            Translation { x: 0.2999999999999998, y: 0.0, z: 0.0 }
+        ]);
 
         let movement = Translation { x: 1.0, y: 0.75, z: 0.0 } * 4.0;
         let fragments = movement.fragment(&shape);
-        assert_eq!(fragments, vec![
+        assert_eq!(fragments.map(|(t,_)| t).collect::<Vec<Translation>>(), vec![
+            Translation { x: 0.0, y: 0.0, z: 0.0 },
             Translation { x: 1.0, y: 0.75, z: 0.0 },
             Translation { x: 0.3333333333333333, y: 0.25, z: 0.0 },
             Translation { x: 0.666666666666667, y: 0.5000000000000002, z: 0.0 },
