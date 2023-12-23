@@ -1,6 +1,6 @@
 use std::{collections::HashMap, cmp::Ordering, vec};
 use minecraft_protocol::{components::chunk::PalettedData, ids::blocks::Block};
-use tokio::sync::{RwLock, RwLockWriteGuard};
+use tokio::sync::{RwLock, OwnedRwLockWriteGuard};
 use crate::{prelude::*, world::light::LightManager};
 use super::light::Light;
 
@@ -11,7 +11,7 @@ pub struct WorldMap {
     /// The shards are locked independently.
     /// This allows high concurrency.
     shard_count: usize,
-    shards: Vec<RwLock<HashMap<ChunkColumnPosition, ChunkColumn>>>,
+    shards: Vec<Arc<RwLock<HashMap<ChunkColumnPosition, ChunkColumn>>>>,
 }
 
 #[derive(Clone)]
@@ -439,7 +439,7 @@ impl WorldMap {
     pub fn new(shard_count: usize) -> WorldMap {
         let mut shards = Vec::new();
         for _ in 0..shard_count {
-            shards.push(RwLock::new(HashMap::new()));
+            shards.push(Arc::new(RwLock::new(HashMap::new())));
         }
         WorldMap { 
             shard_count,
@@ -461,8 +461,8 @@ impl WorldMap {
         inner_get_block(self, position).await.unwrap_or(BlockWithState::Air)
     }
 
-    pub(super) async fn write_shard(&self, shard: usize) -> RwLockWriteGuard<HashMap<ChunkColumnPosition, ChunkColumn>> {
-        self.shards[shard].write().await
+    pub(super) async fn write_shard(&self, shard: usize) -> OwnedRwLockWriteGuard<HashMap<ChunkColumnPosition, ChunkColumn>> {
+        self.shards[shard].clone().write_owned().await
     }
 
     pub async fn get_network_chunk_column_data(&self, position: ChunkColumnPosition) -> Option<Vec<u8>> {

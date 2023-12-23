@@ -245,7 +245,7 @@ impl From<BlockPositionInChunkColumn> for LightPositionInChunkColumn {
 }
 
 #[derive(Debug, Clone)]
-pub struct LightPosition {
+struct LightPosition {
     pub x: i32,
     pub y: usize,
     pub z: i32,
@@ -276,6 +276,16 @@ impl From<BlockPosition> for LightPosition {
             x: val.x,
             y: (val.y + 64 + 16) as usize,
             z: val.z,
+        }
+    }
+}
+
+impl From<LightPosition> for BlockPosition {
+    fn from(val: LightPosition) -> Self {
+        Self {
+            x: val.x,
+            y: val.y as i32 - 64 - 16,
+            z: val.z
         }
     }
 }
@@ -341,30 +351,31 @@ impl std::cmp::Ord for LightPosition {
     }
 }
 
-pub struct LightManager<'a> {
-    locked_shards: HashMap<usize, RwLockWriteGuard<HashMap<ChunkColumnPosition, ChunkColumn>>>,
+pub struct LightManager {
     world_map: &'static WorldMap,
-    current_chunk_column: Option<&'a mut ChunkColumn>,
-    current_chunk_column_position: Option<ChunkColumnPosition>,
+    current_shard_id: Option<usize>,
+    current_shard: Option<OwnedRwLockWriteGuard<HashMap<ChunkColumnPosition, ChunkColumn>>>,
 }
 
-impl LightManager<'_> {
+impl LightManager {
     pub async fn update_light(world_map: &'static WorldMap, block_position: BlockPosition, block: BlockWithState) {
         let mut light_manager = LightManager {
-            locked_shards: HashMap::new(),
             world_map,
-            current_chunk_column: None,
-            current_chunk_column_position: None,
+            current_shard: None,
+            current_shard_id: None,
         };
 
         light_manager.set_block(block_position, block).await;
     }
 
     async fn ensure_shard(&mut self, shard_id: usize) {
-        if let Entry::Vacant(e) = self.locked_shards.entry(shard_id) {
-            let shard = self.world_map.write_shard(shard_id).await;
-            e.insert(shard);
+        if let Some(current_shard_id) = self.current_shard_id  {
+            if current_shard_id == shard_id {
+                return;
+            }
         }
+        self.current_shard = Some(self.world_map.write_shard(shard_id).await); 
+        self.current_shard_id = Some(shard_id);       
     }
     
     async fn get_chunk_column(&mut self, chunk_column_position: ChunkColumnPosition) -> Option<&mut ChunkColumn> {
@@ -372,22 +383,16 @@ impl LightManager<'_> {
     
         self.ensure_shard(shard_id).await;
     
-        let shard = self.locked_shards.get_mut(&shard_id)?;
-        shard.get_mut(&chunk_column_position)
+        if let Some(shard) = &mut self.current_shard {
+            // Here, we use a reference to `shard` instead of trying to move it
+            shard.get_mut(&chunk_column_position)
+        } else {
+            unreachable!("ensure shard always sets to current_shard the requested shard")
+        }
     }
+    
 
-    async fn update_chunk_column(&mut self, light_position: LightPosition) {
-        let chunk_column_position = ChunkColumnPosition::from(light_position);
-        let shard_id = chunk_column_position.shard(self.world_map.get_shard_count());
-        if let Some(current_chunk_column_position) = &self.current_chunk_column_position {
-            if current_chunk_column_position != &chunk_column_position {
-                // Load the new chunk column
-                self.ensure_shard(shard_id).await;
-                self.current_chunk_column = self.get_chunk_column(chunk_column_position).await;
-            }
-        }   
-    }
-
+ 
     async fn set_light_level(&mut self, position: LightPosition, level: u8) {
         unimplemented!();
     }
@@ -401,10 +406,8 @@ impl LightManager<'_> {
         let position = LightPosition::from(block_position.clone());
         to_explore.extend(position.get_neighbors(24));
         while let Some(postion) = to_explore.pop() {
-
-            self.update_chunk_column(position.clone()).await;
             
-            if let Some(column) = &self.current_chunk_column {
+            if let Some(column) = self.get_chunk_column(position.clone().into()).await {
                 let block = Block::from(column.get_block(position.clone().into()));
 
                 if block.is_transparent() {
