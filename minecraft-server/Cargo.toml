@@ -7,10 +7,18 @@ edition = "2021"
 
 [dependencies]
 env_logger = "0.10.0"
-log = "0.4.20"
 tokio = { version = "1.33.0", features = ["full"] }
 futures = "0.3.29"
 minecraft-protocol = { path="../minecraft-protocol" }
 minecraft-positions = { path="../minecraft-positions" }
 minecraft-entities-derive = { path="../minecraft-entities-derive" }
 rand = "0.8.4"
+tracy-client = { version = "0.16.4", features = ["enable"] }
+tracing-tracy = { version = "0.10.4", features = ["enable", "system-tracing"] }
+tracing-subscriber = "0.3.18"
+log = "0.4.17"
+tracing = "0.1"
+
+[features]
+default = []
+tracing = []

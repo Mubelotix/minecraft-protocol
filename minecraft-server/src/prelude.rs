@@ -1,6 +1,6 @@
 pub use crate::{entities::*, player_handler::*, server_behavior::*, world::*};
 pub use futures::FutureExt;
-pub use log::{debug, error, info, trace, warn};
+pub use tracing::{debug, error, info, trace, warn};
 pub use minecraft_protocol::{
     components::{
         chat::ChatMode,
