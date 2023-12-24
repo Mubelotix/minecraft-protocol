@@ -9,7 +9,7 @@ pub struct Slot {
 }
 
 #[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug, Clone, MinecraftPacketPart)]
+#[derive(Debug, Clone, Default, MinecraftPacketPart)]
 pub struct SlotItem {
     /// The [item](crate::ids::items::Item).
     /// Item IDs are distinct from [block IDs](crate::ids::blocks::Block); see [crate::ids] for more information.

@@ -1,4 +1,4 @@
-use crate::{nbt::NbtTag, *, components::blocks::BlockEntity};
+use crate::{nbt::NbtTag, *, components::blocks::BlockEntity, packets::serializer::BitSet};
 
 /// A complex data structure including block data and optionally entities of a chunk.
 ///
@@ -24,19 +24,19 @@ pub struct ChunkData<'a> {
     /// BitSet containing bits for each section in the world + 2.
     /// Each set bit indicates that the corresponding 16×16×16 chunk section has data in the Sky Light array below.
     /// The least significant bit is for blocks 16 blocks to 1 block below the min world height (one section below the world), while the most significant bit covers blocks 1 to 16 blocks above the max world height (one section above the world).
-    pub sky_light_mask: Array<'a, u64, VarInt>,
+    pub sky_light_mask: BitSet<'a>,
     /// BitSet containing bits for each section in the world + 2.
     /// Each set bit indicates that the corresponding 16×16×16 chunk section has data in the Block Light array below.
     /// The order of bits is the same as in Sky Light Mask.
-    pub block_light_mask: Array<'a, u64, VarInt>,
+    pub block_light_mask: BitSet<'a>,
     /// BitSet containing bits for each section in the world + 2.
     /// Each set bit indicates that the corresponding 16×16×16 chunk section has data in the Block Light array below.
     /// The order of bits is the same as in Sky Light Mask.
-    pub empty_sky_light_mask: Array<'a, u64, VarInt>,
+    pub empty_sky_light_mask: BitSet<'a>,
     /// BitSet containing bits for each section in the world + 2.
     /// Each set bit indicates that the corresponding 16×16×16 chunk section has data in the Block Light array below.
     /// The order of bits is the same as in Sky Light Mask.
-    pub empty_block_light_mask: Array<'a, u64, VarInt>,
+    pub empty_block_light_mask: BitSet<'a>,
     /// Length should match the number of bits set in Sky Light Mask.
     /// Each entry is an array of 2048 bytes.
     /// There is 1 array for each bit set to true in the sky light mask, starting with the lowest value. Half a byte per light value. Indexed ((y<<8) | (z<<4) | x) / 2

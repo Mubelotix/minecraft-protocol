@@ -60,6 +60,13 @@ pub enum Item {{
 {variants}
 }}
 
+impl Default for Item {{
+    #[inline]
+    fn default() -> Self {{
+        Item::Air
+    }}
+}}
+
 impl Item {{
     #[inline]
     pub fn from_id(id: u32) -> Option<Item> {{
