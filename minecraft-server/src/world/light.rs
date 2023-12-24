@@ -186,3 +186,28 @@ impl LightSystem {
     }
 }
 
+pub(super) struct Light {
+    sky_light: LightSystem,
+}
+
+impl Light {
+    pub fn new() -> Self {
+        // TODO: Make this configurable with the world.
+        Self {
+            sky_light: LightSystem {
+                level: MAX_LIGHT_LEVEL,
+                light_arrays: vec![SectionLightData::new(); 24+2],
+                light_mask: 0,
+                empty_light_mask: !0,
+            },
+        }
+    }
+
+    pub fn get_packet(&self) -> (Array<Array<u8, VarInt>, VarInt>, BitSet, BitSet) {
+        self.sky_light.get_packet_data()
+    }
+
+    pub fn get_skylight_level(&self, position: LightPositionInChunkColumn) -> u8 {
+        self.sky_light.get_level(position).unwrap_or_default()
+    }
+}
