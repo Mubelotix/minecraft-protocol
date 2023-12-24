@@ -1,5 +1,6 @@
 use super::*;
 
+#[instrument(skip_all)]
 pub async fn status(stream: &mut TcpStream) -> Result<(), ()> {
     loop {
         let packet = receive_packet(stream).await?;

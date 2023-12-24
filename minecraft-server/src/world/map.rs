@@ -52,6 +52,7 @@ impl Chunk {
         &self.data
     }
 
+    #[instrument(skip_all)]
     fn get_block(&self, position: BlockPositionInChunk) -> BlockWithState {
         match &self.data.blocks {
             PalettedData::Paletted { palette, indexed } => {
@@ -72,6 +73,7 @@ impl Chunk {
     }
 
     // TODO edit block_count in data
+    #[instrument(skip_all)]
     fn set_block(&mut self, position: BlockPositionInChunk, block: BlockWithState) {
         let block_state_id = block.block_state_id().unwrap_or_else(|| {
             error!("Tried to set block with invalid state {block:?}. Placing air"); 0
@@ -230,6 +232,7 @@ impl WorldMap {
         WorldMap { shard_count, shards }
     }
 
+    #[instrument(skip_all)]
     pub async fn get_block(&self, position: BlockPosition) -> BlockWithState {
         async fn inner_get_block(s: &WorldMap, position: BlockPosition) -> Option<BlockWithState> {
             let chunk_position = position.chunk();
@@ -256,6 +259,7 @@ impl WorldMap {
         Some(chunk.as_network_chunk().clone())
     }
 
+    #[instrument(skip_all)]
     pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
         async fn inner_get_block(s: &WorldMap, position: BlockPosition, block: BlockWithState) -> Option<()> {
             let chunk_position = position.chunk();
@@ -271,6 +275,7 @@ impl WorldMap {
         inner_get_block(self, position, block).await;
     }
 
+    #[instrument(skip_all)]
     pub async fn try_move(&self, object: &CollisionShape, movement: &Translation) -> Translation {
         // TODO(perf): Optimize Map.try_move by preventing block double-checking
         // Also lock the map only once
@@ -288,6 +293,7 @@ impl WorldMap {
         movement.clone() // Would be more logic if it returned validated, but this way we avoid precision errors
     }
 
+    #[instrument(skip_all)]
     pub async fn load(&self, position: ChunkColumnPosition) {
         let chunk = ChunkColumn::flat(); // TODO: load from disk
         let shard = position.shard(self.shard_count);

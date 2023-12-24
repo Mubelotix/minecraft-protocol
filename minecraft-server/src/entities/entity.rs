@@ -7,6 +7,8 @@ use super::*;
         init(self, server_msg_rcvr: BroadcastReceiver<ServerMessage>);
     }
 )]
+
+#[derive(Debug)]
 pub struct Entity {
     pub position: Position,
     pub velocity: Translation,
@@ -29,6 +31,7 @@ pub struct Entity {
 }
 
 impl Handler<Entity> {
+    #[instrument(skip_all)]
     pub async fn init(self, server_msg_rcvr: BroadcastReceiver<ServerMessage>) {
         self.insert_task("newton", tokio::spawn(newton_task(self.clone(), server_msg_rcvr))).await;
     }
