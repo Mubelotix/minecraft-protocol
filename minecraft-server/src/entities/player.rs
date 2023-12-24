@@ -147,7 +147,7 @@ impl Handler<Player> {
             }
             let serialized: Vec<u8> = NetworkChunk::into_data(column).unwrap();
             let chunk_data = PlayClientbound::ChunkData {
-                value: ChunkData {
+                value: NetworkChunkColumnData {
                     chunk_x: newly_loaded_chunk.cx,
                     chunk_z: newly_loaded_chunk.cz,
                     heightmaps: heightmaps.clone(),

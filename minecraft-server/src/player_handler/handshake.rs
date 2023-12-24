@@ -337,7 +337,7 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
             }
             let serialized: Vec<u8> = NetworkChunk::into_data(column).unwrap();
             let chunk_data = PlayClientbound::ChunkData {
-                value: ChunkData {
+                value: NetworkChunkColumnData {
                     chunk_x: cx,
                     chunk_z: cz,
                     heightmaps: heightmaps.clone(),
