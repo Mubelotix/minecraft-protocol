@@ -48,6 +48,7 @@ pub async fn receive_packet_split(stream: &mut OwnedReadHalf) -> Result<Vec<u8>,
     Ok(data)
 }
 
+#[instrument]
 pub async fn send_packet_raw(stream: &mut TcpStream, packet: &[u8]) {
     let length = VarInt::from(packet.len());
     stream.write_all(length.serialize_minecraft_packet().unwrap().as_slice()).await.unwrap();
@@ -55,6 +56,7 @@ pub async fn send_packet_raw(stream: &mut TcpStream, packet: &[u8]) {
     stream.flush().await.unwrap();
 }
 
+#[instrument]
 pub async fn send_packet_raw_split(stream: &mut OwnedWriteHalf, packet: &[u8]) {
     let length = VarInt::from(packet.len());
     stream.write_all(length.serialize_minecraft_packet().unwrap().as_slice()).await.unwrap();
@@ -62,6 +64,7 @@ pub async fn send_packet_raw_split(stream: &mut OwnedWriteHalf, packet: &[u8]) {
     stream.flush().await.unwrap();
 }
 
+#[instrument(skip_all)]
 pub async fn send_packet<'a, P: MinecraftPacketPart<'a>>(stream: &mut TcpStream, packet: P) {
     let packet = packet.serialize_minecraft_packet().unwrap();
     send_packet_raw(stream, packet.as_slice()).await;

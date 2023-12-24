@@ -37,7 +37,6 @@ async fn main() {
     tracing::subscriber::set_global_default(subscriber)
         .expect("setting up tracing");
         
-
     env_logger::init();
 
     let server = ServerBehavior::init().await;
