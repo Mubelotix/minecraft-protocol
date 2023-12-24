@@ -9,7 +9,7 @@ pub struct WorldMap {
     /// The shards are locked independently.
     /// This allows high concurrency.
     shard_count: usize,
-    shards: Vec<RwLock<HashMap<ChunkColumnPosition, ChunkColumn>>>,
+    shards: Vec<Arc<RwLock<HashMap<ChunkColumnPosition, ChunkColumn>>>>,
 }
 
 #[derive(Clone)]
@@ -227,7 +227,7 @@ impl WorldMap {
     pub fn new(shard_count: usize) -> WorldMap {
         let mut shards = Vec::new();
         for _ in 0..shard_count {
-            shards.push(RwLock::new(HashMap::new()));
+            shards.push(Arc::new(RwLock::new(HashMap::new())));
         }
         WorldMap { shard_count, shards }
     }
