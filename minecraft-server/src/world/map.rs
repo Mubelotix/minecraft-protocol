@@ -54,6 +54,7 @@ impl Chunk {
         &self.data
     }
 
+    #[instrument(skip_all)]
     fn get_block(&self, position: BlockPositionInChunk) -> BlockWithState {
         match &self.data.blocks {
             PalettedData::Paletted { palette, indexed } => {
@@ -74,6 +75,7 @@ impl Chunk {
     }
 
     // TODO edit block_count in data
+    #[instrument(skip_all)]
     fn set_block(&mut self, position: BlockPositionInChunk, block: BlockWithState) {
         let block_state_id = block.block_state_id().unwrap_or_else(|| {
             error!("Tried to set block with invalid state {block:?}. Placing air"); 0
@@ -448,6 +450,7 @@ impl WorldMap {
         }
     }
 
+    #[instrument(skip_all)]
     pub async fn get_block(&self, position: BlockPosition) -> BlockWithState {
         async fn inner_get_block(s: &WorldMap, position: BlockPosition) -> Option<BlockWithState> {
             let chunk_position = position.chunk();
@@ -466,6 +469,7 @@ impl WorldMap {
         self.shards[shard].clone().write_owned().await
     }
 
+    #[instrument(skip_all)]
     pub async fn get_network_chunk_column_data(&self, position: ChunkColumnPosition) -> Option<Vec<u8>> {
         let shard = position.shard(self.shard_count);
         let shard = self.shards[shard].read().await;
@@ -508,6 +512,7 @@ impl WorldMap {
         LightManager::update_light(self, position, block).await;
     }
 
+    #[instrument(skip_all)]
     pub async fn get_skylight(&self, position: BlockPosition) -> u8 {
         async fn inner_get_skylight(s: &WorldMap, position: BlockPosition) -> Option<u8> {
             let chunk_position = position.chunk();
@@ -551,6 +556,7 @@ impl WorldMap {
         movement.clone() // Would be more logic if it returned validated, but this way we avoid precision errors
     }
 
+    #[instrument(skip_all)]
     pub async fn load(&'static self, position: ChunkColumnPosition) {
         let chunk = ChunkColumn::flat(); // TODO: load from disk
         let shard = position.shard(self.shard_count);

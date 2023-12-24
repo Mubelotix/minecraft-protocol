@@ -1,12 +1,13 @@
 use crate::prelude::*;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub(super) struct WorldLoadingManager {
     loaded_chunks: HashMap<UUID, HashSet<ChunkColumnPosition>>,
     loader_entities: HashMap<ChunkColumnPosition, HashSet<UUID>>,
 }
 
 impl WorldLoadingManager {
+    #[instrument(skip_all)]
     pub(super) fn update_loaded_chunks(&mut self, uuid: UUID, loaded_chunks: HashSet<ChunkColumnPosition>) {
         let loaded_before = self.loaded_chunks.entry(uuid).or_default();
         for just_unloaded in loaded_before.difference(&loaded_chunks) {
