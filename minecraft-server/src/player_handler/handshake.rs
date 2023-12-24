@@ -14,6 +14,8 @@ pub struct PlayerInfo {
     pub allow_server_listing: bool,
 }
 
+
+#[instrument(skip_all)]
 pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPlayerInfo, world: &'static World) -> Result<(PlayerInfo, MpscReceiver<WorldChange>), ()> {
     // Receive client informations
     let packet = receive_packet(stream).await?;

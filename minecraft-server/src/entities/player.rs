@@ -87,6 +87,7 @@ impl Player {
 }
 
 impl Handler<Player> {
+    #[instrument(skip_all)]
     async fn update_center_chunk(self) {
         let Some((old_center_chunk, new_center_chunk, render_distance)) = self.mutate(|player| {
             let old_center_chunk = player.center_chunk.clone();
@@ -172,6 +173,7 @@ impl Handler<Player> {
         }
     }
 
+    #[instrument(skip_all)]
     async fn send_packet<'a>(&self, packet: PlayClientbound<'a>) {
         let packet = packet.serialize_minecraft_packet().unwrap();
         let packets_sent = self.mutate(|player| {
@@ -185,10 +187,16 @@ impl Handler<Player> {
         packet_sender.send(packet).await.unwrap();
     }
 
+    #[instrument(skip_all)]
     async fn on_server_message(self, message: ServerMessage) {
         use ServerMessage::*;
         match message {
             Tick(tick_id) => {
+                #[cfg(feature = "tracing")] {
+                    let span = info_span!("player tick");
+                    let _enter: tracing::span::Entered<'_> = span.enter();    
+                }
+
                 if tick_id % (20*10) == 0 {
                     self.send_packet(PlayClientbound::KeepAlive { keep_alive_id: tick_id as u64 }).await;
                 }
@@ -201,6 +209,7 @@ impl Handler<Player> {
         }
     }
 
+    #[instrument(skip_all)]
     async fn on_world_change(self, change: WorldChange) {
         match change {
             WorldChange::Block(position, block) => {
@@ -293,6 +302,7 @@ impl Handler<Player> {
         }
     }
 
+    #[instrument(skip_all)]
     async fn on_packet<'a>(mut self, packet: PlayServerbound<'a>) {
         use PlayServerbound::*;
         match packet {
@@ -367,6 +377,7 @@ impl Handler<Player> {
     }
 }
 
+#[instrument(skip_all)]
 async fn handle_player(h: Handler<Player>, uuid: UUID, stream: TcpStream, packet_receiver: MpscReceiver<Vec<u8>>, server_msg_rcvr: BroadcastReceiver<ServerMessage>, change_receiver: MpscReceiver<WorldChange>) {
     let r = handle_player_inner(h.clone(), stream, packet_receiver, server_msg_rcvr, change_receiver).await;
     match r {
@@ -376,6 +387,7 @@ async fn handle_player(h: Handler<Player>, uuid: UUID, stream: TcpStream, packet
     h.world.remove_loader(uuid).await;
 }
 
+#[instrument(skip_all)]
 async fn handle_player_inner(h: Handler<Player>, stream: TcpStream, mut packet_receiver: MpscReceiver<Vec<u8>>, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>, mut change_receiver: MpscReceiver<WorldChange>) -> Result<(), ()> {
     let (mut reader_stream, mut writer_stream) = stream.into_split();
     
