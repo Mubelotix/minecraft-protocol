@@ -184,3 +184,31 @@ impl ChunkColumnPosition {
         }
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct LightPositionInChunkColumn {
+    pub bx: u8,
+    pub y: usize,
+    pub bz: u8,
+}
+
+impl LightPositionInChunkColumn {
+    pub fn in_chunk(&self) -> BlockPositionInChunk {
+        BlockPositionInChunk {
+            bx: self.bx,
+            by: self.y.rem_euclid(16) as u8,
+            bz: self.bz,
+        }
+    }
+}
+
+
+impl From<BlockPositionInChunkColumn> for LightPositionInChunkColumn {
+    fn from(val: BlockPositionInChunkColumn) -> Self {
+        Self {
+            bx: val.bx,
+            y: (val.y + 64 + 16) as usize, // TODO: Use the world config
+            bz: val.bz,
+        }
+    }
+}
