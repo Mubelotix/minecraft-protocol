@@ -79,3 +79,110 @@ impl SectionLightData {
     }
 }
 
+#[derive(Debug, Clone)]
+struct LightSystem {
+    /// The level of the sky light, 15 is the maximum.
+    pub level: u8,
+    /// The sky light data for each section.
+    pub light_arrays: Vec<SectionLightData>,
+    /// The mask of sections that have sky light data.
+    pub light_mask: u64,
+    /// The mask of sections that don't have sky light data.
+    pub empty_light_mask: u64,
+}
+
+impl LightSystem {
+    /// Get the light data as an array of arrays.
+    fn to_array<'a>(&self) ->  Array<'a, Array<'a, u8, VarInt>, VarInt> {
+        let mut sections = Vec::new();
+        for (i, section) in self.light_arrays.iter().enumerate() {
+            if self.light_mask & (1 << i) != 0 {
+                let mut data = Vec::new();
+                for byte in section.0.iter() {
+                    data.push(*byte);
+                }
+                sections.push(Array::from(data));
+            }
+        }
+        Array::from(sections)
+    }
+
+    /// Get the light mask and the empty light mask as bitsets.
+    /// return (light_mask, empty_light_mask)
+    fn masks_to_bitset<'a>(&self) -> (BitSet<'a>, BitSet<'a>) {
+        let light_mask = BitSet::from(vec![self.light_mask as i64]);
+        let empty_light_mask = BitSet::from(vec![self.empty_light_mask as i64]);
+        (light_mask, empty_light_mask)
+    } 
+
+    /// Get the light data and the light mask and the empty light mask as bitsets.
+    /// return (light_data, light_mask, empty_light_mask)
+    pub fn get_packet_data<'a>(&self) -> (Array<'a, Array<'a, u8, VarInt>, VarInt>, BitSet<'a>, BitSet<'a>) {
+        let data = self.to_array();
+        let (light_mask, empty_light_mask) = self.masks_to_bitset();
+        (data, light_mask, empty_light_mask)
+    }
+
+    /// Set the sky light in the given section.
+    pub fn set_region(&mut self, from_y: usize, to_y: usize, level: u8) -> Result<(), ()> {
+        if level > self.level {
+            return Err(());
+        }
+
+        // Get the range of sections to set.
+        let first_section = from_y.div_euclid(16);
+        let first_secion_offset = from_y.rem_euclid(16);
+
+        let last_section = to_y.div_euclid(16);
+        let last_section_offset = to_y.rem_euclid(16);
+
+
+        for section in first_section..=last_section {
+            if section != first_section && section != last_section {
+                // Set the whole section
+                self.light_arrays[section].set_with(level);
+            } else {
+                // Set the part of the section
+                let first_offset = if section == first_section { first_secion_offset } else { 0 };
+                let last_offset = if section == last_section { last_section_offset } else { MAX_LIGHT_LEVEL as usize };
+                for y in first_offset..=last_offset {
+                    self.light_arrays[section].set_layer(y as u8, level)?;
+                }
+            }
+
+            // Update the mask
+            let mask = 1 << section;
+            if self.level > 0 {
+                self.empty_light_mask &= !mask;
+                self.light_mask |= mask;
+            } else {
+                self.empty_light_mask |= mask;
+                self.light_mask &= !mask;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub(super) fn get_level(&self, position: LightPositionInChunkColumn) -> Result<u8, ()> {
+        let section = position.y.div_euclid(16);
+        self.light_arrays[section.max(0)].get(position.in_chunk())
+    }
+
+    pub(super) fn set_level(&mut self, position: LightPositionInChunkColumn, level: u8) -> Result<(), ()> {
+        let section = position.y.div_euclid(16);
+        // Update the mask
+        let mask = 1 << section;
+        if self.level > 0 {
+            self.empty_light_mask &= !mask;
+            self.light_mask |= mask;
+        } else {
+            // TODO: don't apply this if another block contains the light
+            self.empty_light_mask |= mask;
+            self.light_mask &= !mask;
+        }
+        self.light_arrays[section.max(0)].set(position.in_chunk(), level)?;
+        Ok(())
+    }
+}
+
