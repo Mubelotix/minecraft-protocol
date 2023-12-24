@@ -6,6 +6,8 @@ mod loading_manager;
 use loading_manager::*;
 mod map;
 use map::*;
+mod light;
+use light::*;
 mod ecs;
 use ecs::*;
 mod collisions;
