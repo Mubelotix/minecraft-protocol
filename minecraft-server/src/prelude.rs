@@ -4,7 +4,7 @@ pub use tracing::{debug, error, info, trace, warn, instrument, info_span};
 pub use minecraft_protocol::{
     components::{
         chat::ChatMode,
-        chunk::{Chunk as NetworkChunk, ChunkData, PalettedData},
+        chunk::{Chunk as NetworkChunk, ChunkData as NetworkChunkColumnData, PalettedData},
         difficulty::Difficulty,
         entity::{EntityAttribute, EntityMetadata, EntityMetadataValue},
         gamemode::{Gamemode, PreviousGamemode},

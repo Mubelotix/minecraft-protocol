@@ -25,6 +25,12 @@ pub enum NbtTag {
     RootCompound(String, HashMap<String, NbtTag>),
 }
 
+impl Default for NbtTag {
+    fn default() -> Self {
+        NbtTag::Null
+    }
+}
+
 impl NbtTag {
     #[inline]
     pub fn is_null(&self) -> bool {
