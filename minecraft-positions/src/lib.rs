@@ -1,5 +1,7 @@
 mod shards;
 
+use std::ops::AddAssign;
+
 pub use minecraft_protocol::packets::Position as NetworkPosition;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
@@ -212,3 +214,111 @@ impl From<BlockPositionInChunkColumn> for LightPositionInChunkColumn {
         }
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct LightPosition {
+    pub x: i32,
+    pub y: usize,
+    pub z: i32,
+}
+
+impl From<LightPosition> for LightPositionInChunkColumn {
+    fn from(val: LightPosition) -> Self {
+        LightPositionInChunkColumn {
+            bx: val.x.rem_euclid(16) as u8,
+            y: val.y,
+            bz: val.z.rem_euclid(16) as u8,
+        }
+    }
+}
+
+impl From<LightPosition> for ChunkColumnPosition {
+    fn from(val: LightPosition) -> Self {
+        ChunkColumnPosition {
+            cx: val.x.div_euclid(16),
+            cz: val.z.div_euclid(16),
+        }
+    }
+}
+
+impl From<BlockPosition> for LightPosition {
+    fn from(val: BlockPosition) -> Self {
+        Self {
+            x: val.x,
+            y: (val.y + 64 + 16) as usize,
+            z: val.z,
+        }
+    }
+}
+
+impl From<LightPosition> for BlockPosition {
+    fn from(val: LightPosition) -> Self {
+        Self {
+            x: val.x,
+            y: val.y as i32 - 64 - 16,
+            z: val.z
+        }
+    }
+}
+
+impl LightPosition {
+    pub fn in_chunk(&self) -> BlockPositionInChunk {
+        BlockPositionInChunk {
+            bx: self.x.rem_euclid(16) as u8,
+            by: self.y.rem_euclid(16) as u8,
+            bz: self.z.rem_euclid(16) as u8,
+        }
+    }
+
+    pub fn get_neighbors(&self, n_chunk: usize) -> Vec<Self> {
+        let mut neighbors = Vec::new();
+        if self.y < ((n_chunk - 1) * 16) + 1 { // No block can be higher so no block can affect the light level 
+            neighbors.push(LightPosition { x: self.x, y: self.y + 1, z: self.z });
+        }
+        neighbors.push(LightPosition { x: self.x - 1, y: self.y, z: self.z });
+        neighbors.push(LightPosition { x: self.x + 1, y: self.y, z: self.z });
+        neighbors.push(LightPosition { x: self.x, y: self.y, z: self.z - 1 });
+        neighbors.push(LightPosition { x: self.x, y: self.y, z: self.z + 1 });
+        if self.y > 0 {
+            neighbors.push(LightPosition { x: self.x, y: self.y - 1, z: self.z });
+        }
+        neighbors
+    }
+}
+
+impl PartialEq for LightPosition {
+    fn eq(&self, other: &Self) -> bool {
+        self.y == other.y
+    }
+}
+
+impl From<LightPosition> for BlockPositionInChunkColumn {
+    fn from(val: LightPosition) -> Self {
+        BlockPositionInChunkColumn {
+            bx: val.x.rem_euclid(16) as u8,
+            y: val.y as i32 - 64 - 16, // TODO: Use the world config
+            bz: val.x.rem_euclid(16) as u8,
+        }
+    }
+}
+
+impl AddAssign<usize> for LightPosition {
+    fn add_assign(&mut self, rhs: usize) {
+        self.y += rhs;
+    }
+}
+
+impl std::cmp::Eq for LightPosition {}
+
+impl std::cmp::PartialOrd for LightPosition {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.y.cmp(&other.y))
+    }
+}
+
+impl std::cmp::Ord for LightPosition {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.y.cmp(&other.y)
+    }
+}
+
