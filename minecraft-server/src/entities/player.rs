@@ -192,6 +192,9 @@ impl Handler<Player> {
         use ServerMessage::*;
         match message {
             Tick(tick_id) => {
+                let span = info_span!("player tick");
+                let _enter = span.enter();
+
                 if tick_id % (20*10) == 0 {
                     self.send_packet(PlayClientbound::KeepAlive { keep_alive_id: tick_id as u64 }).await;
                 }
