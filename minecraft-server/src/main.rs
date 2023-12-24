@@ -31,8 +31,10 @@ async fn main() {
     use tracing_subscriber::{fmt, layer::SubscriberExt, Registry};
 
     let subscriber = Registry::default()
-        .with(tracing_tracy::TracyLayer::new())
-        .with(fmt::layer());
+                                .with(fmt::layer());
+    #[cfg(feature = "tracing")]
+    let subscriber = subscriber
+        .with(tracing_tracy::TracyLayer::new());
     
     tracing::subscriber::set_global_default(subscriber)
         .expect("setting up tracing");
