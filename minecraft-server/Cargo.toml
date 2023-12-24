@@ -13,12 +13,12 @@ minecraft-protocol = { path="../minecraft-protocol" }
 minecraft-positions = { path="../minecraft-positions" }
 minecraft-entities-derive = { path="../minecraft-entities-derive" }
 rand = "0.8.4"
-tracy-client = { version = "0.16.4", features = ["enable"] }
-tracing-tracy = { version = "0.10.4", features = ["enable", "system-tracing"] }
+tracy-client = { version = "0.16.4", features = ["enable"], optional = true}
+tracing-tracy = { version = "0.10.4", features = ["enable", "system-tracing"], optional = true}
 tracing-subscriber = "0.3.18"
 log = "0.4.17"
 tracing = { version = "0.1", features = ["attributes"] }
 
 [features]
 default = []
-tracing = []
+tracing = ["tracy-client", "tracing-tracy"]
