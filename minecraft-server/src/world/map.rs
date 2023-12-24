@@ -13,7 +13,7 @@ pub struct WorldMap {
 }
 
 #[derive(Clone)]
-struct Chunk {
+pub(super) struct Chunk {
     data: NetworkChunk,
     palette_block_counts: Vec<u16>,
 }
@@ -169,7 +169,7 @@ impl Chunk {
     }
 }
 
-struct ChunkColumn {
+pub(super) struct ChunkColumn {
     chunks: Vec<Chunk>,
 }
 
