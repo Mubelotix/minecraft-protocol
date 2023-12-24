@@ -7,8 +7,9 @@ use arrays::*;
 use compound::*;
 use numbers::*;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum NbtTag {
+    #[default]
     Null,
     Byte(i8),
     Short(i16),
