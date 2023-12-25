@@ -324,3 +324,75 @@ impl ChunkColumn {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_section_light_data() {
+        let mut data = SectionLightData::new();
+
+        data.set(BlockPositionInChunk { bx: 0, by: 0, bz: 0 }, MAX_LIGHT_LEVEL).unwrap();
+        assert_eq!(data.get(BlockPositionInChunk { bx: 0, by: 0, bz: 0 }).unwrap(), MAX_LIGHT_LEVEL);
+
+        data.set(BlockPositionInChunk { bx: 0, by: 0, bz: 0 }, 0).unwrap();
+        assert_eq!(data.get(BlockPositionInChunk { bx: 0, by: 0, bz: 0 }).unwrap(), 0);
+
+        data.set(BlockPositionInChunk { bx: 0, by: 0, bz: 1 }, 1).unwrap();
+        assert_eq!(data.get(BlockPositionInChunk { bx: 0, by: 0, bz: 1 }).unwrap(), 1);
+
+        data.set(BlockPositionInChunk { bx: 0, by: 1, bz: 1 }, MAX_LIGHT_LEVEL).unwrap();
+        assert_eq!(data.get(BlockPositionInChunk { bx: 0, by: 1, bz: 1 }).unwrap(), MAX_LIGHT_LEVEL);
+
+        data.set(BlockPositionInChunk { bx: 1, by: 1, bz: 1 }, 1).unwrap();
+        assert_eq!(data.get(BlockPositionInChunk { bx: 1, by: 1, bz: 1 }).unwrap(), 1);
+
+        data.set(BlockPositionInChunk { bx: 2, by: 0, bz: 0 }, 1).unwrap();
+        assert_eq!(data.get(BlockPositionInChunk { bx: 2, by: 0, bz: 0 }).unwrap(), 1);
+
+        // Manual layer
+        for z in 0..16 {
+            for x in 0..16 {
+                data.set(BlockPositionInChunk { bx: x, by: 0, bz: z }, MAX_LIGHT_LEVEL).unwrap();
+            }
+        }
+
+        for z in 0..16 {
+            for x in 0..16 {
+                assert_eq!(data.get(BlockPositionInChunk { bx: x, by: 0, bz: z }).unwrap(), MAX_LIGHT_LEVEL, "x: {}, z: {}", x, z);
+            }
+        }
+
+        // Test layer
+        data.set_layer(1, MAX_LIGHT_LEVEL).unwrap();
+        for x in 0..16 {
+            for z in 0..16 {
+                assert_eq!(data.get(BlockPositionInChunk { bx: x, by: 1, bz: z }).unwrap(), MAX_LIGHT_LEVEL, "x: {}, z: {}", x, z);
+            }
+        }
+    }
+
+    #[test]
+    fn test_set_region() {
+        let mut sky_light = LightSystem {
+            level: MAX_LIGHT_LEVEL,
+            light_arrays: vec![SectionLightData::new(); 16+2],
+            light_mask: 0,
+            empty_light_mask: !0,
+        };
+
+        sky_light.set_region(1, 33, MAX_LIGHT_LEVEL).unwrap();
+
+        // Test in
+        assert_eq!(sky_light.light_arrays[0].get(BlockPositionInChunk { bx: 0, by: 1, bz: 7 }).unwrap(), MAX_LIGHT_LEVEL);
+        assert_eq!(sky_light.light_arrays[1].get(BlockPositionInChunk { bx: 1, by: MAX_LIGHT_LEVEL, bz: 8 }).unwrap(), MAX_LIGHT_LEVEL);
+        assert_eq!(sky_light.light_arrays[2].get(BlockPositionInChunk { bx: 3, by: 0, bz: 0 }).unwrap(), MAX_LIGHT_LEVEL);
+
+        // Test out
+        assert_eq!(sky_light.light_arrays[0].get(BlockPositionInChunk { bx: 4, by: 0, bz: 2 }).unwrap(), 0);
+        assert_eq!(sky_light.light_arrays[3].get(BlockPositionInChunk { bx: 0, by: 14, bz: 9 }).unwrap(), 0);
+        assert_eq!(sky_light.light_arrays[4].get(BlockPositionInChunk { bx: 9, by: 0, bz: 10 }).unwrap(), 0);
+    }
+
+}
