@@ -31,8 +31,6 @@ pub struct Entity {
 }
 
 impl Handler<Entity> {
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
-
     pub async fn init(self, server_msg_rcvr: BroadcastReceiver<ServerMessage>) {
         self.insert_task("newton", tokio::spawn(newton_task(self.clone(), server_msg_rcvr))).await;
     }

@@ -23,7 +23,7 @@ impl std::future::Future for ServerFuture {
 
 #[tokio::main]
 async fn main() {
-    #[cfg(feature = "tracing")]
+    #[cfg(feature = "trace")]
     #[global_allocator]
     static GLOBAL: tracy_client::ProfiledAllocator<std::alloc::System> =
         tracy_client::ProfiledAllocator::new(std::alloc::System, 100);
@@ -32,7 +32,7 @@ async fn main() {
 
     let subscriber = Registry::default()
                                 .with(fmt::layer());
-    #[cfg(feature = "tracing")]
+    #[cfg(feature = "trace")]
     let subscriber = subscriber
         .with(tracing_tracy::TracyLayer::new());
     

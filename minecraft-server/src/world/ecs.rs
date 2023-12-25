@@ -31,16 +31,12 @@ impl Entities {
     }
 
     /// Observe an entity through a closure
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
-
     pub(super) async fn observe_entity<R>(&self, eid: Eid, observer: impl FnOnce(&AnyEntity) -> R) -> Option<R> {
         self.entities.read().await.get(&eid).map(observer)
     }
 
     /// Observe entities in a chunk through a closure
     /// That closure will be applied to each entity, and the results will be returned in a vector
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
-
     pub(super) async fn observe_entities<R>(&self, chunk: ChunkColumnPosition, mut observer: impl FnMut(&AnyEntity) -> Option<R>) -> Vec<R> {
         let entities = self.entities.read().await;
         let chunks = self.chunks.read().await;
@@ -57,8 +53,6 @@ impl Entities {
     }
 
     /// Mutate an entity through a closure
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
-
     pub(super) async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> (R, EntityChanges)) -> Option<(R, EntityChanges)> {
         let mut entities = self.entities.write().await;
 
@@ -79,8 +73,7 @@ impl Entities {
         }
     }
 
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
-
+    #[cfg_attr(feature = "trace", instrument(skip_all))]
     pub(super) async fn spawn_entity<E>(&self, entity: AnyEntity, world: &'static World, receiver: BroadcastReceiver<ServerMessage>) -> (Eid, UUID)
         where AnyEntity: TryAsEntityRef<E>, Handler<E>: EntityExt
     {
@@ -100,8 +93,6 @@ impl Entities {
         (eid, uuid)
     }
     
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
-
     pub(super) async fn insert_entity_task(&self, eid: Eid, name: &'static str, handle: EntityTaskHandle) {
         let mut entity_tasks = self.entity_tasks.write().await;
         let old = entity_tasks.entry(eid).or_insert(HashMap::new()).insert(name, handle);
@@ -111,8 +102,7 @@ impl Entities {
     }
 
     /// Remove an entity
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
-
+    #[cfg_attr(feature = "trace", instrument(skip_all))]
     pub(super) async fn remove_entity(&self, eid: Eid) -> Option<AnyEntity> {
         let entity = self.entities.write().await.remove(&eid);
         let mut chunks = self.chunks.write().await;

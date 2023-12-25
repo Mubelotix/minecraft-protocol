@@ -1,6 +1,6 @@
 use super::*;
 
-#[cfg_attr(feature = "tracing", instrument(skip_all))]
+#[cfg_attr(feature = "trace", instrument(skip_all))]
 pub async fn status(stream: &mut TcpStream) -> Result<(), ()> {
     loop {
         let packet = receive_packet(stream).await?;
