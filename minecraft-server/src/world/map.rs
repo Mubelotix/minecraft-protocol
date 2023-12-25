@@ -490,7 +490,6 @@ impl WorldMap {
     }
 
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
-
     pub async fn try_move(&self, object: &CollisionShape, movement: &Translation) -> Translation {
         // TODO(perf): Optimize Map.try_move by preventing block double-checking
         // Also lock the map only once
@@ -509,7 +508,6 @@ impl WorldMap {
     }
 
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
-
     pub async fn load(&self, position: ChunkColumnPosition) {
         let chunk = ChunkColumn::flat(); // TODO: load from disk
         let shard = position.shard(self.shard_count);
@@ -521,7 +519,6 @@ impl WorldMap {
 
 
     #[cfg_attr(feature = "tracing", instrument(skip_all))]
-
     pub async fn get_network_chunk_column_data(&self, position: ChunkColumnPosition) -> Option<Vec<u8>> {
         let shard = position.shard(self.shard_count);
         let shard = self.shards[shard].read().await;
