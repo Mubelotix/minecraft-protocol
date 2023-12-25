@@ -6,7 +6,8 @@ pub struct LoggedInPlayerInfo {
     pub(super) uuid: u128,
 }
 
-#[instrument(skip_all)]
+#[cfg_attr(feature = "tracing", instrument(skip_all))]
+
 pub async fn login(stream: &mut TcpStream, addr: SocketAddr) -> Result<LoggedInPlayerInfo, ()> {
     // Receive login start
     let packet = receive_packet(stream).await?;

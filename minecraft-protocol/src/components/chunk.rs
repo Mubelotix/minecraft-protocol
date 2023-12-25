@@ -221,6 +221,7 @@ impl Chunk {
         Ok(chunks)
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip(output)))]
     pub fn into_data(chunks: Vec<Chunk>) -> Result<Vec<u8>, &'static str> {
         let mut output = Vec::new();
 

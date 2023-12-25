@@ -1,7 +1,8 @@
 use super::*;
 
 
-#[instrument(skip_all)]
+#[cfg_attr(feature = "tracing", instrument(skip_all))]
+
 pub async fn handle_connection(
     mut stream: TcpStream,
     addr: SocketAddr,
