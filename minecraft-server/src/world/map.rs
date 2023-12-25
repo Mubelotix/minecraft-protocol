@@ -3,6 +3,8 @@ use minecraft_protocol::{components::chunk::PalettedData, ids::blocks::Block};
 use tokio::sync::{RwLock, OwnedRwLockWriteGuard};
 use crate::{prelude::*, world::light::LightManager};
 
+use super::light::Light;
+
 pub struct WorldMap {
     /// The map is divided in shards.
     /// Chunks are evenly distributed between shards.
@@ -297,6 +299,7 @@ impl HeightMap {
 }
 
 pub(super) struct ChunkColumn {
+    pub(super) light: Light,
     heightmap: HeightMap,
     chunks: Vec<Chunk>,
 }
@@ -350,7 +353,9 @@ impl ChunkColumn {
         let mut column = Self { 
             chunks, 
             heightmap: HeightMap::new(8),
+            light: Light::new(),
         };
+        column.init_independant_light();
         column.init_chunk_heightmap();
         column
     }
@@ -515,7 +520,7 @@ impl WorldMap {
         let chunk_column = shard.get(&position)?;
 
         let serialized = NetworkChunk::into_data(chunk_column.chunks.iter().map(|c| c.data.clone()).collect()).unwrap();
-        //let (skylight_array_data, skylight_mask, empty_skylight_mask) = chunk_column.light.get_packet();
+        let (sky_light, sky_light_mask, empty_sky_light_mask) = chunk_column.light.get_packet();
 
         let chunk_data = PlayClientbound::ChunkData { value: NetworkChunkColumnData {
             chunk_x: position.cx,
@@ -523,11 +528,11 @@ impl WorldMap {
             heightmaps: chunk_column.heightmap.to_tag(),
             data: Array::from(serialized.clone()),
             block_entities: Array::default(),
-            sky_light_mask: Array::default(),//skylight_mask,
+            sky_light_mask,
             block_light_mask: Array::default(),
-            empty_sky_light_mask: Array::default(), //empty_skylight_mask,
+            empty_sky_light_mask,
             empty_block_light_mask: Array::default(),
-            sky_light: Array::default(), //skylight_array_data,
+            sky_light,
             block_light: Array::default(),
         }};
         let serialized = chunk_data.serialize_minecraft_packet().ok()?;

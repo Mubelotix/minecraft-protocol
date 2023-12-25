@@ -301,4 +301,26 @@ impl LightManager {
     }
 }
 
+impl ChunkColumn {
+    /// Init independant light means it will compute the light for all the chunk without considering the neighbour chunks.
+    pub(super) fn init_independant_light(&mut self) {
+        let _ = self.light.sky_light.set_region(self.get_highest_block() as usize + 1, ChunkColumn::MAX_HEIGHT as usize, self.light.sky_light.level);
 
+        for x in 0..16 {
+            for z in 0..16 {
+                for y in self.get_highest_block_at(&BlockPositionInChunkColumn {
+                    bx: x,
+                    y: 0i32,
+                    bz: z
+                })..(self.get_highest_block() as u16) {
+                    let _ = self.light.sky_light.set_level(
+                        LightPositionInChunkColumn {
+                            bx: x,
+                            y: y as usize,
+                            bz: z
+                        }, self.light.sky_light.level);
+                }
+            }
+        }
+    }
+}
