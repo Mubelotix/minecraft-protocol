@@ -375,6 +375,9 @@ impl Handler<Player> {
             Pong { id } => {
                 self.send_packet(PlayClientbound::PingResponse { payload: id as i64 }).await;
             },
+            KeepAlive { keep_alive_id  } => {
+                self.send_packet(PlayClientbound::KeepAlive { keep_alive_id }).await;
+            },
             packet => warn!("Unsupported packet received: {packet:?}"),
         }
     }
