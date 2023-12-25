@@ -188,45 +188,26 @@ impl ChunkColumnPosition {
 
     pub fn get_circle_from_center(&self, radius: i32) -> Vec<ChunkColumnPosition> {
         let mut chunks = Vec::new();
-        let r2 = radius * radius;
         for x in 0..=radius {
-            let x2 = x * x;
-            for y in 0..x {
-                if x2 + y * y > r2 {
-                    break;
+            for z in 0..=radius {
+                if x * x + z * z <= radius * radius {
+                    chunks.push(ChunkColumnPosition {
+                        cx: self.cx + x,
+                        cz: self.cz + z,
+                    });
+                    chunks.push(ChunkColumnPosition {
+                        cx: self.cx + x,
+                        cz: self.cz - z,
+                    });
+                    chunks.push(ChunkColumnPosition {
+                        cx: self.cx - x,
+                        cz: self.cz + z,
+                    });
+                    chunks.push(ChunkColumnPosition {
+                        cx: self.cx - x,
+                        cz: self.cz - z,
+                    });
                 }
-                chunks.push(ChunkColumnPosition {
-                    cx: self.cx + x,
-                    cz: self.cz + y,
-                });
-                chunks.push(ChunkColumnPosition {
-                    cx: self.cx + x,
-                    cz: self.cz - y,
-                });
-                chunks.push(ChunkColumnPosition {
-                    cx: self.cx - x,
-                    cz: self.cz + y,
-                });
-                chunks.push(ChunkColumnPosition {
-                    cx: self.cx - x,
-                    cz: self.cz - y,
-                });
-                chunks.push(ChunkColumnPosition {
-                    cx: self.cx + y,
-                    cz: self.cz + x,
-                });
-                chunks.push(ChunkColumnPosition {
-                    cx: self.cx + y,
-                    cz: self.cz - x,
-                });
-                chunks.push(ChunkColumnPosition {
-                    cx: self.cx - y,
-                    cz: self.cz + x,
-                });
-                chunks.push(ChunkColumnPosition {
-                    cx: self.cx - y,
-                    cz: self.cz - x,
-                });
             }
         }
         chunks

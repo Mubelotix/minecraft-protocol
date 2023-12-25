@@ -97,35 +97,39 @@ impl Handler<Player> {
         }).await else {return};
 
         // Tell the client which chunk he is in
-        if new_center_chunk == old_center_chunk { return };
-        self.send_packet(PlayClientbound::SetCenterChunk { chunk_x: VarInt(new_center_chunk.cx), chunk_z: VarInt(new_center_chunk.cz) }).await;
+        // Maybe the server didn't send all the chunks yet so we have to check if all chunks are loaded
+        if new_center_chunk != old_center_chunk { 
+            self.send_packet(PlayClientbound::SetCenterChunk { chunk_x: VarInt(new_center_chunk.cx), chunk_z: VarInt(new_center_chunk.cz) }).await;
+        };
 
-        // Find out which chunks should be loaded
-        if new_center_chunk.chunk_column() == old_center_chunk.chunk_column() { return };
-        let mut loaded_chunks_after = HashSet::new();
-        for cx in (new_center_chunk.cx - render_distance)..=(new_center_chunk.cx + render_distance) {
-            for cz in (new_center_chunk.cz - render_distance)..=(new_center_chunk.cz + render_distance) {
-                let dist = (((cx - new_center_chunk.cx).pow(2) + (cz - new_center_chunk.cz).pow(2)) as f32).sqrt();
-                if dist > render_distance as f32 { continue };
-                loaded_chunks_after.insert(ChunkColumnPosition { cx, cz });
-            }
-        }
+        let mut loaded_chunks_after_ordered = new_center_chunk.chunk_column().get_circle_from_center(render_distance);
+        loaded_chunks_after_ordered.sort_by_key(|chunk| (chunk.cx - new_center_chunk.cx).abs() + (chunk.cz - new_center_chunk.cz).abs());
+        let loaded_chunks_after: HashSet<_> = loaded_chunks_after_ordered.iter().collect();
+        // TODO: Load n chunks per tick according to the server's TPS
+        const CHUNK_PER_REQUEST: usize = 10;
 
-        // Select chunks to load (max 50) and unload
         let Some((loaded_chunks_after, newly_loaded_chunks, unloaded_chunks, uuid)) = self.mutate(|player| {
-            if loaded_chunks_after == player.loaded_chunks { return (None, EntityChanges::nothing()) };
-            let mut newly_loaded_chunks: Vec<_> = loaded_chunks_after.difference(&player.loaded_chunks).cloned().collect();
-            let unloaded_chunks: Vec<_> = player.loaded_chunks.difference(&loaded_chunks_after).cloned().collect();
-            for skipped in newly_loaded_chunks.iter().skip(50) {
-                loaded_chunks_after.remove(skipped);
-            }
-            newly_loaded_chunks.truncate(50);
+            let newly_loaded_chunks: Vec<_> = loaded_chunks_after_ordered.iter()
+                .filter(|chunk| !player.loaded_chunks.contains(chunk))
+                .take(CHUNK_PER_REQUEST).cloned() 
+                .collect();
+        
+            let unloaded_chunks: Vec<_> = player.loaded_chunks.iter()
+                .filter(|chunk| !loaded_chunks_after.contains(chunk))
+                .cloned()
+                .collect();
+        
+            // loaded_chunks_after = loaded_chunks_before - unloaded_chunks + newly_loaded_chunks
+            let loaded_chunks_after: HashSet<_> = player.loaded_chunks.difference(&unloaded_chunks.iter().cloned().collect()).chain(newly_loaded_chunks.iter()).cloned().collect();
+            player.loaded_chunks = loaded_chunks_after.clone();
+            
             let uuid = player.info.uuid;
+        
             player.loaded_chunks = loaded_chunks_after.clone();
             (Some((loaded_chunks_after, newly_loaded_chunks, unloaded_chunks, uuid)), EntityChanges::other())
         }).await.flatten() else { return };
+        
 
-        // Tell the world about the changes
         self.world.ensure_loaded_chunks(uuid, loaded_chunks_after).await;
 
         // Send the chunks to the client
