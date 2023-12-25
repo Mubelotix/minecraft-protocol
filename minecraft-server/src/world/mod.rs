@@ -7,7 +7,7 @@ use loading_manager::*;
 mod map;
 use map::*;
 mod light;
-use light::*;
+pub use light::*;
 mod ecs;
 use ecs::*;
 mod collisions;
