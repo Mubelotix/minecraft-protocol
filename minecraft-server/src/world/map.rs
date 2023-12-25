@@ -355,8 +355,8 @@ impl ChunkColumn {
             heightmap: HeightMap::new(8),
             light: Light::new(),
         };
-        column.init_independant_light();
         column.init_chunk_heightmap();
+        column.init_independant_light();
         column
     }
 
@@ -535,6 +535,7 @@ impl WorldMap {
             sky_light,
             block_light: Array::default(),
         }};
+         
         let serialized = chunk_data.serialize_minecraft_packet().ok()?;
         Some(serialized)
     }
