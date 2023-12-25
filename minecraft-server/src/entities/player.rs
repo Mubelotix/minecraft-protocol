@@ -176,6 +176,7 @@ impl Handler<Player> {
         let Some(packet_sender) = self.observe(|player| player.packet_sender.clone()).await else {return};
         packet_sender.send(packet).await.unwrap();
     }
+    
     #[instrument(skip_all)]
     async fn on_server_message(self, message: ServerMessage) {
         use ServerMessage::*;
@@ -264,7 +265,7 @@ impl Handler<Player> {
                             pitch: (pitch * (256.0 / 360.0)) as u8,
                             yaw: (yaw * (256.0 / 360.0)) as u8,
                             head_yaw: (head_yaw * (256.0 / 360.0)) as u8,
-                            data: VarInt(0 as i32), // TODO set data on entities
+                            data: VarInt(0_i32), // TODO set data on entities
                             velocity_x: (velocity.x * 8000.0) as i16,
                             velocity_y: (velocity.y * 8000.0) as i16,
                             velocity_z: (velocity.z * 8000.0) as i16,
@@ -347,7 +348,7 @@ impl Handler<Player> {
                     self.world.spawn_entity::<Zombie>(AnyEntity::Zombie(zombie)).await;
                 } else if message == "stress" {
                     tokio::spawn(async move {
-                        for i in 0..1000 {
+                        for _ in 0..1000 {
                             let mut zombie = Zombie::default();
                             let Some(mut position) = self.observe(|player| player.get_entity().position.clone()).await else {return};
                             position.y += 20.0;
