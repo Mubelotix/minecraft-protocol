@@ -232,6 +232,7 @@ impl LightManager {
         }
     }
 
+    #[instrument(skip(world_map))]
     pub async fn update_light(world_map: &'static WorldMap, block_position: BlockPosition, block: BlockWithState) {
         let mut light_manager = Self::new(world_map);
 
@@ -260,8 +261,6 @@ impl LightManager {
             unreachable!("ensure shard always sets to current_shard the requested shard")
         }
     }
-
-
 
     async fn set_light_level(&mut self, position: LightPosition, level: u8) {
         unimplemented!();

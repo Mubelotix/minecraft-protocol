@@ -1,7 +1,7 @@
 use std::{collections::HashMap, cmp::Ordering};
 use minecraft_protocol::{components::chunk::PalettedData, ids::blocks::Block};
 use tokio::sync::{RwLock, OwnedRwLockWriteGuard};
-use crate::prelude::*;
+use crate::{prelude::*, world::light::LightManager};
 
 pub struct WorldMap {
     /// The map is divided in shards.
@@ -453,19 +453,21 @@ impl WorldMap {
     }
 
 
-    pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
-        async fn inner_get_block(s: &WorldMap, position: BlockPosition, block: BlockWithState) -> Option<()> {
+    pub async fn set_block(&'static self, position: BlockPosition, block: BlockWithState) {
+        async fn inner_set_block(s: &'static WorldMap, position: BlockPosition, block: BlockWithState) -> Option<()> {
             let chunk_position = position.chunk();
             let position_in_chunk_column = position.in_chunk_column();
             let chunk_column_position = chunk_position.chunk_column();
             let shard = chunk_column_position.shard(s.shard_count);
-        
+
             let mut shard = s.shards[shard].write().await;
             let chunk_column = shard.get_mut(&chunk_column_position)?;
-            chunk_column.set_block(position_in_chunk_column, block);
+            chunk_column.set_block(position_in_chunk_column.clone(), block);
             Some(())
         }
-        inner_get_block(self, position, block).await;
+
+        inner_set_block(self, position.clone(), block.clone()).await;
+        LightManager::update_light(self, position, block).await;
     }
 
     #[cfg_attr(feature = "trace", instrument(skip_all))]
@@ -495,13 +497,14 @@ impl WorldMap {
     }
     
     #[cfg_attr(feature = "trace", instrument(skip(self)))]
-    pub async fn load(&self, position: ChunkColumnPosition) {
+    pub async fn load(&'static self, position: ChunkColumnPosition) {
         let chunk = ChunkColumn::flat(); // TODO: load from disk
         let shard = position.shard(self.shard_count);
         
         trace!("Loading chunk column at {:?}", position);
         let mut shard = self.shards[shard].write().await;
-        shard.entry(position).or_insert_with(|| chunk);
+        shard.entry(position.clone()).or_insert_with(|| chunk);
+        LightManager::init_chunk_column_light(self, position).await;
     }
 
 
@@ -645,16 +648,16 @@ mod tests {
 
     #[tokio::test]
     async fn test_world_map() {
-        let map = WorldMap::new(1);
+        let world = Box::leak(Box::new(World::new(broadcast_channel(100).1)));
         for cx in -3..=3 {
             for cz in -3..=3 {
-                map.load(ChunkColumnPosition { cx, cz }).await;
+                world.map.load(ChunkColumnPosition { cx, cz }).await;
             }
         }
         
         // Test single block
-        map.set_block(BlockPosition { x: -40, y: -40, z: -40 }, BlockWithState::RedstoneBlock).await;
-        let block = map.get_block(BlockPosition { x: -40, y: -40, z: -40 }).await;
+        world.map.set_block(BlockPosition { x: -40, y: -40, z: -40 }, BlockWithState::RedstoneBlock).await;
+        let block = world.map.get_block(BlockPosition { x: -40, y: -40, z: -40 }).await;
         assert_eq!(block.block_state_id().unwrap(), BlockWithState::RedstoneBlock.block_state_id().unwrap());
 
         // Set blocks
@@ -662,7 +665,7 @@ mod tests {
         for x in (-40..40).step_by(9) {
             for y in (-40..200).step_by(15) {
                 for z in (-40..40).step_by(9) {
-                    map.set_block(BlockPosition { x, y, z }, BlockWithState::from_state_id(id).unwrap()).await;
+                    world.map.set_block(BlockPosition { x, y, z }, BlockWithState::from_state_id(id).unwrap()).await;
                     id += 1;
                 }
             }
@@ -673,7 +676,7 @@ mod tests {
         for x in (-40..40).step_by(9) {
             for y in (-40..200).step_by(15) {
                 for z in (-40..40).step_by(9) {
-                    let got = map.get_block(BlockPosition { x, y, z }).await.block_state_id().unwrap();
+                    let got = world.map.get_block(BlockPosition { x, y, z }).await.block_state_id().unwrap();
                     assert_eq!(id, got);
                     id += 1;
                 }
@@ -735,8 +738,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_try_move() {
-        let map = WorldMap::new(1);
-        map.load(ChunkColumnPosition { cx: 0, cz: 0 }).await;
+        let world = Box::leak(Box::new(World::new(broadcast_channel(100).1)));
+        world.map.load(ChunkColumnPosition { cx: 0, cz: 0 }).await;
         let bounding_box = CollisionShape {
             x1: 0.0,
             y1: 0.0,
@@ -749,19 +752,19 @@ mod tests {
         // Position on ground and try to go through it
         let positionned_box = bounding_box.clone() + &Translation { x: 0.0, y: -3.0*16.0, z: 0.0 };
         let movement = Translation { x: 0.0, y: -10.0, z: 0.0 };
-        let movement = map.try_move(&positionned_box, &movement).await;
+        let movement = world.map.try_move(&positionned_box, &movement).await;
         assert_eq!(movement, Translation { x: 0.0, y: 0.0, z: 0.0 }); // It doesn't get through
 
         // Place it a little above ground
         let positionned_box = bounding_box.clone() + &Translation { x: 0.0, y: -3.0*16.0 + 1.0, z: 0.0 };
         let movement = Translation { x: 0.0, y: -10.0, z: 0.0 };
-        let movement = map.try_move(&positionned_box, &movement).await;
+        let movement = world.map.try_move(&positionned_box, &movement).await;
         assert_eq!(movement, Translation { x: 0.0, y: -1.0, z: 0.0 }); // It falls down but doesn't get through
 
         // Place it above but not on round coordinates
         let positionned_box = bounding_box.clone() + &Translation { x: 0.0, y: -3.0*16.0 + 1.1, z: 0.2 };
         let movement = Translation { x: 2.0, y: -10.0, z: 0.0 };
-        let movement = map.try_move(&positionned_box, &movement).await;
+        let movement = world.map.try_move(&positionned_box, &movement).await;
         assert_eq!(movement, Translation { x: 0.2200000000000003, y: -1.1000000000000014, z: 0.0 }); // It falls down but doesn't get through
     }
 }

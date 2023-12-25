@@ -40,7 +40,7 @@ impl World {
         Some(self.map.get_block(position).await)
     }
 
-    pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
+    pub async fn set_block(&'static self, position: BlockPosition, block: BlockWithState) {
         self.map.set_block(position.clone(), block.clone()).await;
         self.notify(&position.chunk_column(), WorldChange::Block(position, block)).await;
     }
@@ -59,7 +59,7 @@ impl World {
         self.change_senders.write().await.remove(&uuid);
     }
 
-    pub async fn ensure_loaded_chunks(&self, uuid: UUID, loaded_chunks: HashSet<ChunkColumnPosition>) {
+    pub async fn ensure_loaded_chunks(&'static self, uuid: UUID, loaded_chunks: HashSet<ChunkColumnPosition>) {
         let mut loading_manager = self.loading_manager.write().await;
         let loaded_chunks_before = loading_manager.get_loaded_chunks();
         loading_manager.update_loaded_chunks(uuid, loaded_chunks);
@@ -171,7 +171,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_world_notifications() {
-        let world = World::new(broadcast_channel(100).1);
+        let world = Box::leak(Box::new(World::new(broadcast_channel(100).1)));
 
         let mut receiver1 = world.add_loader(1).await;
         let mut receiver2 = world.add_loader(2).await;
