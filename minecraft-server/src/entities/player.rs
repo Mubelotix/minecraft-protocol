@@ -126,7 +126,7 @@ impl Handler<Player> {
         }).await.flatten() else { return };
 
         // Tell the world about the changes
-        self.world.update_loaded_chunks(uuid, loaded_chunks_after).await;
+        self.world.ensure_loaded_chunks(uuid, loaded_chunks_after).await;
 
         // Send the chunks to the client
         let mut heightmaps = HashMap::new();

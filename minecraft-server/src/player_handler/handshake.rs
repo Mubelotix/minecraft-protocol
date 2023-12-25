@@ -315,7 +315,7 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
             loaded_chunks.insert(ChunkColumnPosition { cx, cz });
         }
     }
-    world.update_loaded_chunks(logged_in_player_info.uuid, loaded_chunks).await;
+    world.ensure_loaded_chunks(logged_in_player_info.uuid, loaded_chunks).await;
 
     let mut heightmaps = HashMap::new();
     heightmaps.insert(String::from("MOTION_BLOCKING"), NbtTag::LongArray(vec![0; 37]));

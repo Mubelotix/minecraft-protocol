@@ -63,7 +63,7 @@ impl World {
         self.change_senders.write().await.remove(&uuid);
     }
 
-    pub async fn update_loaded_chunks(&self, uuid: UUID, loaded_chunks: HashSet<ChunkColumnPosition>) {
+    pub async fn ensure_loaded_chunks(&self, uuid: UUID, loaded_chunks: HashSet<ChunkColumnPosition>) {
         let mut loading_manager = self.loading_manager.write().await;
         let loaded_chunks_before = loading_manager.get_loaded_chunks();
         loading_manager.update_loaded_chunks(uuid, loaded_chunks);
@@ -160,6 +160,12 @@ impl World {
             }
         }
     }
+
+    #[cfg_attr(feature = "trace", instrument(skip(self)))]
+    pub async fn get_network_chunk_column_data<'a>(&self, position: ChunkColumnPosition) -> Option<Vec<u8>> {
+        self.map.get_network_chunk_column_data(position).await
+    }
+
 }
 
 #[cfg(test)]
@@ -173,8 +179,8 @@ mod tests {
 
         let mut receiver1 = world.add_loader(1).await;
         let mut receiver2 = world.add_loader(2).await;
-        world.update_loaded_chunks(1, vec![ChunkColumnPosition{cx: 0, cz: 0}].into_iter().collect()).await;
-        world.update_loaded_chunks(2, vec![ChunkColumnPosition{cx: 1, cz: 1}].into_iter().collect()).await;
+        world.ensure_loaded_chunks(1, vec![ChunkColumnPosition{cx: 0, cz: 0}].into_iter().collect()).await;
+        world.ensure_loaded_chunks(2, vec![ChunkColumnPosition{cx: 1, cz: 1}].into_iter().collect()).await;
 
         world.set_block(BlockPosition{x: 1, y: 1, z: 1}, BlockWithState::Air).await;
         assert!(matches!(receiver1.try_recv(), Ok(WorldChange::Block(BlockPosition{x: 1, y: 1, z: 1}, BlockWithState::Air))));
