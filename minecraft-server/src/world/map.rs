@@ -1,6 +1,6 @@
 use std::{collections::HashMap, cmp::Ordering};
 use minecraft_protocol::{components::chunk::PalettedData, ids::blocks::Block};
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, OwnedRwLockWriteGuard};
 use crate::prelude::*;
 
 pub struct WorldMap {
@@ -432,7 +432,10 @@ impl WorldMap {
         for _ in 0..shard_count {
             shards.push(Arc::new(RwLock::new(HashMap::new())));
         }
-        WorldMap { shard_count, shards }
+        WorldMap { 
+            shard_count,
+            shards
+       }
     }
 
     pub async fn get_block(&self, position: BlockPosition) -> BlockWithState {
@@ -449,17 +452,6 @@ impl WorldMap {
         inner_get_block(self, position).await.unwrap_or(BlockWithState::Air)
     }
 
-    pub async fn get_network_chunk(&self, position: ChunkPosition) -> Option<NetworkChunk> {
-        let chunk_column_position = position.chunk_column();
-        let shard = chunk_column_position.shard(self.shard_count);
-        let cy_in_vec: usize = position.cy.saturating_add(4).try_into().ok()?;
-        
-        let shard = self.shards[shard].read().await;
-        let chunk_column = shard.get(&chunk_column_position)?;
-        let chunk = chunk_column.chunks.get(cy_in_vec)?;
-
-        Some(chunk.as_network_chunk().clone())
-    }
 
     pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
         async fn inner_get_block(s: &WorldMap, position: BlockPosition, block: BlockWithState) -> Option<()> {
@@ -494,6 +486,14 @@ impl WorldMap {
         movement.clone() // Would be more logic if it returned validated, but this way we avoid precision errors
     }
 
+    pub fn get_shard_count(&self) -> usize {
+        self.shard_count
+    }
+    
+    pub(super) async fn write_shard(&self, shard: usize) -> OwnedRwLockWriteGuard<HashMap<ChunkColumnPosition, ChunkColumn>> {
+        self.shards[shard].clone().write_owned().await
+    }
+    
     #[cfg_attr(feature = "trace", instrument(skip(self)))]
     pub async fn load(&self, position: ChunkColumnPosition) {
         let chunk = ChunkColumn::flat(); // TODO: load from disk

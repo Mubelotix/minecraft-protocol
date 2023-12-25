@@ -1,3 +1,8 @@
+use std::collections::BinaryHeap;
+
+use minecraft_protocol::ids::blocks::Block;
+use tokio::sync::OwnedRwLockWriteGuard;
+
 use crate::prelude::*;
 use super::*;
 
@@ -211,3 +216,90 @@ impl Light {
         self.sky_light.get_level(position).unwrap_or_default()
     }
 }
+
+pub struct LightManager {
+    world_map: &'static WorldMap,
+    current_shard_id: Option<usize>,
+    current_shard: Option<OwnedRwLockWriteGuard<HashMap<ChunkColumnPosition, ChunkColumn>>>,
+}
+
+impl LightManager {
+    fn new(world_map: &'static WorldMap) -> Self {
+        Self {
+            world_map,
+            current_shard: None,
+            current_shard_id: None,
+        }
+    }
+
+    pub async fn update_light(world_map: &'static WorldMap, block_position: BlockPosition, block: BlockWithState) {
+        let mut light_manager = Self::new(world_map);
+
+        light_manager.set_block(block_position, block).await;
+    }
+
+    async fn ensure_shard(&mut self, shard_id: usize) {
+        if let Some(current_shard_id) = self.current_shard_id  {
+            if current_shard_id == shard_id {
+                return;
+            }
+        }
+        self.current_shard = Some(self.world_map.write_shard(shard_id).await); 
+        self.current_shard_id = Some(shard_id);       
+    }
+
+    async fn get_chunk_column(&mut self, chunk_column_position: ChunkColumnPosition) -> Option<&mut ChunkColumn> {
+        let shard_id = chunk_column_position.shard(self.world_map.get_shard_count());
+
+        self.ensure_shard(shard_id).await;
+
+        if let Some(shard) = &mut self.current_shard {
+            // Here, we use a reference to `shard` instead of trying to move it
+            shard.get_mut(&chunk_column_position)
+        } else {
+            unreachable!("ensure shard always sets to current_shard the requested shard")
+        }
+    }
+
+
+
+    async fn set_light_level(&mut self, position: LightPosition, level: u8) {
+        unimplemented!();
+    }
+
+    async fn get_light_level(&mut self, position: LightPosition) -> u8 {
+        unimplemented!();
+    }
+
+    pub async fn set_block(&mut self, block_position: BlockPosition, block: BlockWithState) {
+        let mut to_explore = BinaryHeap::new();
+        let position = LightPosition::from(block_position.clone());
+        to_explore.extend(position.get_neighbors(24));
+        while let Some(postion) = to_explore.pop() {
+
+            if let Some(column) = self.get_chunk_column(position.clone().into()).await {
+                let block = Block::from(column.get_block(position.clone().into()));
+
+                if block.is_transparent() {
+                    let highest_block = column.get_highest_block_at(&block_position.in_chunk_column());
+                    let is_inside = highest_block > postion.clone().y as u16 + 1;
+                    let new_level = if is_inside { postion.clone().y as u8 - block.light_absorption() - 1 } else { MAX_LIGHT_LEVEL };
+                    let new_position = LightPositionInChunkColumn::from(postion.clone());
+
+                    to_explore.extend(postion.clone().get_neighbors(24));                
+                }          
+            } 
+        }
+
+        // Clear locked chunks
+
+    }
+
+
+    pub async fn init_chunk_column_light(world_map: &'static WorldMap, chunk_column_position: ChunkColumnPosition) {
+
+        // Clear locked chubks
+    }
+}
+
+
