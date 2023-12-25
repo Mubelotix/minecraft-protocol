@@ -52,9 +52,7 @@ impl Chunk {
         &self.data
     }
 
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
-
-    fn get_block(&self, position: BlockPositionInChunk) -> BlockWithState {
+    fn get_block(&self, position: &BlockPositionInChunk) -> BlockWithState {
         match &self.data.blocks {
             PalettedData::Paletted { palette, indexed } => {
                 let data_position = position.by as usize * 16 * 16 + position.bz as usize * 16 + position.bx as usize;
@@ -74,8 +72,6 @@ impl Chunk {
     }
 
     // TODO edit block_count in data
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
-
     fn set_block(&mut self, position: BlockPositionInChunk, block: BlockWithState) {
         let block_state_id = block.block_state_id().unwrap_or_else(|| {
             error!("Tried to set block with invalid state {block:?}. Placing air"); 0
@@ -216,8 +212,6 @@ impl HeightMap {
     }
 
     /// Set the height of the highest block at the given position.
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
-
     pub fn set(&mut self, position: &BlockPositionInChunkColumn, height: u32) {
         let (x, z) = (position.bx, position.bz);
         // Check if the height is higher than the current max height.
@@ -311,10 +305,8 @@ impl ChunkColumn {
     pub const MAX_HEIGHT: u16 = 320 + 64; // TODO: adapt to the world height
     pub const MIN_Y: i32 = -64;
 
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
-
+    #[cfg_attr(feature = "trace", instrument(skip_all))]
     fn init_chunk_heightmap(&mut self){
-        self.heightmap = HeightMap::new(9);
         if self.chunks.len() != 24 {
             panic!("Chunk column must have 24 chunks (change it for other world heights)");
         }
@@ -328,25 +320,24 @@ impl ChunkColumn {
         }
     }
 
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
-
     fn get_higher_skylight_filter_block(&self, position: &BlockPositionInChunkColumn, current_height: u16) -> u16 {
-        let n_chunk_to_skip = self.chunks.len() - current_height.div_euclid(16) as usize - (current_height.rem_euclid(16) > 0) as usize;
+        let n_chunk_to_skip = self.chunks.len() - (current_height >> 4) as usize - ((current_height & 15) > 0) as usize;
         let mut current_height = current_height - 1;
+        let mut block_position = BlockPositionInChunk { bx: position.bx, by: 0, bz: position.bz };
         // Downward propagation
         for chunk in self.chunks.iter().rev().skip(n_chunk_to_skip) {
-            for by in (0..((((current_height) % 16) + 1) as u8)).rev() {
-                let block: BlockWithState = chunk.get_block(BlockPositionInChunk { bx: position.bx, by, bz: position.bz });
+            for by in (0..(((current_height & 15) + 1) as u8)).rev() {
+                block_position.by = by;
+                let block: BlockWithState = chunk.get_block(&block_position);
                 // SAFETY: fom_id will get a valid block necessarily 
                 if !Block::from(block).is_transparent() {
                     return current_height + 1;
                 }
                 current_height = current_height.saturating_sub(1);
-            }          
+            }
         }
         current_height
     }
-
     pub(super) fn get_highest_block(&self) -> u32 {
         self.heightmap.max_height.unwrap_or(0)
     }
@@ -358,9 +349,9 @@ impl ChunkColumn {
     pub fn from(chunks: Vec<Chunk>) -> Self {
         let mut column = Self { 
             chunks, 
-            heightmap: HeightMap::new(9),
+            heightmap: HeightMap::new(8),
         };
-        //column.init_chunk_heightmap();
+        column.init_chunk_heightmap();
         column
     }
 
@@ -395,7 +386,7 @@ impl ChunkColumn {
             let cy_in_vec: usize = cy.saturating_add(4).try_into().ok()?;
             let position = position.in_chunk();
             let chunk = s.chunks.get(cy_in_vec)?;
-            Some(chunk.get_block(position))
+            Some(chunk.get_block(&position))
         }
         get_block_inner(self, position).unwrap_or(BlockWithState::Air)
     }
@@ -444,8 +435,6 @@ impl WorldMap {
         WorldMap { shard_count, shards }
     }
 
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
-
     pub async fn get_block(&self, position: BlockPosition) -> BlockWithState {
         async fn inner_get_block(s: &WorldMap, position: BlockPosition) -> Option<BlockWithState> {
             let chunk_position = position.chunk();
@@ -472,8 +461,6 @@ impl WorldMap {
         Some(chunk.as_network_chunk().clone())
     }
 
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
-
     pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
         async fn inner_get_block(s: &WorldMap, position: BlockPosition, block: BlockWithState) -> Option<()> {
             let chunk_position = position.chunk();
@@ -489,7 +476,7 @@ impl WorldMap {
         inner_get_block(self, position, block).await;
     }
 
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+    #[cfg_attr(feature = "trace", instrument(skip_all))]
     pub async fn try_move(&self, object: &CollisionShape, movement: &Translation) -> Translation {
         // TODO(perf): Optimize Map.try_move by preventing block double-checking
         // Also lock the map only once
@@ -507,7 +494,7 @@ impl WorldMap {
         movement.clone() // Would be more logic if it returned validated, but this way we avoid precision errors
     }
 
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+    #[cfg_attr(feature = "trace", instrument(skip(self)))]
     pub async fn load(&self, position: ChunkColumnPosition) {
         let chunk = ChunkColumn::flat(); // TODO: load from disk
         let shard = position.shard(self.shard_count);
@@ -518,7 +505,6 @@ impl WorldMap {
     }
 
 
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub async fn get_network_chunk_column_data(&self, position: ChunkColumnPosition) -> Option<Vec<u8>> {
         let shard = position.shard(self.shard_count);
         let shard = self.shards[shard].read().await;
@@ -561,7 +547,7 @@ mod tests {
     #[test]
     fn test_get_block() {
         let chunk = Chunk::filled(BlockWithState::Dirt).unwrap();
-        chunk.get_block(BlockPositionInChunk { bx: 0, by: 1, bz: 2 });
+        chunk.get_block(&BlockPositionInChunk { bx: 0, by: 1, bz: 2 });
     }
 
     #[test]
@@ -577,7 +563,7 @@ mod tests {
         assert!(!chunk.palette_block_counts.is_empty());
         let mut id = 1;
         for bx in 0..16 {
-            let got = chunk.get_block(BlockPositionInChunk { bx, by: 0, bz: 0 }).block_state_id().unwrap();
+            let got = chunk.get_block(&BlockPositionInChunk { bx, by: 0, bz: 0 }).block_state_id().unwrap();
             assert_eq!(id, got);
             id += 1;
         }
@@ -602,7 +588,7 @@ mod tests {
         for bx in 0..16 {
             for by in 0..16 {
                 for bz in 0..2 {
-                    let got = chunk.get_block(BlockPositionInChunk { bx, by, bz }).block_state_id().unwrap();
+                    let got = chunk.get_block(&BlockPositionInChunk { bx, by, bz }).block_state_id().unwrap();
                     assert_eq!(id, got);
                     id += 1;
                 }
