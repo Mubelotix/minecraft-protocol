@@ -52,7 +52,8 @@ impl Chunk {
         &self.data
     }
 
-    #[instrument(skip_all)]
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+
     fn get_block(&self, position: BlockPositionInChunk) -> BlockWithState {
         match &self.data.blocks {
             PalettedData::Paletted { palette, indexed } => {
@@ -73,7 +74,8 @@ impl Chunk {
     }
 
     // TODO edit block_count in data
-    #[instrument(skip_all)]
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+
     fn set_block(&mut self, position: BlockPositionInChunk, block: BlockWithState) {
         let block_state_id = block.block_state_id().unwrap_or_else(|| {
             error!("Tried to set block with invalid state {block:?}. Placing air"); 0
@@ -214,6 +216,8 @@ impl HeightMap {
     }
 
     /// Set the height of the highest block at the given position.
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+
     pub fn set(&mut self, position: &BlockPositionInChunkColumn, height: u32) {
         let (x, z) = (position.bx, position.bz);
         // Check if the height is higher than the current max height.
@@ -307,6 +311,8 @@ impl ChunkColumn {
     pub const MAX_HEIGHT: u16 = 320 + 64; // TODO: adapt to the world height
     pub const MIN_Y: i32 = -64;
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+
     fn init_chunk_heightmap(&mut self){
         self.heightmap = HeightMap::new(9);
         if self.chunks.len() != 24 {
@@ -321,6 +327,8 @@ impl ChunkColumn {
             }
         }
     }
+
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
 
     fn get_higher_skylight_filter_block(&self, position: &BlockPositionInChunkColumn, current_height: u16) -> u16 {
         let n_chunk_to_skip = self.chunks.len() - current_height.div_euclid(16) as usize - (current_height.rem_euclid(16) > 0) as usize;
@@ -352,7 +360,7 @@ impl ChunkColumn {
             chunks, 
             heightmap: HeightMap::new(9),
         };
-        column.init_chunk_heightmap();
+        //column.init_chunk_heightmap();
         column
     }
 
@@ -436,7 +444,8 @@ impl WorldMap {
         WorldMap { shard_count, shards }
     }
 
-    #[instrument(skip_all)]
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+
     pub async fn get_block(&self, position: BlockPosition) -> BlockWithState {
         async fn inner_get_block(s: &WorldMap, position: BlockPosition) -> Option<BlockWithState> {
             let chunk_position = position.chunk();
@@ -463,7 +472,8 @@ impl WorldMap {
         Some(chunk.as_network_chunk().clone())
     }
 
-    #[instrument(skip_all)]
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+
     pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
         async fn inner_get_block(s: &WorldMap, position: BlockPosition, block: BlockWithState) -> Option<()> {
             let chunk_position = position.chunk();
@@ -479,7 +489,8 @@ impl WorldMap {
         inner_get_block(self, position, block).await;
     }
 
-    #[instrument(skip_all)]
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+
     pub async fn try_move(&self, object: &CollisionShape, movement: &Translation) -> Translation {
         // TODO(perf): Optimize Map.try_move by preventing block double-checking
         // Also lock the map only once
@@ -497,7 +508,8 @@ impl WorldMap {
         movement.clone() // Would be more logic if it returned validated, but this way we avoid precision errors
     }
 
-    #[instrument(skip_all)]
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+
     pub async fn load(&self, position: ChunkColumnPosition) {
         let chunk = ChunkColumn::flat(); // TODO: load from disk
         let shard = position.shard(self.shard_count);
@@ -508,7 +520,8 @@ impl WorldMap {
     }
 
 
-    #[instrument(skip_all)]
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+
     pub async fn get_network_chunk_column_data(&self, position: ChunkColumnPosition) -> Option<Vec<u8>> {
         let shard = position.shard(self.shard_count);
         let shard = self.shards[shard].read().await;

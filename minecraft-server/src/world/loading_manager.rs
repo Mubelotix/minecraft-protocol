@@ -7,7 +7,8 @@ pub(super) struct WorldLoadingManager {
 }
 
 impl WorldLoadingManager {
-    #[instrument(skip_all)]
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+
     pub(super) fn update_loaded_chunks(&mut self, uuid: UUID, loaded_chunks: HashSet<ChunkColumnPosition>) {
         let loaded_before = self.loaded_chunks.entry(uuid).or_default();
         for just_unloaded in loaded_before.difference(&loaded_chunks) {

@@ -173,7 +173,7 @@ impl Handler<Player> {
         }
     }
 
-    #[instrument(skip_all)]
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     async fn send_packet<'a>(&self, packet: PlayClientbound<'a>) {
         let packet = packet.serialize_minecraft_packet().unwrap();
         let packets_sent = self.mutate(|player| {
