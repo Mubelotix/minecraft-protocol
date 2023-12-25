@@ -504,7 +504,8 @@ impl WorldMap {
         trace!("Loading chunk column at {:?}", position);
         let mut shard = self.shards[shard].write().await;
         shard.entry(position.clone()).or_insert_with(|| chunk);
-        LightManager::init_chunk_column_light(self, position).await;
+        // init light because we don't really load the chunk but we generate it
+        LightManager::init_chunk_column_light(self, position).await; 
     }
 
 
