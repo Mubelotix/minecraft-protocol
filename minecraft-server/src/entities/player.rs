@@ -130,42 +130,15 @@ impl Handler<Player> {
         }).await.flatten() else { return };
         
 
+        // TODO: optimize, don't wait to load all chunks before sending them to the client
         self.world.ensure_loaded_chunks(uuid, loaded_chunks_after).await;
 
         // Send the chunks to the client
-        let mut heightmaps = HashMap::new();
-        heightmaps.insert(String::from("MOTION_BLOCKING"), NbtTag::LongArray(vec![0; 37]));
-        let heightmaps = NbtTag::Compound(heightmaps);
         for newly_loaded_chunk in newly_loaded_chunks {
-            let mut column = Vec::new();
-            for cy in -4..20 {
-                let chunk = self.world.get_network_chunk(newly_loaded_chunk.chunk(cy)).await.unwrap_or_else(|| {
-                    error!("Chunk not loaded: {newly_loaded_chunk:?}");
-                    NetworkChunk { // TODO hard error
-                        block_count: 0,
-                        blocks: PalettedData::Single { value: 0 },
-                        biomes: PalettedData::Single { value: 4 },
-                    }
-                });
-                column.push(chunk);
-            }
-            let serialized: Vec<u8> = NetworkChunk::into_data(column).unwrap();
-            let chunk_data = PlayClientbound::ChunkData {
-                value: NetworkChunkColumnData {
-                    chunk_x: newly_loaded_chunk.cx,
-                    chunk_z: newly_loaded_chunk.cz,
-                    heightmaps: heightmaps.clone(),
-                    data: Array::from(serialized.clone()),
-                    block_entities: Array::default(),
-                    sky_light_mask: Array::default(),
-                    block_light_mask: Array::default(),
-                    empty_sky_light_mask: Array::default(),
-                    empty_block_light_mask: Array::default(),
-                    sky_light: Array::default(),
-                    block_light: Array::default(),
-                }
-            };
-            self.send_packet(chunk_data).await;
+            let chunk_column = self.world.get_network_chunk_column_data(newly_loaded_chunk.clone()).await.unwrap_or_else(|| {
+                panic!("Chunk not loaded: {:?}", newly_loaded_chunk);
+            });
+            self.send_raw_packet(chunk_column).await;
         }
 
         // Tell the client to unload chunks
@@ -191,6 +164,18 @@ impl Handler<Player> {
         packet_sender.send(packet).await.unwrap();
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+    async fn send_raw_packet(&self, packet: Vec<u8>) {
+        let packets_sent = self.mutate(|player| {
+            player.packets_sent += 1;
+            (player.packets_sent, EntityChanges::other())
+        }).await.unwrap_or(0);
+        if packets_sent > 500 {
+            warn!("Many packets sent ({packets_sent})");
+        }
+        let Some(packet_sender) = self.observe(|player| player.packet_sender.clone()).await else {return};
+        packet_sender.send(packet).await.unwrap();
+    }
     #[instrument(skip_all)]
     async fn on_server_message(self, message: ServerMessage) {
         use ServerMessage::*;
