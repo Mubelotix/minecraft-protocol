@@ -315,7 +315,7 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
             loaded_chunks.insert(ChunkColumnPosition { cx, cz });
         }
     }
-    world.ensure_loaded_chunks(logged_in_player_info.uuid, loaded_chunks).await;
+    world.ensure_loaded_chunks(logged_in_player_info.uuid, loaded_chunks.clone()).await;
     
     for cx in -3..=3 {
         for cz in -3..=3 {
@@ -329,18 +329,22 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
     debug!("ChunkData sent");
 
     // Chunk batch end
-    let chunk_data = PlayClientbound::ChunkBatchFinished { batch_size: VarInt(49) };
+    let chunk_data = PlayClientbound::ChunkBatchFinished { batch_size: VarInt(loaded_chunks.len() as i32) };
     send_packet(stream, chunk_data).await;
     debug!("ChunkBatchFinished sent");
 
     // Get chunk batch acknoledgement
     let packet = receive_packet(stream).await?;
     let packet = PlayServerbound::deserialize_uncompressed_minecraft_packet(packet.as_slice()).unwrap();
-    let PlayServerbound::ChunkBatchReceived { chunks_per_tick } = packet else {
+    if let PlayServerbound::ChunkBatchReceived { chunks_per_tick } = packet {
+        debug!("ChunkBatchAcknoledgement received chunks per tick: {chunks_per_tick}");
+    } else if let PlayServerbound::ConfirmTeleportation { teleport_id } = packet {
+        debug!("ConfirmTeleportation received {:?}", teleport_id);
+    } else {
         error!("Expected ChunkBatchAcknoledgement packet, got: {packet:?}");
         return Err(());
-    };
-    debug!("ChunkBatchAcknoledgement received chunks per tick: {chunks_per_tick}");
+
+    }
 
     Ok((PlayerInfo {
         addr: logged_in_player_info.addr,
