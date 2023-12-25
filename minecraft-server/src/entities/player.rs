@@ -371,7 +371,10 @@ impl Handler<Player> {
             }
             RequestPing { payload } => {
                 self.send_packet(PlayClientbound::Ping { id: payload as i32 }).await;
-            }
+            },
+            Pong { id } => {
+                self.send_packet(PlayClientbound::PingResponse { payload: id as i64 }).await;
+            },
             packet => warn!("Unsupported packet received: {packet:?}"),
         }
     }
