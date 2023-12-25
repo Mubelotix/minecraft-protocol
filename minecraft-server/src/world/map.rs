@@ -535,7 +535,7 @@ impl WorldMap {
             sky_light,
             block_light: Array::default(),
         }};
-         
+
         let serialized = chunk_data.serialize_minecraft_packet().ok()?;
         Some(serialized)
     }
@@ -652,7 +652,6 @@ mod tests {
         let high_block = flat_column.get_block(BlockPositionInChunkColumn { bx: 0, y: 120, bz: 0 });
         assert_eq!(high_block.block_state_id().unwrap(), BlockWithState::Air.block_state_id().unwrap());
     }
-
     #[tokio::test]
     async fn test_world_map() {
         let world = Box::leak(Box::new(World::new(broadcast_channel(100).1)));
