@@ -316,42 +316,14 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
         }
     }
     world.ensure_loaded_chunks(logged_in_player_info.uuid, loaded_chunks).await;
-
-    let mut heightmaps = HashMap::new();
-    heightmaps.insert(String::from("MOTION_BLOCKING"), NbtTag::LongArray(vec![0; 37]));
-    let heightmaps = NbtTag::Compound(heightmaps);
     
     for cx in -3..=3 {
         for cz in -3..=3 {
-            let mut column = Vec::new();
-            for cy in -4..20 {
-                let chunk = world.get_network_chunk(ChunkPosition { cx, cy, cz }).await.unwrap_or_else(|| {
-                    error!("Chunk not loaded: {cx} {cy} {cz}");
-                    NetworkChunk { // TODO hard error
-                        block_count: 0,
-                        blocks: PalettedData::Single { value: 0 },
-                        biomes: PalettedData::Single { value: 4 },
-                    }
-                });
-                column.push(chunk);
-            }
-            let serialized: Vec<u8> = NetworkChunk::into_data(column).unwrap();
-            let chunk_data = PlayClientbound::ChunkData {
-                value: NetworkChunkColumnData {
-                    chunk_x: cx,
-                    chunk_z: cz,
-                    heightmaps: heightmaps.clone(),
-                    data: Array::from(serialized.clone()),
-                    block_entities: Array::default(),
-                    sky_light_mask: Array::default(),
-                    block_light_mask: Array::default(),
-                    empty_sky_light_mask: Array::default(),
-                    empty_block_light_mask: Array::default(),
-                    sky_light: Array::default(),
-                    block_light: Array::default(),
-                }
-            };
-            send_packet(stream, chunk_data).await;
+            let chunk_column = world.get_network_chunk_column_data(ChunkColumnPosition { cx, cz }).await.unwrap_or_else(|| {
+                error!("Chunk not loaded: {cx} {cz}");
+                panic!("Chunk not loaded: {cx} {cz}");
+            });
+            send_packet_raw(stream, chunk_column.as_slice()).await;
         }
     }
     debug!("ChunkData sent");
@@ -368,7 +340,7 @@ pub async fn handshake(stream: &mut TcpStream, logged_in_player_info: LoggedInPl
         error!("Expected ChunkBatchAcknoledgement packet, got: {packet:?}");
         return Err(());
     };
-    debug!("ChunkBatchAcknoledgement received");
+    debug!("ChunkBatchAcknoledgement received chunks per tick: {chunks_per_tick}");
 
     Ok((PlayerInfo {
         addr: logged_in_player_info.addr,
