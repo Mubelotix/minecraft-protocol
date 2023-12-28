@@ -349,3 +349,15 @@ impl std::cmp::Ord for LightPosition {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_light_positions_conversions() {
+        let light_position = LightPosition { x: 1, y: 1, z: 1 };
+        assert_eq!(light_position, LightPosition::from(BlockPosition::from(light_position.clone())));
+
+        let block_position = BlockPosition { x: 1, y: 1, z: 1 };
+        assert_eq!(block_position, BlockPosition::from(LightPosition::from(block_position.clone())));
+    }
+}
