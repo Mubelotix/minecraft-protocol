@@ -106,7 +106,7 @@ impl Handler<Player> {
         loaded_chunks_after_ordered.sort_by_key(|chunk| (chunk.cx - new_center_chunk.cx).abs() + (chunk.cz - new_center_chunk.cz).abs());
         let loaded_chunks_after: HashSet<_> = loaded_chunks_after_ordered.iter().collect();
         // TODO: Load n chunks per tick according to the server's TPS
-        const CHUNK_PER_REQUEST: usize = 10;
+        const CHUNK_PER_REQUEST: usize = 5;
 
         let Some((loaded_chunks_after, newly_loaded_chunks, unloaded_chunks, uuid)) = self.mutate(|player| {
             let newly_loaded_chunks: Vec<_> = loaded_chunks_after_ordered.iter()
@@ -176,7 +176,7 @@ impl Handler<Player> {
         let Some(packet_sender) = self.observe(|player| player.packet_sender.clone()).await else {return};
         packet_sender.send(packet).await.unwrap();
     }
-    
+
     #[instrument(skip_all)]
     async fn on_server_message(self, message: ServerMessage) {
         use ServerMessage::*;
