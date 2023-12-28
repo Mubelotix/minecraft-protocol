@@ -146,9 +146,7 @@ pub fn generate_block_enum(data: serde_json::Value) {
         raw_harvest_tools.push(
             block
                 .harvest_tools
-                .clone()
-                .into_iter()
-                .map(|(k, _v)| k)
+                .clone().into_keys()
                 .collect(),
         );
         let mut material = block
@@ -427,7 +425,7 @@ const AIR_BLOCKS: [bool; {max_value}] = {air_blocks:?};
         default_state_ids = blocks.iter().map(|b| b.default_state).collect::<Vec<_>>(),
         item_ids = blocks
             .iter()
-            .map(|b| b.drops.get(0).copied().unwrap_or(0))
+            .map(|b| b.drops.first().copied().unwrap_or(0))
             .collect::<Vec<_>>(),
         materials = materials,
         resistances = blocks.iter().map(|b| b.resistance).collect::<Vec<_>>(),

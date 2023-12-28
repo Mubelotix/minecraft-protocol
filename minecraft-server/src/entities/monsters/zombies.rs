@@ -1,5 +1,3 @@
-use minecraft_protocol::network;
-
 use super::*;
 
 #[derive(Default)]
