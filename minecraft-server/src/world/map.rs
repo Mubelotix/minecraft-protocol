@@ -662,16 +662,17 @@ mod tests {
         }
         
         // Test single block
-        world.map.set_block(BlockPosition { x: -40, y: -40, z: -40 }, BlockWithState::RedstoneBlock).await;
+        world.set_block(BlockPosition { x: -40, y: -40, z: -40 }, BlockWithState::RedstoneBlock).await;
         let block = world.map.get_block(BlockPosition { x: -40, y: -40, z: -40 }).await;
         assert_eq!(block.block_state_id().unwrap(), BlockWithState::RedstoneBlock.block_state_id().unwrap());
-
+        // Test no skylight at the same position
+        assert_eq!(world.get_light_level(BlockPosition { x: -40, y: -40, z: -40 }).await, 0);
         // Set blocks
         let mut id = 1;
         for x in (-40..40).step_by(9) {
             for y in (-40..200).step_by(15) {
                 for z in (-40..40).step_by(9) {
-                    world.map.set_block(BlockPosition { x, y, z }, BlockWithState::from_state_id(id).unwrap()).await;
+                    world.set_block(BlockPosition { x, y, z }, BlockWithState::from_state_id(id).unwrap()).await;
                     id += 1;
                 }
             }
@@ -682,7 +683,7 @@ mod tests {
         for x in (-40..40).step_by(9) {
             for y in (-40..200).step_by(15) {
                 for z in (-40..40).step_by(9) {
-                    let got = world.map.get_block(BlockPosition { x, y, z }).await.block_state_id().unwrap();
+                    let got = world.get_block(BlockPosition { x, y, z }).await.unwrap().block_state_id().unwrap();
                     assert_eq!(id, got);
                     id += 1;
                 }

@@ -162,6 +162,10 @@ impl World {
         self.map.get_network_chunk_column_data(position).await
     }
 
+    pub async fn get_light_level(&'static self, position: BlockPosition) -> u8 {
+        LightManager::new(&self.map).get_light_level(LightPosition::from(position)).await
+    }
+
 }
 
 #[cfg(test)]
