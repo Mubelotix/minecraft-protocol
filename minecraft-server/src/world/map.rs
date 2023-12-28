@@ -774,4 +774,17 @@ mod tests {
         let movement = world.map.try_move(&positionned_box, &movement).await;
         assert_eq!(movement, Translation { x: 0.2200000000000003, y: -1.1000000000000014, z: 0.0 }); // It falls down but doesn't get through
     }
+
+    #[tokio::test]
+    async fn test_light_getters_and_setters() {
+        let world = Box::leak(Box::new(World::new(broadcast_channel(100).1)));
+        world.map.load(ChunkColumnPosition { cx: 0, cz: 0 }).await;
+
+        // Test set_light_level
+        world.set_light_level(BlockPosition { x: 0, y: 0, z: 0 }, 15).await;
+        assert_eq!(world.get_light_level(BlockPosition { x: 0, y: 0, z: 0 }).await, 15);
+
+        world.set_light_level(BlockPosition { x: 0, y: 10, z: 0 }, 0).await;
+        assert_eq!(world.get_light_level(BlockPosition { x: 0, y: 10, z: 0 }).await, 0);
+    }
 }

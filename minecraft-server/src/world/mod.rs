@@ -166,6 +166,10 @@ impl World {
         LightManager::new(&self.map).get_light_level(LightPosition::from(position)).await
     }
 
+    pub async fn set_light_level(&'static self, position: BlockPosition, light_level: u8) {
+        LightManager::new(&self.map).set_light_level(LightPosition::from(position), light_level).await;
+    }
+
 }
 
 #[cfg(test)]

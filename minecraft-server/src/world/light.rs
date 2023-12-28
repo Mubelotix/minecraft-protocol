@@ -289,16 +289,15 @@ impl LightManager {
         }
     }
 
-    async fn set_light_level(&mut self, position: LightPosition, level: u8) {
+    pub async fn set_light_level(&mut self, position: LightPosition, level: u8) {
         let chunk_col_position = ChunkColumnPosition::from(position.clone());
-        let shard_id = ChunkColumnPosition::from(chunk_col_position.clone()).shard(self.world_map.get_shard_count());
+        let shard_id = chunk_col_position.clone().shard(self.world_map.get_shard_count());
         self.ensure_shard(shard_id).await;
 
         if let Some(shard) = &mut self.current_shard {
             // Here, we use a reference to `shard` instead of trying to move it
             if let Some(col) = shard.get_mut(&chunk_col_position) {
-                if let Ok(_) = col.light.sky_light.set_level(LightPositionInChunkColumn::from(position), level) {
-                    return;
+                if col.light.sky_light.set_level(LightPositionInChunkColumn::from(position), level).is_ok() {
                 } else {
                     error!("Chunk column found at {:?} in shard {} but light level not found", chunk_col_position, shard_id);
                 }
@@ -313,7 +312,7 @@ impl LightManager {
 
     pub async fn get_light_level(&mut self, position: LightPosition) -> u8 {
         let chunk_col_position = ChunkColumnPosition::from(position.clone());
-        let shard_id = ChunkColumnPosition::from(chunk_col_position.clone()).shard(self.world_map.get_shard_count());
+        let shard_id = chunk_col_position.clone().shard(self.world_map.get_shard_count());
         self.ensure_shard(shard_id).await;
 
         if let Some(shard) = &mut self.current_shard {
@@ -334,6 +333,7 @@ impl LightManager {
             unreachable!("ensure shard always sets to current_shard the requested shard")
         }
     }
+
 
     async fn set_block(&mut self, block_position: BlockPosition, block: Block) {
         let mut to_explore = BinaryHeap::new();
