@@ -244,7 +244,7 @@ pub struct LightManager {
 }
 
 impl LightManager {
-    fn new(world_map: &'static WorldMap) -> Self {
+    pub fn new(world_map: &'static WorldMap) -> Self {
         Self {
             world_map,
             current_shard: None,
@@ -255,8 +255,15 @@ impl LightManager {
     #[instrument(skip(world_map))]
     pub async fn update_light(world_map: &'static WorldMap, block_position: BlockPosition, block: BlockWithState) {
         let mut light_manager = Self::new(world_map);
+        let block = Block::from_state_id(block.block_id()).unwrap();
+        
+        if block.is_transparent() {
 
-        light_manager.set_block(block_position, block).await;
+        } else {
+            light_manager.set_block(block_position.clone(), block).await;
+            light_manager.set_light_level(LightPosition::from(block_position), 0).await;
+        }
+
     }
 
     async fn ensure_shard(&mut self, shard_id: usize) {
@@ -283,18 +290,56 @@ impl LightManager {
     }
 
     async fn set_light_level(&mut self, position: LightPosition, level: u8) {
-        unimplemented!();
+        let chunk_col_position = ChunkColumnPosition::from(position.clone());
+        let shard_id = ChunkColumnPosition::from(chunk_col_position.clone()).shard(self.world_map.get_shard_count());
+        self.ensure_shard(shard_id).await;
+
+        if let Some(shard) = &mut self.current_shard {
+            // Here, we use a reference to `shard` instead of trying to move it
+            if let Some(col) = shard.get_mut(&chunk_col_position) {
+                if let Ok(_) = col.light.sky_light.set_level(LightPositionInChunkColumn::from(position), level) {
+                    return;
+                } else {
+                    error!("Chunk column found at {:?} in shard {} but light level not found", chunk_col_position, shard_id);
+                }
+            } else {
+                error!("Chunk column not found at {:?} in shard {}", chunk_col_position, shard_id);
+            }
+
+        } else {
+            unreachable!("ensure shard always sets to current_shard the requested shard")
+        }
     }
 
-    async fn get_light_level(&mut self, position: LightPosition) -> u8 {
-        unimplemented!();
+    pub async fn get_light_level(&mut self, position: LightPosition) -> u8 {
+        let chunk_col_position = ChunkColumnPosition::from(position.clone());
+        let shard_id = ChunkColumnPosition::from(chunk_col_position.clone()).shard(self.world_map.get_shard_count());
+        self.ensure_shard(shard_id).await;
+
+        if let Some(shard) = &mut self.current_shard {
+            // Here, we use a reference to `shard` instead of trying to move it
+            if let Some(col) = shard.get_mut(&chunk_col_position) {
+                if let Ok(level) = col.light.sky_light.get_level(LightPositionInChunkColumn::from(position)) {
+                    level
+                } else {
+                    error!("Chunk column found at {:?} in shard {} but light level not found", chunk_col_position, shard_id);
+                    0
+                }
+            } else {
+                error!("Chunk column not found at {:?} in shard {}", chunk_col_position, shard_id);
+                0
+            }
+
+        } else {
+            unreachable!("ensure shard always sets to current_shard the requested shard")
+        }
     }
 
-    async fn set_block(&mut self, block_position: BlockPosition, block: BlockWithState) {
+    async fn set_block(&mut self, block_position: BlockPosition, block: Block) {
         let mut to_explore = BinaryHeap::new();
         let position = LightPosition::from(block_position.clone());
         to_explore.extend(position.get_neighbors(24));
-        /*while let Some(postion) = to_explore.pop() {
+        while let Some(postion) = to_explore.pop() {
 
             if let Some(column) = self.get_chunk_column(position.clone().into()).await {
                 let block = Block::from(column.get_block(position.clone().into()));
@@ -305,10 +350,12 @@ impl LightManager {
                     let new_level = if is_inside { postion.clone().y as u8 - block.light_absorption() - 1 } else { MAX_LIGHT_LEVEL };
                     let new_position = LightPositionInChunkColumn::from(postion.clone());
 
-                    to_explore.extend(postion.clone().get_neighbors(24));                
+                    self.set_light_level(position.clone(), new_level).await;
+
+                    //to_explore.extend(postion.clone().get_neighbors(24));                
                 }          
             } 
-        }*/
+        }
 
         // Clear locked chunks
 
@@ -541,5 +588,4 @@ mod tests {
         assert_eq!(empty_light_mask.items.len(), 1);
         assert!(empty_light_mask.items.contains(&((u64::MAX - 5) as i64)));
     }
-
 }
