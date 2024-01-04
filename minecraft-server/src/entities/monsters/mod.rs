@@ -33,7 +33,7 @@ pub use zombies::*;
 mod enderman;
 pub use enderman::*;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 #[MinecraftEntity(
     inheritable,
     ancestors { PathfinderMob, Mob, LivingEntity, Entity },

@@ -3,13 +3,11 @@ use crate::*;
 use minecraft_protocol::packets::UUID;
 use tokio::sync::RwLock;
 
-pub type EntityTask = Pin<Box<dyn Future<Output = ()> + Send + Sync + 'static>>;
-pub type EntityTaskHandle = tokio::task::JoinHandle<()>;
-
 pub struct Entities {
     eid_counter: std::sync::atomic::AtomicU32,
     uuid_counter: std::sync::atomic::AtomicU64, 
     pub entities: RwLock<HashMap<Eid, AnyEntity>>,
+    pub tasks: RwLock<HashMap<Eid, EntityTask>>,
 
     /// A hashmap of chunk positions to get a list of entities in a chunk
     pub chunks: RwLock<HashMap<ChunkColumnPosition, HashSet<Eid>>>,
@@ -22,6 +20,7 @@ impl Entities {
             eid_counter: std::sync::atomic::AtomicU32::new(0),
             uuid_counter: std::sync::atomic::AtomicU64::new(0),
             entities: RwLock::new(HashMap::new()),
+            tasks: RwLock::new(HashMap::new()),
             chunks: RwLock::new(HashMap::new()),
             uuids: RwLock::new(HashMap::new()),
         }
@@ -73,15 +72,21 @@ impl Entities {
     pub(super) async fn spawn_entity<E>(&self, entity: AnyEntity, world: &'static World, receiver: BroadcastReceiver<ServerMessage>) -> (Eid, UUID)
         where AnyEntity: TryAsEntityRef<E>, Handler<E>: EntityExt
     {
+        let task = entity.init_task().await;
         let eid = self.eid_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         let uuid = self.uuid_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u128;
         let mut entities = self.entities.write().await;
+        let mut tasks = self.tasks.write().await;
         let mut chunks = self.chunks.write().await;
         let mut uuids = self.uuids.write().await;
         chunks.entry(entity.as_entity().position.chunk_column()).or_insert(HashSet::new()).insert(eid);
         entities.insert(eid, entity);
+        if let Some(task) = task {
+            tasks.insert(eid, task);
+        }
         uuids.insert(uuid, eid);
         drop(entities);
+        drop(tasks);
         drop(chunks);
         drop(uuids);
         let h = Handler::<E>::assume(eid, world);

@@ -265,6 +265,10 @@ impl AnyEntity {
         self.try_as_entity_ref()
     }
 
+    pub async fn init_task(&self) -> Option<EntityTask> {
+        EntityTask::init(self).await
+    }
+
     pub fn to_network(&self) -> Option<minecraft_protocol::ids::entities::Entity> {
         use minecraft_protocol::ids::entities::Entity::*;
         match self {

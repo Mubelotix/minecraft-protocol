@@ -1,15 +1,10 @@
-use minecraft_protocol::network;
-
 use super::*;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 #[MinecraftEntity(
     inheritable,
     ancestors { Monster, PathfinderMob, Mob, LivingEntity, Entity },
     descendants { ZombieVillager, Husk, Drowned, ZombifiedPiglin },
-    defines {
-        Entity.tick(self);
-    }
 )]
 pub struct Zombie {
     pub monster: Monster,
@@ -18,71 +13,75 @@ pub struct Zombie {
     pub is_becoming_drowned: bool,
 }
 
-impl Handler<Zombie> {
-    pub async fn tick(self) {
-        // TODO: Stop initializing the task at each tick
-        let Some(mut newton_task) = NewtonTask::new(self.clone()).await else { return };
-        newton_task.tick(self).await;
+const ZOMBIE_SPEED: f64 = 0.2; // Arbitrary value
+
+pub struct ZombieTask {
+    newton_task: NewtonTask,
+    target: Option<Eid>,
+}
+
+impl ZombieTask {
+    pub async fn init(zombie: &Zombie) -> Option<ZombieTask> {
+        let anyentity: AnyEntity = zombie.to_owned().into();
+        let Some(newton_task) = NewtonTask::init(&anyentity).await else { return None; };
+        Some(ZombieTask {
+            newton_task,
+            target: None
+        })
+    }
+
+    pub async fn tick(&mut self, h: Handler<Zombie>) {
+        self.newton_task.tick(h.into()).await;
     }
 }
 
-pub async fn sleep_ticks(server_msg_rcvr: &mut BroadcastReceiver<ServerMessage>, t: usize) {
-    let mut i = 0;
-    while i < t {
-        let Ok(msg) = server_msg_rcvr.recv().await else {continue};
-        if matches!(&msg, &ServerMessage::Tick(_)) { i += 1; }
-    }
-}
+// pub async fn zombie_ai_task<T: EntityDescendant + ZombieDescendant>(h: Handler<T>, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>) where AnyEntity: TryAsEntityRef<T> {
+//     loop {
+//         sleep_ticks(&mut server_msg_rcvr, 1).await;
 
-const ZOOMBIE_SPEED: f64 = 0.2; // Arbitrary value
+//         let mut self_position = h.observe(|e| e.get_entity().position.clone()).await.unwrap();
+//         let chunk = self_position.chunk_column();
+//         let player_positions = h.world.observe_entities(chunk, |entity| {
+//             let network_entity = entity.to_network().unwrap();
+//             TryAsEntityRef::<Player>::try_as_entity_ref(entity).map(|player| {
+//                 (player.get_entity().position.clone(), network_entity)
+//             })
+//         }).await;
 
-pub async fn zombie_ai_task<T: EntityDescendant + ZombieDescendant>(h: Handler<T>, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>) where AnyEntity: TryAsEntityRef<T> {
-    loop {
-        sleep_ticks(&mut server_msg_rcvr, 1).await;
+//         let Some((target_position, network_entity)) = player_positions.get(0) else { sleep_ticks(&mut server_msg_rcvr, 100).await; continue };
+//         let target_object = CollisionShape {
+//             x1: target_position.x - network_entity.width() as f64 / 2.0,
+//             y1: target_position.y,
+//             z1: target_position.z - network_entity.width() as f64 / 2.0,
+//             x2: target_position.x + network_entity.width() as f64 / 2.0,
+//             y2: target_position.y + network_entity.height() as f64,
+//             z2: target_position.z + network_entity.width() as f64 / 2.0,
+//         };
 
-        let mut self_position = h.observe(|e| e.get_entity().position.clone()).await.unwrap();
-        let chunk = self_position.chunk_column();
-        let player_positions = h.world.observe_entities(chunk, |entity| {
-            let network_entity = entity.to_network().unwrap();
-            TryAsEntityRef::<Player>::try_as_entity_ref(entity).map(|player| {
-                (player.get_entity().position.clone(), network_entity)
-            })
-        }).await;
-
-        let Some((target_position, network_entity)) = player_positions.get(0) else { sleep_ticks(&mut server_msg_rcvr, 100).await; continue };
-        let target_object = CollisionShape {
-            x1: target_position.x - network_entity.width() as f64 / 2.0,
-            y1: target_position.y,
-            z1: target_position.z - network_entity.width() as f64 / 2.0,
-            x2: target_position.x + network_entity.width() as f64 / 2.0,
-            y2: target_position.y + network_entity.height() as f64,
-            z2: target_position.z + network_entity.width() as f64 / 2.0,
-        };
-
-        for _ in 0..50 {
-            let mut translation = Translation {
-                x: target_position.x - self_position.x,
-                y: target_position.y - self_position.y,
-                z: target_position.z - self_position.z,
-            };
-            translation.set_norm(ZOOMBIE_SPEED);
+//         for _ in 0..50 {
+//             let mut translation = Translation {
+//                 x: target_position.x - self_position.x,
+//                 y: target_position.y - self_position.y,
+//                 z: target_position.z - self_position.z,
+//             };
+//             translation.set_norm(ZOMBIE_SPEED);
     
-            let authorized_translation = h.world.try_move(&target_object, &translation).await;
+//             let authorized_translation = h.world.try_move(&target_object, &translation).await;
             
-            let new_pos = h.mutate(|e| {
-                e.get_entity_mut().position += authorized_translation;
-                (e.get_entity().position.clone(), EntityChanges::position())
-            }).await;
-            self_position = match new_pos {
-                Some(pos) => pos,
-                None => break,
-            };
+//             let new_pos = h.mutate(|e| {
+//                 e.get_entity_mut().position += authorized_translation;
+//                 (e.get_entity().position.clone(), EntityChanges::position())
+//             }).await;
+//             self_position = match new_pos {
+//                 Some(pos) => pos,
+//                 None => break,
+//             };
 
-            sleep_ticks(&mut server_msg_rcvr, 1).await; // TODO: do while
-        }
+//             sleep_ticks(&mut server_msg_rcvr, 1).await; // TODO: do while
+//         }
         
-    }
-}
+//     }
+// }
 
 #[derive(Default)]
 #[MinecraftEntity(

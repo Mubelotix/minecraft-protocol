@@ -21,7 +21,7 @@ pub struct SlotItem {
 
 #[cfg_attr(test, derive(PartialEq))]
 #[minecraft_enum(VarInt)]
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Hand {
     MainHand,
     OffHand,

@@ -2,22 +2,19 @@ use crate::CollisionShape;
 
 use super::*;
 
-pub struct NewtonTask<T: EntityDescendant> where AnyEntity: TryAsEntityRef<T> {
+pub struct NewtonTask {
     width: f64,
     height: f64,
-    _phantom: std::marker::PhantomData<T>,
 }
 
-impl<T: EntityDescendant> NewtonTask<T> where AnyEntity: TryAsEntityRef<T> {
-    /// Initialize a new Newton task for an entity.
-    /// Returns None if the entity has no network entity or doesn't exist anymore.
-    pub async fn new(h: Handler<T>) -> Option<NewtonTask<T>> {
-        let Some(network_entity) = h.observe_any(|any_entity| any_entity.to_network()).await else { return None; };
+impl NewtonTask {
+    pub async fn init(entity: &AnyEntity) -> Option<NewtonTask> {
+        let network_entity = entity.to_network();
     
         let (width, height) = match network_entity {
             Some(network_entity) => (network_entity.width() as f64, network_entity.height() as f64),
             None => {
-                warn!("Entity {} has no network entity", h.eid);
+                warn!("Entity has no network entity");
                 return None;
             }
         };
@@ -25,11 +22,10 @@ impl<T: EntityDescendant> NewtonTask<T> where AnyEntity: TryAsEntityRef<T> {
         Some(NewtonTask {
             width,
             height,
-            _phantom: std::marker::PhantomData,
         })
     }
 
-    pub async fn tick(&mut self, h: Handler<T>) {
+    pub async fn tick(&mut self, h: Handler<Entity>) {
         // Get data from entity
         let Some((mut position, mut velocity)) = h.observe_any(|any_entity| {
             let entity = any_entity.as_entity();
