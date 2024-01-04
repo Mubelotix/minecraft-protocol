@@ -47,6 +47,7 @@ pub use minecraft_protocol::{
     nbt::NbtTag,
     packets::UUID
 };
+pub use crate::world::EntityChangeSet;
 pub use crate::prelude::*;
 use std::{pin::Pin, future::Future};
 

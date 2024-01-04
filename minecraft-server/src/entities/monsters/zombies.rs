@@ -30,8 +30,8 @@ impl ZombieTask {
         })
     }
 
-    pub async fn tick(&mut self, h: Handler<Zombie>) {
-        self.newton_task.tick(h.into()).await;
+    pub async fn tick(&mut self, h: Handler<Zombie>, entity_change_set: &EntityChangeSet) {
+        self.newton_task.tick(h.into(), entity_change_set).await;
     }
 }
 

@@ -5,6 +5,7 @@ use super::*;
 pub struct NewtonTask {
     width: f64,
     height: f64,
+    on_ground: bool,
 }
 
 impl NewtonTask {
@@ -22,10 +23,17 @@ impl NewtonTask {
         Some(NewtonTask {
             width,
             height,
+            on_ground: false,
         })
     }
 
-    pub async fn tick(&mut self, h: Handler<Entity>) {
+    pub async fn tick(&mut self, h: Handler<Entity>, entity_change_set: &EntityChangeSet) {
+        // If it was on ground before and hasn't moved since, skip the turn
+        // TODO: detect if the ground is destroyed
+        if self.on_ground && !entity_change_set.get(&h.eid).copied().unwrap_or_default().position_changed() {
+            return;
+        }
+
         // Get data from entity
         let Some((mut position, mut velocity)) = h.observe_any(|any_entity| {
             let entity = any_entity.as_entity();
@@ -33,9 +41,7 @@ impl NewtonTask {
         }).await else { return; };
 
         // Apply velocity and collisions
-        let mut changes = EntityChanges::nothing();
-        let mut new_velocity = velocity.clone();
-        new_velocity.y -= 9.81/20.0;
+        velocity.y -= 9.81/20.0;
         let bounding_box = CollisionShape {
             x1: position.x - self.width/2.0,
             y1: position.y,
@@ -44,22 +50,10 @@ impl NewtonTask {
             y2: position.y + self.height,
             z2: position.z + self.width/2.0,
         };
-        let new_velocity = h.world.try_move(&bounding_box, &new_velocity).await;
-        if velocity.x != new_velocity.x {
-            velocity.x = 0.0;
-            changes += EntityChanges::velocity();
-        }
-        if velocity.y != new_velocity.y {
-            velocity.y = 0.0;
-            changes += EntityChanges::velocity();
-        }
-        if velocity.z != new_velocity.z {
-            velocity.z = 0.0;
-            changes += EntityChanges::velocity();
-        }
-        if !new_velocity.is_zero() {
-            changes += EntityChanges::position();
-            position += new_velocity;
+        let new_velocity = h.world.try_move(&bounding_box, &velocity).await;
+        self.on_ground = velocity.y < 0.0 && new_velocity.y >= 0.0;
+        if !velocity.is_zero() {
+            position += new_velocity.clone();
         }
 
         // TODO(feat): Apply air resistance to x and z velocity
@@ -67,14 +61,10 @@ impl NewtonTask {
 
         // Mutate entity
         // TODO(correctness): Before modifying entity values, we should ensure the original values we based the changes on are still the same
-        if changes.nothing_changed() {
-            return;
-        }
         h.mutate(|entity| {
             let entity = entity.get_entity_mut();
-            entity.velocity = velocity;
+            entity.velocity = new_velocity;
             entity.position = position;
-            ((), changes)
         }).await;
     }
 }

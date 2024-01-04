@@ -8,7 +8,7 @@ pub struct Entities {
     uuid_counter: std::sync::atomic::AtomicU64, 
     tasks: RwLock<HashMap<Eid, EntityTask>>,
     entities: RwLock<HashMap<Eid, AnyEntity>>,
-    change_set: RwLock<HashMap<Eid, EntityChanges>>,
+    change_set: RwLock<EntityChangeSet>,
 
     /// A hashmap of chunk positions to get a list of entities in a chunk
     chunks: RwLock<HashMap<ChunkColumnPosition, HashSet<Eid>>>,
@@ -122,10 +122,11 @@ impl Entities {
     }
 
     pub(super) async fn tick(&self, world: &'static World) {
+        let entity_change_set = std::mem::take(&mut *self.change_set.write().await);
         let mut tasks = self.tasks.write().await;
         for (eid, task) in tasks.iter_mut() {
             let h = Handler::<Entity>::assume(*eid, world);
-            task.tick(h).await;
+            task.tick(h, &entity_change_set).await;
         }
     }
 }
