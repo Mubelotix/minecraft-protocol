@@ -102,14 +102,19 @@ impl ZombieTask {
     }
 
     /// Returns the movement towards the target that can be applied without colliding with the world.
-    async fn get_movement(&self, h: &Handler<Zombie>, self_position: &Position, target_position: &Position) -> Translation {
+    async fn get_movement(&mut self, h: &Handler<Zombie>, self_position: &Position, target_position: &Position) -> Translation {
         // Create a movement vector
         let mut translation = Translation {
             x: target_position.x - self_position.x,
             y: target_position.y - self_position.y,
             z: target_position.z - self_position.z,
         };
-        if translation.norm() > ZOMBIE_BASE_MOVEMENT_SPEED {
+        let norm = translation.norm();
+        if norm > ZOMBIE_BASE_FOLLOW_RANGE {
+            self.target = None;
+            return Translation::zero();
+        }
+        if norm > ZOMBIE_BASE_MOVEMENT_SPEED {
             translation.set_norm(ZOMBIE_BASE_MOVEMENT_SPEED);
         }
 
