@@ -1,15 +1,10 @@
-use minecraft_protocol::network;
-
 use super::*;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 #[MinecraftEntity(
     inheritable,
     ancestors { Monster, PathfinderMob, Mob, LivingEntity, Entity },
     descendants { ZombieVillager, Husk, Drowned, ZombifiedPiglin },
-    defines {
-        Entity.init(self, server_msg_rcvr: BroadcastReceiver<ServerMessage>);
-    }
 )]
 pub struct Zombie {
     pub monster: Monster,
@@ -18,68 +13,160 @@ pub struct Zombie {
     pub is_becoming_drowned: bool,
 }
 
-impl Handler<Zombie> {
-    pub async fn init(self, server_msg_rcvr: BroadcastReceiver<ServerMessage>) {
-        self.insert_task("newton", tokio::spawn(newton_task(self.clone(), server_msg_rcvr.resubscribe()))).await;
-        self.insert_task("zombie-ai", tokio::spawn(zombie_ai_task(self.clone(), server_msg_rcvr))).await;
-    }
+// TODO: Attributes should be stored in a nicer way
+// https://minecraft.wiki/w/Attribute
+const ZOMBIE_BASE_FOLLOW_RANGE: f64 = 35.0;
+const ZOMBIE_BASE_MOVEMENT_SPEED: f64 = 0.23;
+const ZOMBIE_SEARCH_COOLDOWN: u64 = 20;
+
+pub struct ZombieTask {
+    newton_task: NewtonTask,
+    target: Option<Eid>,
+    last_search_tick: u64,
 }
 
-pub async fn sleep_ticks(server_msg_rcvr: &mut BroadcastReceiver<ServerMessage>, t: usize) {
-    let mut i = 0;
-    while i < t {
-        let Ok(msg) = server_msg_rcvr.recv().await else {continue};
-        if matches!(&msg, &ServerMessage::Tick(_)) { i += 1; }
+impl ZombieTask {
+    pub async fn init(zombie: &Zombie) -> Option<ZombieTask> {
+        let anyentity: AnyEntity = zombie.to_owned().into();
+        let Some(newton_task) = NewtonTask::init(&anyentity).await else { return None; };
+        Some(ZombieTask {
+            newton_task,
+            target: None,
+            last_search_tick: 0,
+        })
     }
-}
 
-const ZOOMBIE_SPEED: f64 = 0.2; // Arbitrary value
+    /// Sets the target to the closest player in range.
+    /// 
+    /// Returns the position of the zombie and the position of the target as an optimization, just so that we don't have to get them again.
+    async fn acquire_target(&mut self, h: &Handler<Zombie>) -> Option<(Position, Position)> {
+        // Get the range of chunks to search
+        let self_position = h.observe(|e| e.get_entity().position.clone()).await?;
+        let mut lowest = self_position.clone();
+        lowest.x -= ZOMBIE_BASE_FOLLOW_RANGE.floor();
+        lowest.z -= ZOMBIE_BASE_FOLLOW_RANGE.floor();
+        let mut highest = self_position.clone();
+        highest.x += ZOMBIE_BASE_FOLLOW_RANGE.ceil();
+        highest.z += ZOMBIE_BASE_FOLLOW_RANGE.ceil();
+        let lowest_chunk = lowest.chunk_column();
+        let highest_chunk = highest.chunk_column();
 
-pub async fn zombie_ai_task<T: EntityDescendant + ZombieDescendant>(h: Handler<T>, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>) where AnyEntity: TryAsEntityRef<T> {
-    loop {
-        sleep_ticks(&mut server_msg_rcvr, 1).await;
+        // List all players in area
+        let mut player_positions = HashMap::new();
+        for cx in lowest_chunk.cx..=highest_chunk.cx {
+            for cz in lowest_chunk.cz..=highest_chunk.cz {
+                let chunk_position = ChunkColumnPosition { cx, cz };
+                h.world.observe_entities(chunk_position, |entity, eid| -> Option<()> {
+                    TryAsEntityRef::<Player>::try_as_entity_ref(entity).map(|player| {
+                        player_positions.insert(eid, player.get_entity().position.clone());
+                    });
+                    None
+                }).await;
+            }
+        }
 
-        let mut self_position = h.observe(|e| e.get_entity().position.clone()).await.unwrap();
-        let chunk = self_position.chunk_column();
-        let player_positions = h.world.observe_entities(chunk, |entity| {
-            let network_entity = entity.to_network().unwrap();
-            TryAsEntityRef::<Player>::try_as_entity_ref(entity).map(|player| {
-                (player.get_entity().position.clone(), network_entity)
+        // Return if no players are found
+        if player_positions.is_empty() {
+            return None;
+        }
+
+        // Get their distances
+        let mut player_distances = Vec::with_capacity(player_positions.len());
+        for (eid, position) in &player_positions {
+            player_distances.push((*eid, position.distance(&self_position)));
+        }
+        player_distances.sort_by(|(_, d1), (_, d2)| d1.partial_cmp(d2).unwrap());
+
+        // Get the closest player that's in range
+        let (target_eid, target_dist) = player_distances[0];
+        if target_dist > ZOMBIE_BASE_FOLLOW_RANGE as f64 {
+            return None;
+        }
+        self.target = Some(target_eid);
+
+        // TODO: ensure there is a line of sight
+
+        player_positions.remove(&target_eid).map(|target_position| (self_position, target_position))
+    }
+
+    /// Returns the position of the target if any.
+    async fn get_target_position(&self, h: &Handler<Zombie>) -> Option<Position> {
+        let target_eid = self.target?;
+        h.world.observe_entity(target_eid, |entity| {
+            TryAsEntityRef::<Entity>::try_as_entity_ref(entity).map(|player| {
+                player.position.clone()
             })
-        }).await;
+        }).await.flatten()
+    }
 
-        let Some((target_position, network_entity)) = player_positions.get(0) else { sleep_ticks(&mut server_msg_rcvr, 100).await; continue };
-        let target_object = CollisionShape {
-            x1: target_position.x - network_entity.width() as f64 / 2.0,
-            y1: target_position.y,
-            z1: target_position.z - network_entity.width() as f64 / 2.0,
-            x2: target_position.x + network_entity.width() as f64 / 2.0,
-            y2: target_position.y + network_entity.height() as f64,
-            z2: target_position.z + network_entity.width() as f64 / 2.0,
+    /// Returns the position of the zombie.
+    async fn get_self_position(&self, h: &Handler<Zombie>) -> Option<Position> {
+        h.observe(|e| e.get_entity().position.clone()).await
+    }
+
+    /// Returns the movement towards the target that can be applied without colliding with the world.
+    async fn get_movement(&mut self, h: &Handler<Zombie>, self_position: &Position, target_position: &Position) -> Translation {
+        // Create a movement vector
+        let mut translation = Translation {
+            x: target_position.x - self_position.x,
+            y: target_position.y - self_position.y,
+            z: target_position.z - self_position.z,
+        };
+        let norm = translation.norm();
+        if norm > ZOMBIE_BASE_FOLLOW_RANGE {
+            self.target = None;
+            return Translation::zero();
+        }
+        if norm > ZOMBIE_BASE_MOVEMENT_SPEED {
+            translation.set_norm(ZOMBIE_BASE_MOVEMENT_SPEED);
+        }
+
+        // Create a collision shape
+        let collision_shape = CollisionShape {
+            x1: self_position.x - 0.5,
+            y1: self_position.y,
+            z1: self_position.z - 0.5,
+            x2: self_position.x + 0.5,
+            y2: self_position.y + 1.95,
+            z2: self_position.z + 0.5,
         };
 
-        for _ in 0..50 {
-            let mut translation = Translation {
-                x: target_position.x - self_position.x,
-                y: target_position.y - self_position.y,
-                z: target_position.z - self_position.z,
-            };
-            translation.set_norm(ZOOMBIE_SPEED);
-    
-            let authorized_translation = h.world.try_move(&target_object, &translation).await;
-            
-            let new_pos = h.mutate(|e| {
-                e.get_entity_mut().position += authorized_translation;
-                (e.get_entity().position.clone(), EntityChanges::position())
-            }).await;
-            self_position = match new_pos {
-                Some(pos) => pos,
-                None => break,
-            };
+        // Restrict the movement considering world collisions
+        h.world.try_move(&collision_shape, &translation).await
+    }
 
-            sleep_ticks(&mut server_msg_rcvr, 1).await; // TODO: do while
+    pub async fn tick(&mut self, h: Handler<Zombie>, tick_id: u64, entity_change_set: &EntityChangeSet) {
+        // Acquire target if none
+        let mut positions = None;
+        if self.target.is_none() && self.last_search_tick + ZOMBIE_SEARCH_COOLDOWN < tick_id {
+            positions = self.acquire_target(&h).await;
+            self.last_search_tick = tick_id;
         }
-        
+
+        // Get target position if not already acquired
+        if self.target.is_some() && positions.is_none() {
+            let target_position = self.get_target_position(&h).await;
+            let self_position = self.get_self_position(&h).await;
+            positions = match (target_position, self_position) {
+                (Some(target_position), Some(self_position)) => Some((self_position, target_position)),
+                _ => None,
+            };
+        }
+
+        // Get the movement to apply
+        if let Some((self_position, target_position)) = positions {
+            let movement = self.get_movement(&h, &self_position, &target_position).await;
+            let (yaw, pitch) = movement.yaw_pitch();
+            h.mutate(|e| {
+                e.get_entity_mut().position += movement;
+                e.get_entity_mut().yaw = yaw;
+                e.get_entity_mut().pitch = pitch;
+                e.get_living_entity_mut().head_yaw = yaw; // TODO: Make pitch and yaw work on zombies
+            }).await;
+        }
+
+        // Apply gravity and velocity
+        self.newton_task.tick(h.into(), entity_change_set).await;
     }
 }
 

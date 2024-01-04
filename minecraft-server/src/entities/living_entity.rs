@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Clone)]
 #[MinecraftEntity(
     inheritable,
     ancestors { Entity },

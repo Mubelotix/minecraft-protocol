@@ -11,6 +11,8 @@ use ecs::*;
 mod collisions;
 pub use collisions::*;
 
+pub type EntityChangeSet = HashMap<Eid, EntityChanges>; 
+
 /// World is the union of the map and entities.
 /// World handles loaded chunks and entities.
 /// It is responsible for notifying players of changes in the world.
@@ -106,12 +108,12 @@ impl World {
         self.entities.observe_entity(eid, observer).await
     }
 
-    pub async fn observe_entities<R>(&self, chunk: ChunkColumnPosition, observer: impl FnMut(&AnyEntity) -> Option<R>) -> Vec<R> {
+    pub async fn observe_entities<R>(&self, chunk: ChunkColumnPosition, observer: impl FnMut(&AnyEntity, Eid) -> Option<R>) -> Vec<R> {
         self.entities.observe_entities(chunk, observer).await
     }
 
     // TODO: add version that doesn't notify modified entity
-    pub async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> (R, EntityChanges)) -> Option<R> {
+    pub async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> R) -> Option<R> {
         // TODO: change events
         match self.entities.mutate_entity(eid, mutator).await {
             Some((r, changes)) => {
@@ -139,9 +141,6 @@ impl World {
                         head_yaw,
                     }).await;
                 }
-                if changes.metadata_changed() {
-                    todo!()
-                }
                 Some(r)
             },
             None => None,
@@ -157,6 +156,11 @@ impl World {
                 let _ = sender.try_send(change.clone());
             }
         }
+    }
+
+    pub async fn tick(&'static self, tick_id: u64) {
+        self.entities.tick(tick_id, self).await;
+        // TODO: tick world
     }
 }
 

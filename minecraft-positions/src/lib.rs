@@ -112,6 +112,10 @@ impl Position {
             cz: (self.z.floor() as i32).div_euclid(16),
         }
     }
+
+    pub fn distance(&self, other: &Position) -> f64 {
+        ((self.x - other.x).powi(2) + (self.y - other.y).powi(2) + (self.z - other.z).powi(2)).sqrt()
+    }
 }
 
 impl std::ops::Add<Position> for Position {

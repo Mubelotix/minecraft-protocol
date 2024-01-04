@@ -13,7 +13,7 @@ pub use flying::*;
 mod bat;
 pub use bat::*;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 #[MinecraftEntity(
     inheritable,
     ancestors { LivingEntity, Entity },
@@ -36,7 +36,7 @@ pub struct AmbientCreature {
     pub mob: Mob,
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 #[MinecraftEntity(
     inheritable,
     ancestors { Mob, LivingEntity, Entity },

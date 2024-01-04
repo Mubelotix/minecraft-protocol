@@ -268,11 +268,24 @@ impl<'a> Iterator for PointIter<'a> {
 }
 
 /// Vector describing a movement
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Translation {
     pub x: f64,
     pub y: f64,
     pub z: f64,
+}
+
+impl Translation {
+    pub fn zero() -> Self {
+        Self::default()
+    }
+
+    pub fn yaw_pitch(&self) -> (f32, f32) {
+        let r = (self.x * self.x + self.y * self.y + self.z * self.z).sqrt();
+        let pitch = -(self.y / r).asin() / std::f64::consts::PI * 180.0;
+        let yaw = -(self.x / self.z).atan() / std::f64::consts::PI * 180.0;
+        (yaw as f32, pitch as f32)
+    }
 }
 
 pub struct TranslationFragmentIterator<'a> {
