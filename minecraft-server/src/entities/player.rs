@@ -363,6 +363,9 @@ impl Handler<Player> {
             RequestPing { payload } => {
                 self.send_packet(PlayClientbound::Ping { id: payload as i32 }).await;
             }
+            KeepAlive { keep_alive_id } => {
+                self.send_packet(PlayClientbound::KeepAlive { keep_alive_id }).await;
+            }
             packet => warn!("Unsupported packet received: {packet:?}"),
         }
     }
