@@ -108,7 +108,7 @@ impl World {
         self.entities.observe_entity(eid, observer).await
     }
 
-    pub async fn observe_entities<R>(&self, chunk: ChunkColumnPosition, observer: impl FnMut(&AnyEntity) -> Option<R>) -> Vec<R> {
+    pub async fn observe_entities<R>(&self, chunk: ChunkColumnPosition, observer: impl FnMut(&AnyEntity, Eid) -> Option<R>) -> Vec<R> {
         self.entities.observe_entities(chunk, observer).await
     }
 
