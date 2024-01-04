@@ -69,6 +69,8 @@ impl Entities {
         }
     }
 
+    // TODO: Since we lock tasks it makes it impossible for an entity task to itself call this function
+    // It would be resolved if we had a temporary task buffer that would be added only on Ecs::tick
     pub(super) async fn spawn_entity<E>(&self, entity: AnyEntity, world: &'static World, receiver: BroadcastReceiver<ServerMessage>) -> (Eid, UUID)
         where AnyEntity: TryAsEntityRef<E>, Handler<E>: EntityExt
     {
@@ -103,5 +105,13 @@ impl Entities {
         drop(chunks);
         self.uuids.write().await.retain(|_,v| *v != eid);
         entity
+    }
+
+    pub(super) async fn tick(&self, world: &'static World) {
+        let mut tasks = self.tasks.write().await;
+        for (eid, task) in tasks.iter_mut() {
+            let h = Handler::<Entity>::assume(*eid, world);
+            task.tick(h).await;
+        }
     }
 }

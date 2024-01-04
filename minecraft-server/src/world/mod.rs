@@ -158,6 +158,11 @@ impl World {
             }
         }
     }
+
+    pub async fn tick(&'static self) {
+        self.entities.tick(self).await;
+        // TODO: tick world
+    }
 }
 
 #[cfg(test)]
