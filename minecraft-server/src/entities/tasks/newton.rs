@@ -2,6 +2,13 @@ use crate::CollisionShape;
 
 use super::*;
 
+/// This task applies gravity and velocity to an entity.
+/// It has minimal performance impact.
+/// 
+/// It can be used by other larger tasks.
+/// In that case, other tasks should stick to modifying `x`, `z`, `vx`, `vz` and `vy`.
+/// This task shall be called at the end of their tick.
+/// See the [ZombieTask] for an example.
 pub struct NewtonTask {
     width: f64,
     height: f64,
