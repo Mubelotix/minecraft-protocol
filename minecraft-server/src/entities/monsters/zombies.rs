@@ -17,10 +17,12 @@ pub struct Zombie {
 // https://minecraft.wiki/w/Attribute
 const ZOMBIE_BASE_FOLLOW_RANGE: f64 = 35.0;
 const ZOMBIE_BASE_MOVEMENT_SPEED: f64 = 0.23;
+const ZOMBIE_SEARCH_COOLDOWN: u64 = 20;
 
 pub struct ZombieTask {
     newton_task: NewtonTask,
     target: Option<Eid>,
+    last_search_tick: u64,
 }
 
 impl ZombieTask {
@@ -29,7 +31,8 @@ impl ZombieTask {
         let Some(newton_task) = NewtonTask::init(&anyentity).await else { return None; };
         Some(ZombieTask {
             newton_task,
-            target: None
+            target: None,
+            last_search_tick: 0,
         })
     }
 
@@ -132,20 +135,21 @@ impl ZombieTask {
         h.world.try_move(&collision_shape, &translation).await
     }
 
-    pub async fn tick(&mut self, h: Handler<Zombie>, entity_change_set: &EntityChangeSet) {
+    pub async fn tick(&mut self, h: Handler<Zombie>, tick_id: u64, entity_change_set: &EntityChangeSet) {
         // Acquire target if none
         let mut positions = None;
-        if self.target.is_none() {
+        if self.target.is_none() && self.last_search_tick + ZOMBIE_SEARCH_COOLDOWN < tick_id {
             positions = self.acquire_target(&h).await;
+            self.last_search_tick = tick_id;
         }
 
         // Get target position if not already acquired
-        if positions.is_none() {
+        if self.target.is_some() && positions.is_none() {
             let target_position = self.get_target_position(&h).await;
             let self_position = self.get_self_position(&h).await;
             positions = match (target_position, self_position) {
                 (Some(target_position), Some(self_position)) => Some((self_position, target_position)),
-                _ => return,
+                _ => None,
             };
         }
 
@@ -161,6 +165,7 @@ impl ZombieTask {
             }).await;
         }
 
+        // Apply gravity and velocity
         self.newton_task.tick(h.into(), entity_change_set).await;
     }
 }

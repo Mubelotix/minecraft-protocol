@@ -122,12 +122,12 @@ impl Entities {
         entity
     }
 
-    pub(super) async fn tick(&self, world: &'static World) {
+    pub(super) async fn tick(&self, tick_id: u64, world: &'static World) {
         let entity_change_set = std::mem::take(&mut *self.change_set.write().await);
         let mut tasks = self.tasks.write().await;
         for (eid, task) in tasks.iter_mut() {
             let h = Handler::<Entity>::assume(*eid, world);
-            task.tick(h, &entity_change_set).await;
+            task.tick(h, tick_id, &entity_change_set).await;
         }
     }
 }

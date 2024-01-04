@@ -158,8 +158,8 @@ impl World {
         }
     }
 
-    pub async fn tick(&'static self) {
-        self.entities.tick(self).await;
+    pub async fn tick(&'static self, tick_id: u64) {
+        self.entities.tick(tick_id, self).await;
         // TODO: tick world
     }
 }

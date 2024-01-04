@@ -22,9 +22,9 @@ impl EntityTask {
         }
     }
 
-    pub async fn tick(&mut self, h: Handler<Entity>, entity_change_set: &EntityChangeSet) {
+    pub async fn tick(&mut self, h: Handler<Entity>, tick_id: u64, entity_change_set: &EntityChangeSet) {
         match self {
-            EntityTask::Zombie(zombie_task) => zombie_task.tick(h.assume_other(), entity_change_set).await,
+            EntityTask::Zombie(zombie_task) => zombie_task.tick(h.assume_other(), tick_id, entity_change_set).await,
         }
     }
 }
