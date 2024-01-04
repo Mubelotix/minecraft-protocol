@@ -6,12 +6,12 @@ use tokio::sync::RwLock;
 pub struct Entities {
     eid_counter: std::sync::atomic::AtomicU32,
     uuid_counter: std::sync::atomic::AtomicU64, 
-    pub entities: RwLock<HashMap<Eid, AnyEntity>>,
-    pub tasks: RwLock<HashMap<Eid, EntityTask>>,
+    tasks: RwLock<HashMap<Eid, EntityTask>>,
+    entities: RwLock<HashMap<Eid, AnyEntity>>,
 
     /// A hashmap of chunk positions to get a list of entities in a chunk
-    pub chunks: RwLock<HashMap<ChunkColumnPosition, HashSet<Eid>>>,
-    pub uuids: RwLock<HashMap<UUID, Eid>>,
+    chunks: RwLock<HashMap<ChunkColumnPosition, HashSet<Eid>>>,
+    uuids: RwLock<HashMap<UUID, Eid>>,
 }
 
 impl Entities {
@@ -19,8 +19,8 @@ impl Entities {
         Entities {
             eid_counter: std::sync::atomic::AtomicU32::new(0),
             uuid_counter: std::sync::atomic::AtomicU64::new(0),
-            entities: RwLock::new(HashMap::new()),
             tasks: RwLock::new(HashMap::new()),
+            entities: RwLock::new(HashMap::new()),
             chunks: RwLock::new(HashMap::new()),
             uuids: RwLock::new(HashMap::new()),
         }
@@ -77,8 +77,8 @@ impl Entities {
         let task = entity.init_task().await;
         let eid = self.eid_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         let uuid = self.uuid_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u128;
-        let mut entities = self.entities.write().await;
         let mut tasks = self.tasks.write().await;
+        let mut entities = self.entities.write().await;
         let mut chunks = self.chunks.write().await;
         let mut uuids = self.uuids.write().await;
         chunks.entry(entity.as_entity().position.chunk_column()).or_insert(HashSet::new()).insert(eid);
