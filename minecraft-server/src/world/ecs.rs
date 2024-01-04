@@ -59,12 +59,13 @@ impl Entities {
             let prev_position = entity.as_entity().position.clone();
             let prev_velocity = entity.as_entity().velocity.clone();
             let prev_pitch = entity.as_entity().pitch;
+            let prev_yaw = entity.as_entity().yaw;
             let r = mutator(entity);
             let mut changes = EntityChanges::other();
             if prev_velocity != entity.as_entity().velocity {
                 changes += EntityChanges::velocity();
             }
-            if prev_pitch != entity.as_entity().pitch { // TODO: detect yaw changes
+            if prev_pitch != entity.as_entity().pitch || prev_yaw != entity.as_entity().yaw {
                 changes += EntityChanges::pitch();
             }
             if prev_position != entity.as_entity().position {

@@ -147,8 +147,12 @@ impl ZombieTask {
         // Get the movement to apply
         if let Some((self_position, target_position)) = positions {
             let movement = self.get_movement(&h, &self_position, &target_position).await;
+            let (yaw, pitch) = movement.yaw_pitch();
             h.mutate(|e| {
                 e.get_entity_mut().position += movement;
+                e.get_entity_mut().yaw = yaw;
+                e.get_entity_mut().pitch = pitch;
+                e.get_living_entity_mut().head_yaw = yaw; // TODO: Make pitch and yaw work on zombies
             }).await;
         }
 

@@ -275,6 +275,15 @@ pub struct Translation {
     pub z: f64,
 }
 
+impl Translation {
+    pub fn yaw_pitch(&self) -> (f32, f32) {
+        let r = (self.x * self.x + self.y * self.y + self.z * self.z).sqrt();
+        let pitch = -(self.y / r).asin() / std::f64::consts::PI * 180.0;
+        let yaw = -(self.x / self.z).atan() / std::f64::consts::PI * 180.0;
+        (yaw as f32, pitch as f32)
+    }
+}
+
 pub struct TranslationFragmentIterator<'a> {
     translation: &'a Translation,
     position: &'a CollisionShape,
