@@ -111,7 +111,7 @@ impl World {
     }
 
     // TODO: add version that doesn't notify modified entity
-    pub async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> (R, EntityChanges)) -> Option<R> {
+    pub async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> R) -> Option<R> {
         // TODO: change events
         match self.entities.mutate_entity(eid, mutator).await {
             Some((r, changes)) => {
@@ -138,9 +138,6 @@ impl World {
                         yaw,
                         head_yaw,
                     }).await;
-                }
-                if changes.metadata_changed() {
-                    todo!()
                 }
                 Some(r)
             },

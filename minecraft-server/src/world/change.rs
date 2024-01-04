@@ -38,13 +38,10 @@ pub enum WorldChange {
     },
 }
 
+#[derive(Clone, Copy)]
 pub struct EntityChanges(u8);
 
 impl EntityChanges {
-    pub const fn other() -> EntityChanges {
-        EntityChanges(0)
-    }
-
     pub const fn nothing() -> EntityChanges {
         EntityChanges(0)
     }
@@ -61,7 +58,7 @@ impl EntityChanges {
         EntityChanges(1 << 2)
     }
 
-    pub const fn metadata() -> EntityChanges {
+    pub const fn other() -> EntityChanges {
         EntityChanges(1 << 3)
     }
 
@@ -81,7 +78,7 @@ impl EntityChanges {
         self.0 & (1 << 2) != 0
     }
 
-    pub const fn metadata_changed(&self) -> bool {
+    pub const fn other_changed(&self) -> bool {
         self.0 & (1 << 3) != 0
     }
 }
@@ -97,5 +94,11 @@ impl std::ops::Add<EntityChanges> for EntityChanges {
 impl std::ops::AddAssign<EntityChanges> for EntityChanges {
     fn add_assign(&mut self, rhs: EntityChanges) {
         self.0 |= rhs.0;
+    }
+}
+
+impl Default for EntityChanges {
+    fn default() -> EntityChanges {
+        EntityChanges::nothing()
     }
 }

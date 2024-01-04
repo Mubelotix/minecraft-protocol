@@ -8,6 +8,7 @@ pub struct Entities {
     uuid_counter: std::sync::atomic::AtomicU64, 
     tasks: RwLock<HashMap<Eid, EntityTask>>,
     entities: RwLock<HashMap<Eid, AnyEntity>>,
+    change_set: RwLock<HashMap<Eid, EntityChanges>>,
 
     /// A hashmap of chunk positions to get a list of entities in a chunk
     chunks: RwLock<HashMap<ChunkColumnPosition, HashSet<Eid>>>,
@@ -21,6 +22,7 @@ impl Entities {
             uuid_counter: std::sync::atomic::AtomicU64::new(0),
             tasks: RwLock::new(HashMap::new()),
             entities: RwLock::new(HashMap::new()),
+            change_set: RwLock::new(HashMap::new()),
             chunks: RwLock::new(HashMap::new()),
             uuids: RwLock::new(HashMap::new()),
         }
@@ -48,14 +50,25 @@ impl Entities {
         results
     }
 
+    // TODO don't return [EntityChanges]
     /// Mutate an entity through a closure
-    pub(super) async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> (R, EntityChanges)) -> Option<(R, EntityChanges)> {
+    pub(super) async fn mutate_entity<R>(&self, eid: Eid, mutator: impl FnOnce(&mut AnyEntity) -> R) -> Option<(R, EntityChanges)> {
         let mut entities = self.entities.write().await;
 
         if let Some(entity) = entities.get_mut(&eid) {
             let prev_position = entity.as_entity().position.clone();
+            let prev_velocity = entity.as_entity().velocity.clone();
+            let prev_pitch = entity.as_entity().pitch;
             let r = mutator(entity);
+            let mut changes = EntityChanges::other();
+            if prev_velocity != entity.as_entity().velocity {
+                changes += EntityChanges::velocity();
+            }
+            if prev_pitch != entity.as_entity().pitch { // TODO: detect yaw changes
+                changes += EntityChanges::pitch();
+            }
             if prev_position != entity.as_entity().position {
+                changes += EntityChanges::position();
                 let old_chunk = prev_position.chunk_column();
                 let new_chunk = entity.as_entity().position.chunk_column();
                 drop(entities);
@@ -63,7 +76,8 @@ impl Entities {
                 chunks.entry(old_chunk).and_modify(|set| { set.remove(&eid); }); // TODO: ensure it gets removed
                 chunks.entry(new_chunk).or_insert(HashSet::new()).insert(eid);
             }
-            Some(r)
+            *self.change_set.write().await.entry(eid).or_default() += changes;
+            Some((r, changes))
         } else {
             None
         }

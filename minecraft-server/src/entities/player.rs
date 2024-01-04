@@ -93,7 +93,7 @@ impl Handler<Player> {
             let old_center_chunk = player.center_chunk.clone();
             let new_center_chunk = player.get_entity().position.chunk();
             player.center_chunk = new_center_chunk.clone();
-            ((old_center_chunk, new_center_chunk, player.render_distance), EntityChanges::other())
+            (old_center_chunk, new_center_chunk, player.render_distance)
         }).await else {return};
 
         // Tell the client which chunk he is in
@@ -113,7 +113,7 @@ impl Handler<Player> {
 
         // Select chunks to load (max 50) and unload
         let Some((loaded_chunks_after, newly_loaded_chunks, unloaded_chunks, uuid)) = self.mutate(|player| {
-            if loaded_chunks_after == player.loaded_chunks { return (None, EntityChanges::nothing()) };
+            if loaded_chunks_after == player.loaded_chunks { return None };
             let mut newly_loaded_chunks: Vec<_> = loaded_chunks_after.difference(&player.loaded_chunks).cloned().collect();
             let unloaded_chunks: Vec<_> = player.loaded_chunks.difference(&loaded_chunks_after).cloned().collect();
             for skipped in newly_loaded_chunks.iter().skip(50) {
@@ -122,7 +122,7 @@ impl Handler<Player> {
             newly_loaded_chunks.truncate(50);
             let uuid = player.info.uuid;
             player.loaded_chunks = loaded_chunks_after.clone();
-            (Some((loaded_chunks_after, newly_loaded_chunks, unloaded_chunks, uuid)), EntityChanges::other())
+            Some((loaded_chunks_after, newly_loaded_chunks, unloaded_chunks, uuid))
         }).await.flatten() else { return };
 
         // Tell the world about the changes
@@ -177,7 +177,7 @@ impl Handler<Player> {
         let packet = packet.serialize_minecraft_packet().unwrap();
         let packets_sent = self.mutate(|player| {
             player.packets_sent += 1;
-            (player.packets_sent, EntityChanges::other())
+            player.packets_sent
         }).await.unwrap_or(0);
         if packets_sent > 500 {
             warn!("Many packets sent ({packets_sent})");
@@ -234,7 +234,7 @@ impl Handler<Player> {
             },
             WorldChange::EntityMetadata { eid, metadata } => todo!(),
             WorldChange::EntityPosition { eid, position } => {
-                let Some(prev_position) = self.mutate(|player| ((player.entity_prev_positions.insert(eid, position.clone())), EntityChanges::other())).await else {return};
+                let Some(prev_position) = self.mutate(|player| player.entity_prev_positions.insert(eid, position.clone())).await else {return};
                 match prev_position {
                     Some(prev_position) => {
                         self.send_packet(PlayClientbound::UpdateEntityPosition {

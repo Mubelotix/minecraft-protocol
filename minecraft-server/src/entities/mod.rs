@@ -111,13 +111,13 @@ impl<T> Handler<T> where AnyEntity: TryAsEntityRef<T> {
         self.world.observe_entity(self.eid, observer).await
     }
 
-    pub async fn mutate<R>(&self, mutator: impl FnOnce(&mut T) -> (R, EntityChanges)) -> Option<R> {
+    pub async fn mutate<R>(&self, mutator: impl FnOnce(&mut T) -> R) -> Option<R> {
         self.world.mutate_entity(self.eid, move |entity| {
             mutator(entity.try_as_entity_mut().expect("Called mutate on the wrong entity"))
         }).await
     }
 
-    pub async fn mutate_any<R>(&self, mutator: impl FnOnce(&mut AnyEntity) -> (R, EntityChanges)) -> Option<R> {
+    pub async fn mutate_any<R>(&self, mutator: impl FnOnce(&mut AnyEntity) -> R) -> Option<R> {
         self.world.mutate_entity(self.eid, mutator).await
     }
 }
