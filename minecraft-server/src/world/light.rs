@@ -334,31 +334,37 @@ impl LightManager {
         }
     }
 
+    async fn get_block(&mut self, position: LightPosition) -> Block {
+        let chunk_col_position = ChunkColumnPosition::from(position.clone());
+        let shard_id = chunk_col_position.clone().shard(self.world_map.get_shard_count());
+        self.ensure_shard(shard_id).await;
 
-    async fn set_block(&mut self, block_position: BlockPosition, block: Block) {
-        let mut to_explore = BinaryHeap::new();
-        let position = LightPosition::from(block_position.clone());
-        to_explore.extend(position.get_neighbors(24));
-        while let Some(postion) = to_explore.pop() {
+        if let Some(shard) = &mut self.current_shard {
+            // Here, we use a reference to `shard` instead of trying to move it
+            if let Some(col) = shard.get_mut(&chunk_col_position) {
+                let block_position = BlockPositionInChunkColumn::from(position);
+                Block::from_id(col.get_block(block_position).block_id()).unwrap()
+            } else {
+                error!("Chunk column not found at {:?} in shard {}", chunk_col_position, shard_id);
+                Block::Air
+            }
 
-            if let Some(column) = self.get_chunk_column(position.clone().into()).await {
-                let block = Block::from(column.get_block(position.clone().into()));
-
-                if block.is_transparent() {
-                    let highest_block = column.get_highest_block_at(&block_position.in_chunk_column());
-                    let is_inside = highest_block > postion.clone().y as u16 + 1;
-                    let new_level = if is_inside { postion.clone().y as u8 - block.light_absorption() - 1 } else { MAX_LIGHT_LEVEL };
-                    let new_position = LightPositionInChunkColumn::from(postion.clone());
-
-                    self.set_light_level(position.clone(), new_level).await;
-
-                    //to_explore.extend(postion.clone().get_neighbors(24));                
-                }          
-            } 
+        } else {
+            unreachable!("ensure shard always sets to current_shard the requested shard")
         }
+    }
 
-        // Clear locked chunks
-
+    // Light propagation when a block is placed
+    async fn set_block(&mut self, block_position: BlockPosition, block: Block) {
+        // Use only self.get_light_level() and self.set_light_level() to get and set light levels
+        // Use only self.get_block() to get the block at a position
+        // Don't use self.get_chunk_column() to get the chunk column, use self.ensure_shard() instead
+        
+        // Use the dijsktra algorithm to propagate the light
+        let mut heap = BinaryHeap::new();
+        let mut visited = HashSet::new();
+        heap.push(block_position.clone());
+       
     }
 
 
