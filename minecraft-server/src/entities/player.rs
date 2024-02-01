@@ -87,6 +87,7 @@ impl Player {
 }
 
 impl Handler<Player> {
+    #[instrument(skip_all)]
     async fn update_center_chunk(self) {
         let Some((old_center_chunk, new_center_chunk, render_distance)) = self.mutate(|player| {
             let old_center_chunk = player.center_chunk.clone();
@@ -96,71 +97,48 @@ impl Handler<Player> {
         }).await else {return};
 
         // Tell the client which chunk he is in
-        if new_center_chunk == old_center_chunk { return };
-        self.send_packet(PlayClientbound::SetCenterChunk { chunk_x: VarInt(new_center_chunk.cx), chunk_z: VarInt(new_center_chunk.cz) }).await;
+        // Maybe the server didn't send all the chunks yet so we have to check if all chunks are loaded
+        if new_center_chunk != old_center_chunk { 
+            self.send_packet(PlayClientbound::SetCenterChunk { chunk_x: VarInt(new_center_chunk.cx), chunk_z: VarInt(new_center_chunk.cz) }).await;
+        };
 
-        // Find out which chunks should be loaded
-        if new_center_chunk.chunk_column() == old_center_chunk.chunk_column() { return };
-        let mut loaded_chunks_after = HashSet::new();
-        for cx in (new_center_chunk.cx - render_distance)..=(new_center_chunk.cx + render_distance) {
-            for cz in (new_center_chunk.cz - render_distance)..=(new_center_chunk.cz + render_distance) {
-                let dist = (((cx - new_center_chunk.cx).pow(2) + (cz - new_center_chunk.cz).pow(2)) as f32).sqrt();
-                if dist > render_distance as f32 { continue };
-                loaded_chunks_after.insert(ChunkColumnPosition { cx, cz });
-            }
-        }
+        let mut loaded_chunks_after_ordered = new_center_chunk.chunk_column().get_circle_from_center(render_distance);
+        loaded_chunks_after_ordered.sort_by_key(|chunk| (chunk.cx - new_center_chunk.cx).abs() + (chunk.cz - new_center_chunk.cz).abs());
+        let loaded_chunks_after: HashSet<_> = loaded_chunks_after_ordered.iter().collect();
+        // TODO: Load n chunks per tick according to the server's TPS
+        const CHUNK_PER_REQUEST: usize = 5;
 
-        // Select chunks to load (max 50) and unload
         let Some((loaded_chunks_after, newly_loaded_chunks, unloaded_chunks, uuid)) = self.mutate(|player| {
-            if loaded_chunks_after == player.loaded_chunks { return (None, EntityChanges::nothing()) };
-            let mut newly_loaded_chunks: Vec<_> = loaded_chunks_after.difference(&player.loaded_chunks).cloned().collect();
-            let unloaded_chunks: Vec<_> = player.loaded_chunks.difference(&loaded_chunks_after).cloned().collect();
-            for skipped in newly_loaded_chunks.iter().skip(50) {
-                loaded_chunks_after.remove(skipped);
-            }
-            newly_loaded_chunks.truncate(50);
+            let newly_loaded_chunks: Vec<_> = loaded_chunks_after_ordered.iter()
+                .filter(|chunk| !player.loaded_chunks.contains(chunk))
+                .take(CHUNK_PER_REQUEST).cloned() 
+                .collect();
+        
+            let unloaded_chunks: Vec<_> = player.loaded_chunks.iter()
+                .filter(|chunk| !loaded_chunks_after.contains(chunk))
+                .cloned()
+                .collect();
+        
+            // loaded_chunks_after = loaded_chunks_before - unloaded_chunks + newly_loaded_chunks
+            let loaded_chunks_after: HashSet<_> = player.loaded_chunks.difference(&unloaded_chunks.iter().cloned().collect()).chain(newly_loaded_chunks.iter()).cloned().collect();
+            player.loaded_chunks = loaded_chunks_after.clone();
+            
             let uuid = player.info.uuid;
+        
             player.loaded_chunks = loaded_chunks_after.clone();
             (Some((loaded_chunks_after, newly_loaded_chunks, unloaded_chunks, uuid)), EntityChanges::other())
         }).await.flatten() else { return };
+        
 
-        // Tell the world about the changes
-        self.world.update_loaded_chunks(uuid, loaded_chunks_after).await;
+        // TODO: optimize, don't wait to load all chunks before sending them to the client
+        self.world.ensure_loaded_chunks(uuid, loaded_chunks_after).await;
 
         // Send the chunks to the client
-        let mut heightmaps = HashMap::new();
-        heightmaps.insert(String::from("MOTION_BLOCKING"), NbtTag::LongArray(vec![0; 37]));
-        let heightmaps = NbtTag::Compound(heightmaps);
         for newly_loaded_chunk in newly_loaded_chunks {
-            let mut column = Vec::new();
-            for cy in -4..20 {
-                let chunk = self.world.get_network_chunk(newly_loaded_chunk.chunk(cy)).await.unwrap_or_else(|| {
-                    error!("Chunk not loaded: {newly_loaded_chunk:?}");
-                    NetworkChunk { // TODO hard error
-                        block_count: 0,
-                        blocks: PalettedData::Single { value: 0 },
-                        biomes: PalettedData::Single { value: 4 },
-                    }
-                });
-                column.push(chunk);
-            }
-            let serialized: Vec<u8> = NetworkChunk::into_data(column).unwrap();
-            let chunk_data = PlayClientbound::ChunkData {
-                value: ChunkData {
-                    chunk_x: newly_loaded_chunk.cx,
-                    chunk_z: newly_loaded_chunk.cz,
-                    heightmaps: heightmaps.clone(),
-                    data: Array::from(serialized.clone()),
-                    block_entities: Array::default(),
-                    sky_light_mask: Array::default(),
-                    block_light_mask: Array::default(),
-                    empty_sky_light_mask: Array::default(),
-                    empty_block_light_mask: Array::default(),
-                    sky_light: Array::default(),
-                    block_light: Array::default(),
-                }
-            };
-            self.send_packet(chunk_data).await;
+            let chunk_column = self.world.get_network_chunk_column_data(newly_loaded_chunk.clone()).await.unwrap_or_else(|| {
+                panic!("Chunk not loaded: {:?}", newly_loaded_chunk);
+            });
+            self.send_raw_packet(chunk_column).await;
         }
 
         // Tell the client to unload chunks
@@ -172,6 +150,7 @@ impl Handler<Player> {
         }
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     async fn send_packet<'a>(&self, packet: PlayClientbound<'a>) {
         let packet = packet.serialize_minecraft_packet().unwrap();
         let packets_sent = self.mutate(|player| {
@@ -185,10 +164,29 @@ impl Handler<Player> {
         packet_sender.send(packet).await.unwrap();
     }
 
+    #[cfg_attr(feature = "tracing", instrument(skip_all))]
+    async fn send_raw_packet(&self, packet: Vec<u8>) {
+        let packets_sent = self.mutate(|player| {
+            player.packets_sent += 1;
+            (player.packets_sent, EntityChanges::other())
+        }).await.unwrap_or(0);
+        if packets_sent > 500 {
+            warn!("Many packets sent ({packets_sent})");
+        }
+        let Some(packet_sender) = self.observe(|player| player.packet_sender.clone()).await else {return};
+        packet_sender.send(packet).await.unwrap();
+    }
+
+    #[instrument(skip_all)]
     async fn on_server_message(self, message: ServerMessage) {
         use ServerMessage::*;
         match message {
             Tick(tick_id) => {
+                #[cfg(feature = "tracing")] {
+                    let span = info_span!("player tick");
+                    let _enter: tracing::span::Entered<'_> = span.enter();    
+                }
+
                 if tick_id % (20*10) == 0 {
                     self.send_packet(PlayClientbound::KeepAlive { keep_alive_id: tick_id as u64 }).await;
                 }
@@ -201,6 +199,7 @@ impl Handler<Player> {
         }
     }
 
+    #[instrument(skip_all)]
     async fn on_world_change(self, change: WorldChange) {
         match change {
             WorldChange::Block(position, block) => {
@@ -266,7 +265,7 @@ impl Handler<Player> {
                             pitch: (pitch * (256.0 / 360.0)) as u8,
                             yaw: (yaw * (256.0 / 360.0)) as u8,
                             head_yaw: (head_yaw * (256.0 / 360.0)) as u8,
-                            data: VarInt(0 as i32), // TODO set data on entities
+                            data: VarInt(0_i32), // TODO set data on entities
                             velocity_x: (velocity.x * 8000.0) as i16,
                             velocity_y: (velocity.y * 8000.0) as i16,
                             velocity_z: (velocity.z * 8000.0) as i16,
@@ -293,6 +292,7 @@ impl Handler<Player> {
         }
     }
 
+    #[instrument(skip_all)]
     async fn on_packet<'a>(mut self, packet: PlayServerbound<'a>) {
         use PlayServerbound::*;
         match packet {
@@ -348,7 +348,7 @@ impl Handler<Player> {
                     self.world.spawn_entity::<Zombie>(AnyEntity::Zombie(zombie)).await;
                 } else if message == "stress" {
                     tokio::spawn(async move {
-                        for i in 0..1000 {
+                        for _ in 0..1000 {
                             let mut zombie = Zombie::default();
                             let Some(mut position) = self.observe(|player| player.get_entity().position.clone()).await else {return};
                             position.y += 20.0;
@@ -361,12 +361,19 @@ impl Handler<Player> {
             }
             RequestPing { payload } => {
                 self.send_packet(PlayClientbound::Ping { id: payload as i32 }).await;
-            }
+            },
+            Pong { id } => {
+                self.send_packet(PlayClientbound::PingResponse { payload: id as i64 }).await;
+            },
+            KeepAlive { keep_alive_id  } => {
+                self.send_packet(PlayClientbound::KeepAlive { keep_alive_id }).await;
+            },
             packet => warn!("Unsupported packet received: {packet:?}"),
         }
     }
 }
 
+#[instrument(skip_all)]
 async fn handle_player(h: Handler<Player>, uuid: UUID, stream: TcpStream, packet_receiver: MpscReceiver<Vec<u8>>, server_msg_rcvr: BroadcastReceiver<ServerMessage>, change_receiver: MpscReceiver<WorldChange>) {
     let r = handle_player_inner(h.clone(), stream, packet_receiver, server_msg_rcvr, change_receiver).await;
     match r {
@@ -376,6 +383,7 @@ async fn handle_player(h: Handler<Player>, uuid: UUID, stream: TcpStream, packet
     h.world.remove_loader(uuid).await;
 }
 
+#[instrument(skip_all)]
 async fn handle_player_inner(h: Handler<Player>, stream: TcpStream, mut packet_receiver: MpscReceiver<Vec<u8>>, mut server_msg_rcvr: BroadcastReceiver<ServerMessage>, mut change_receiver: MpscReceiver<WorldChange>) -> Result<(), ()> {
     let (mut reader_stream, mut writer_stream) = stream.into_split();
     

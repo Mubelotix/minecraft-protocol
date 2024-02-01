@@ -6,6 +6,8 @@ mod loading_manager;
 use loading_manager::*;
 mod map;
 use map::*;
+mod light;
+pub use light::*;
 mod ecs;
 use ecs::*;
 mod collisions;
@@ -38,11 +40,7 @@ impl World {
         Some(self.map.get_block(position).await)
     }
 
-    pub async fn get_network_chunk(&self, position: ChunkPosition) -> Option<NetworkChunk> {
-        self.map.get_network_chunk(position).await
-    }
-
-    pub async fn set_block(&self, position: BlockPosition, block: BlockWithState) {
+    pub async fn set_block(&'static self, position: BlockPosition, block: BlockWithState) {
         self.map.set_block(position.clone(), block.clone()).await;
         self.notify(&position.chunk_column(), WorldChange::Block(position, block)).await;
     }
@@ -61,7 +59,7 @@ impl World {
         self.change_senders.write().await.remove(&uuid);
     }
 
-    pub async fn update_loaded_chunks(&self, uuid: UUID, loaded_chunks: HashSet<ChunkColumnPosition>) {
+    pub async fn ensure_loaded_chunks(&'static self, uuid: UUID, loaded_chunks: HashSet<ChunkColumnPosition>) {
         let mut loading_manager = self.loading_manager.write().await;
         let loaded_chunks_before = loading_manager.get_loaded_chunks();
         loading_manager.update_loaded_chunks(uuid, loaded_chunks);
@@ -158,6 +156,20 @@ impl World {
             }
         }
     }
+
+    #[cfg_attr(feature = "trace", instrument(skip(self)))]
+    pub async fn get_network_chunk_column_data<'a>(&self, position: ChunkColumnPosition) -> Option<Vec<u8>> {
+        self.map.get_network_chunk_column_data(position).await
+    }
+
+    pub async fn get_light_level(&'static self, position: BlockPosition) -> u8 {
+        LightManager::new(&self.map).get_light_level(LightPosition::from(position)).await
+    }
+
+    pub async fn set_light_level(&'static self, position: BlockPosition, light_level: u8) {
+        LightManager::new(&self.map).set_light_level(LightPosition::from(position), light_level).await;
+    }
+
 }
 
 #[cfg(test)]
@@ -167,12 +179,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_world_notifications() {
-        let world = World::new(broadcast_channel(100).1);
+        let world = Box::leak(Box::new(World::new(broadcast_channel(100).1)));
 
         let mut receiver1 = world.add_loader(1).await;
         let mut receiver2 = world.add_loader(2).await;
-        world.update_loaded_chunks(1, vec![ChunkColumnPosition{cx: 0, cz: 0}].into_iter().collect()).await;
-        world.update_loaded_chunks(2, vec![ChunkColumnPosition{cx: 1, cz: 1}].into_iter().collect()).await;
+        world.ensure_loaded_chunks(1, vec![ChunkColumnPosition{cx: 0, cz: 0}].into_iter().collect()).await;
+        world.ensure_loaded_chunks(2, vec![ChunkColumnPosition{cx: 1, cz: 1}].into_iter().collect()).await;
 
         world.set_block(BlockPosition{x: 1, y: 1, z: 1}, BlockWithState::Air).await;
         assert!(matches!(receiver1.try_recv(), Ok(WorldChange::Block(BlockPosition{x: 1, y: 1, z: 1}, BlockWithState::Air))));

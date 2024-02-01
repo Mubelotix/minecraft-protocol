@@ -17,6 +17,7 @@ enum AnyEntity {
     Cow(Cow),
 }
 
+#[derive(Debug)]
 pub struct Handler<T> {
     uuid: Eid,
     world: Arc<Mutex<()>>,

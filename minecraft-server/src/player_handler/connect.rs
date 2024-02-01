@@ -1,5 +1,7 @@
 use super::*;
 
+
+#[cfg_attr(feature = "trace", instrument(skip_all))]
 pub async fn handle_connection(
     mut stream: TcpStream,
     addr: SocketAddr,

@@ -6,6 +6,7 @@ use tokio::sync::RwLock;
 pub type EntityTask = Pin<Box<dyn Future<Output = ()> + Send + Sync + 'static>>;
 pub type EntityTaskHandle = tokio::task::JoinHandle<()>;
 
+
 pub struct Entities {
     eid_counter: std::sync::atomic::AtomicU32,
     uuid_counter: std::sync::atomic::AtomicU64, 
@@ -72,6 +73,7 @@ impl Entities {
         }
     }
 
+    #[cfg_attr(feature = "trace", instrument(skip_all))]
     pub(super) async fn spawn_entity<E>(&self, entity: AnyEntity, world: &'static World, receiver: BroadcastReceiver<ServerMessage>) -> (Eid, UUID)
         where AnyEntity: TryAsEntityRef<E>, Handler<E>: EntityExt
     {
@@ -90,7 +92,7 @@ impl Entities {
         h.init(receiver).await;
         (eid, uuid)
     }
-
+    
     pub(super) async fn insert_entity_task(&self, eid: Eid, name: &'static str, handle: EntityTaskHandle) {
         let mut entity_tasks = self.entity_tasks.write().await;
         let old = entity_tasks.entry(eid).or_insert(HashMap::new()).insert(name, handle);
@@ -100,6 +102,7 @@ impl Entities {
     }
 
     /// Remove an entity
+    #[cfg_attr(feature = "trace", instrument(skip_all))]
     pub(super) async fn remove_entity(&self, eid: Eid) -> Option<AnyEntity> {
         let entity = self.entities.write().await.remove(&eid);
         let mut chunks = self.chunks.write().await;

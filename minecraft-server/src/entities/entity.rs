@@ -7,6 +7,8 @@ use super::*;
         init(self, server_msg_rcvr: BroadcastReceiver<ServerMessage>);
     }
 )]
+
+#[derive(Debug)]
 pub struct Entity {
     pub position: Position,
     pub velocity: Translation,
